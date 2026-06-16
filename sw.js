@@ -2,15 +2,36 @@
    - Caches app shell for offline open.
    - Network-first for HTML, cache-first for static assets.
 */
-const CACHE_NAME = "pfm-pwa-v2";
+const CACHE_NAME = "pfm-pwa-v3";
+const REPORT_ENHANCEMENT_SCRIPT = '<script src="./report-enhancements.js?v=20260616-report-1"></script>';
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
   "./sw.js",
+  "./report-enhancements.js",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
+
+async function enhanceHtml(response) {
+  const headers = new Headers(response.headers);
+  const contentType = headers.get("content-type") || "";
+  if (!contentType.includes("text/html")) return response;
+
+  const html = await response.text();
+  const enhanced = html.includes("report-enhancements.js")
+    ? html
+    : html.replace("</body>", `${REPORT_ENHANCEMENT_SCRIPT}\n</body>`);
+
+  headers.set("content-type", "text/html; charset=utf-8");
+  headers.delete("content-length");
+  return new Response(enhanced, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -41,12 +62,15 @@ self.addEventListener("fetch", (event) => {
         (async () => {
           try {
             const fresh = await fetch(req);
+            const enhanced = await enhanceHtml(fresh.clone());
             const cache = await caches.open(CACHE_NAME);
-            cache.put(req, fresh.clone());
-            return fresh;
+            cache.put(req, enhanced.clone());
+            return enhanced;
           } catch (e) {
             const cached = await caches.match(req);
-            return cached || caches.match("./index.html");
+            if (cached) return enhanceHtml(cached.clone());
+            const shell = await caches.match("./index.html");
+            return shell ? enhanceHtml(shell.clone()) : Response.error();
           }
         })()
       );
