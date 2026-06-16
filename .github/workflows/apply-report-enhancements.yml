@@ -47,3 +47,4 @@ jobs:
             git commit -m "Enhance reports dashboard"
             git push
           fi
+# trigger: closed-draft-pr
