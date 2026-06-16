@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/apply-report-enhancements.yml
       - tools/apply-report-enhancements.mjs
+  workflow_dispatch:
 
 permissions:
   contents: write
