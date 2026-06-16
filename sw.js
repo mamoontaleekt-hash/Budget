@@ -2,14 +2,16 @@
    - Caches app shell for offline open.
    - Network-first for HTML, cache-first for static assets.
 */
-const CACHE_NAME = "pfm-pwa-v3";
+const CACHE_NAME = "pfm-pwa-v4";
 const REPORT_ENHANCEMENT_SCRIPT = '<script src="./report-enhancements.js?v=20260616-report-1"></script>';
+const MOBILE_ENHANCEMENT_STYLE = '<link rel="stylesheet" href="./mobile-enhancements.css?v=20260616-mobile-1">';
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
   "./sw.js",
   "./report-enhancements.js",
+  "./mobile-enhancements.css",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
@@ -20,9 +22,13 @@ async function enhanceHtml(response) {
   if (!contentType.includes("text/html")) return response;
 
   const html = await response.text();
-  const enhanced = html.includes("report-enhancements.js")
-    ? html
-    : html.replace("</body>", `${REPORT_ENHANCEMENT_SCRIPT}\n</body>`);
+  let enhanced = html;
+  if (!enhanced.includes("mobile-enhancements.css")) {
+    enhanced = enhanced.replace("</head>", `${MOBILE_ENHANCEMENT_STYLE}\n</head>`);
+  }
+  if (!enhanced.includes("report-enhancements.js")) {
+    enhanced = enhanced.replace("</body>", `${REPORT_ENHANCEMENT_SCRIPT}\n</body>`);
+  }
 
   headers.set("content-type", "text/html; charset=utf-8");
   headers.delete("content-length");
