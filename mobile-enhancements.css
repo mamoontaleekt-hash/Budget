@@ -1,0 +1,365 @@
+/* Mobile UX layer for the Personal Finance Manager.
+   Display-only changes: no data, storage, or Firebase behavior is touched. */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overscroll-behavior-y: contain;
+}
+
+.btn,
+.tab,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+.btn:focus-visible,
+.tab:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(46, 108, 255, .22);
+  outline-offset: 2px;
+}
+
+.tabs {
+  position: sticky;
+  top: 96px;
+  z-index: 4;
+  backdrop-filter: blur(14px);
+}
+
+.tab {
+  min-height: 42px;
+}
+
+table {
+  min-width: 620px;
+}
+
+@media (max-width: 720px) {
+  body {
+    background:
+      linear-gradient(180deg, rgba(46, 108, 255, .06), rgba(0, 191, 166, .04) 34%, rgba(247, 250, 252, 0) 70%),
+      var(--bg);
+  }
+
+  .app {
+    width: 100%;
+    padding: max(10px, env(safe-area-inset-top)) 10px calc(22px + env(safe-area-inset-bottom));
+  }
+
+  .topbar {
+    top: 0;
+    margin: -10px -10px 0;
+    padding: 10px 10px 12px;
+    border-radius: 0 0 18px 18px;
+    border-inline: 0;
+    border-top: 0;
+    gap: 10px;
+    z-index: 10;
+  }
+
+  .brand {
+    min-width: 0;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    flex: 0 0 auto;
+  }
+
+  .brand h1 {
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  .brand p {
+    font-size: 11px;
+    line-height: 1.45;
+    max-width: 31ch;
+  }
+
+  .controls {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .controls .chip {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 14px;
+    padding: 9px 11px;
+  }
+
+  .chip input[type="month"] {
+    width: 145px;
+    text-align: center;
+  }
+
+  #cloudBadge {
+    grid-column: 1 / -1;
+    justify-content: center;
+    min-height: 34px;
+  }
+
+  .btn,
+  input[type="month"],
+  input[type="date"],
+  input[type="number"],
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    min-height: 44px;
+    font-size: 16px;
+    border-radius: 13px;
+  }
+
+  .btn {
+    padding: 10px 11px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .btn.small {
+    min-height: 38px;
+    font-size: 14px;
+  }
+
+  .tabs {
+    top: 154px;
+    margin: 10px -10px 0;
+    padding: 8px 10px;
+    border-inline: 0;
+    border-radius: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    gap: 8px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    padding: 10px 13px;
+    min-height: 42px;
+    white-space: nowrap;
+    border-radius: 999px;
+  }
+
+  .grid {
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .card {
+    border-radius: 16px;
+  }
+
+  .card .hd {
+    padding: 12px 12px 8px;
+  }
+
+  .card .hd h2 {
+    font-size: 14px;
+  }
+
+  .card .hd p,
+  .mini,
+  .kpi .hint,
+  .help {
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+
+  .card .bd {
+    padding: 12px;
+  }
+
+  .kpis {
+    gap: 8px;
+  }
+
+  .kpi {
+    grid-column: span 6;
+    min-height: 96px;
+    padding: 11px;
+    border-radius: 14px;
+  }
+
+  .kpi .value {
+    font-size: 16px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .split,
+  .two {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  .row {
+    gap: 8px;
+  }
+
+  .row > input,
+  .row > select,
+  .row > textarea {
+    min-width: 0;
+    flex: 1 1 150px;
+  }
+
+  label.mini {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .dialog .bd input:not([type="file"]),
+  .dialog .bd select,
+  .dialog .bd textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  [style*="overflow:auto"] {
+    margin-inline: -2px;
+    padding-bottom: 4px;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  table {
+    min-width: 640px;
+    font-size: 12px;
+  }
+
+  th,
+  td {
+    padding: 10px 9px;
+    vertical-align: middle;
+  }
+
+  td .row {
+    flex-wrap: nowrap;
+  }
+
+  td .btn.small {
+    min-height: 34px;
+    padding: 7px 9px;
+  }
+
+  canvas {
+    max-height: 240px;
+  }
+
+  .modal {
+    align-items: flex-end;
+    padding: 0;
+    z-index: 30;
+  }
+
+  .dialog {
+    width: 100%;
+    max-height: min(88vh, 760px);
+    border-radius: 22px 22px 0 0;
+    border-inline: 0;
+    border-bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dialog .hd {
+    padding: 13px 14px 10px;
+    flex: 0 0 auto;
+  }
+
+  .dialog .bd {
+    padding: 12px 14px;
+    overflow: auto;
+    flex: 1 1 auto;
+  }
+
+  .dialog .ft {
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    flex: 0 0 auto;
+    background: rgba(255, 255, 255, .98);
+  }
+
+  .dialog .ft .btn {
+    flex: 1 1 140px;
+  }
+
+  #modalTx .dialog .ft #btnSaveTx {
+    flex-basis: 100%;
+  }
+
+  textarea#importText,
+  textarea#exportText {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 420px) {
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .controls .btn {
+    width: 100%;
+  }
+
+  .brand p {
+    max-width: 28ch;
+  }
+
+  .tabs {
+    top: 246px;
+  }
+
+  .kpi {
+    grid-column: span 12;
+    min-height: auto;
+  }
+
+  table {
+    min-width: 600px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .btn {
+    transition: none;
+  }
+}
