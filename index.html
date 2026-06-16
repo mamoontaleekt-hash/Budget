@@ -14,7 +14,7 @@
 <link rel="icon" href="data:;base64,=">
 <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>نظام إدارة المصاريف الشخصية (محلي - LocalStorage)</title>
+  <title>نظام إدارة المصاريف الشخصية (أونلاين - Firebase)</title>
   <style>
     :root{
       /* Bright + calm palette */
@@ -749,17 +749,20 @@
                 <div class="row">
                   <button class="btn" id="btnExport2">⬇️ تصدير JSON</button>
                   <button class="btn" id="btnImport2">⬆️ استيراد JSON</button>
+                  <button class="btn" id="btnTrash">🗑️ سلة المحذوفات</button>
+                  <button class="btn" id="btnRestoreSafety">🛟 استعادة آخر نسخة أمان</button>
+                  <button class="btn" id="btnUpdateApp">🔄 تحديث التطبيق</button>
                 </div>
                 <div class="hr"></div>
                 <button class="btn danger" id="btnClearAll">🧨 مسح كل البيانات</button>
-                <div class="mini" style="margin-top:10px">تحذير: مسح البيانات لا يمكن التراجع عنه. استخدم التصدير قبل المسح.</div>
+                <div class="mini" style="margin-top:10px">تحذير: سيتم إنشاء نسخة أمان محلية قبل الاستيراد أو المسح، ومع ذلك يفضّل تنزيل JSON قبل أي تغيير كبير.</div>
               </div>
             </div>
           </div>
 
           <div class="hr"></div>
           <div class="mini">
-            <div>📌 <b>معلومة تقنية:</b> البيانات تُخزَّن داخل المتصفح (LocalStorage) على هذا الجهاز فقط. إذا فتحت الملف في متصفح آخر أو جهاز آخر ستحتاج إلى استيراد ملف JSON.</div>
+            <div>📌 <b>معلومة تقنية:</b> البيانات تُحفظ محلياً أولاً ثم تُزامن تلقائياً مع Firebase بعد تسجيل الدخول. عند فتح جهاز جديد، يتم جلب بيانات السحابة قبل أي حفظ جديد لحماية بياناتك القديمة.</div>
           </div>
         </div>
       </div>
@@ -904,6 +907,42 @@
       </div>
     </div>
 
+    <div class="modal" id="modalTrash">
+      <div class="dialog">
+        <div class="hd">
+          <div>
+            <h3>سلة المحذوفات</h3>
+            <div class="mini">العمليات المحذوفة لا تدخل في التقارير، ويمكن استعادتها في أي وقت.</div>
+          </div>
+          <button class="btn icon" data-close="#modalTrash">✖</button>
+        </div>
+        <div class="bd">
+          <div class="help">يتم الاحتفاظ بالعمليات هنا بدل حذفها نهائياً حتى لا تضيع البيانات بسبب ضغط خاطئ.</div>
+          <div class="hr"></div>
+          <div style="overflow:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th style="min-width:120px">التاريخ</th>
+                  <th style="min-width:110px">النوع</th>
+                  <th style="min-width:140px">التصنيف</th>
+                  <th style="min-width:130px">المبلغ</th>
+                  <th>ملاحظة</th>
+                  <th style="min-width:140px">إجراء</th>
+                </tr>
+              </thead>
+              <tbody id="trashTableBody">
+                <tr><td colspan="6" class="muted">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="ft">
+          <button class="btn" data-close="#modalTrash">إغلاق</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 
@@ -978,6 +1017,7 @@
  *  ========================= */
 (function(){
   const STORAGE_KEY = "pfm_data_v1";
+  const SAFETY_BACKUP_KEY = "pfm_safety_backup_latest_v1";
   const $ = (sel, root=document) => root.querySelector(sel);
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
@@ -1094,7 +1134,7 @@
 
   // --- Transactions helpers
   function txInMonth(month){
-    return state.transactions.filter(t => monthFromDate(t.date)===month);
+    return state.transactions.filter(t => !t.deletedAt && monthFromDate(t.date)===month);
   }
   function sumAmount(arr){ return arr.reduce((s,x)=> s + (Number(x.amount)||0), 0); }
   function totalsForMonth(month){
@@ -1187,7 +1227,7 @@
     const max = maxRaw === "" ? null : Number(maxRaw);
 
     let txs = state.transactions.slice()
-      .filter(t => monthFromDate(t.date)===activeMonth)
+      .filter(t => !t.deletedAt && monthFromDate(t.date)===activeMonth)
       .sort((a,b)=> (b.date||"").localeCompare(a.date||""));
 
     if(typeFilter) txs = txs.filter(t => t.type===typeFilter);
@@ -1664,6 +1704,9 @@
   $("#btnExport2").addEventListener("click", () => openExportModal());
   $("#btnImport").addEventListener("click", () => openImportModal());
   $("#btnImport2").addEventListener("click", () => openImportModal());
+  $("#btnTrash").addEventListener("click", () => openTrashModal());
+  $("#btnRestoreSafety").addEventListener("click", () => restoreLatestSafetyBackup());
+  $("#btnUpdateApp").addEventListener("click", () => updateInstalledApp());
 
   function openExportModal(){
     $("#exportText").value = JSON.stringify(state, null, 2);
@@ -1693,6 +1736,107 @@
     openModal("#modalImport");
   }
 
+  function createLocalSafetyBackup(reason){
+    const payload = {
+      reason,
+      at: new Date().toISOString(),
+      data: state
+    };
+    try{
+      localStorage.setItem(SAFETY_BACKUP_KEY, JSON.stringify(payload));
+      return true;
+    }catch(e){
+      console.warn("Safety backup failed", e);
+      return false;
+    }
+  }
+
+  function restoreLatestSafetyBackup(){
+    try{
+      const raw = localStorage.getItem(SAFETY_BACKUP_KEY);
+      if(!raw){ toast("لا توجد نسخة أمان محلية بعد"); return; }
+      const payload = JSON.parse(raw);
+      if(!payload || !payload.data || !payload.data.categories || !payload.data.transactions || !payload.data.budgets){
+        toast("نسخة الأمان غير صالحة");
+        return;
+      }
+      const ok = confirm("استعادة آخر نسخة أمان محلية؟ سيتم استبدال البيانات الحالية ثم مزامنتها تلقائياً إذا كنت متصلاً.");
+      if(!ok) return;
+      state = payload.data;
+      save();
+      render();
+      toast("تمت استعادة نسخة الأمان ✅");
+    }catch(e){
+      console.error(e);
+      toast("تعذر استعادة نسخة الأمان");
+    }
+  }
+
+  function deletedTransactions(){
+    return state.transactions
+      .filter(t => t.deletedAt)
+      .sort((a,b)=> (b.deletedAt||"").localeCompare(a.deletedAt||""));
+  }
+
+  function openTrashModal(){
+    renderTrashModal();
+    openModal("#modalTrash");
+  }
+
+  function renderTrashModal(){
+    const tbody = $("#trashTableBody");
+    const deleted = deletedTransactions();
+    if(deleted.length===0){
+      tbody.innerHTML = `<tr><td colspan="6" class="muted">سلة المحذوفات فارغة.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = deleted.map(t=>{
+      const signClass = t.type==="income" ? "pos" : "neg";
+      const labelType = t.type==="income" ? `<span class="pill ok">إيراد</span>` : `<span class="pill danger">مصروف</span>`;
+      return `<tr>
+        <td>${escapeHTML(t.date||"")}</td>
+        <td>${labelType}</td>
+        <td><span class="tag">🏷️ ${escapeHTML(catName(t.categoryId))}</span></td>
+        <td class="money ${signClass}">${fmtCompact(t.amount)}</td>
+        <td>${escapeHTML(t.note||"")}</td>
+        <td><button class="btn small" data-restore-tx="${t.id}">↩️ استعادة</button></td>
+      </tr>`;
+    }).join("");
+    $$("[data-restore-tx]", tbody).forEach(b => b.addEventListener("click", () => restoreTx(b.getAttribute("data-restore-tx"))));
+  }
+
+  function restoreTx(id){
+    const tx = state.transactions.find(t=>t.id===id);
+    if(!tx) return;
+    delete tx.deletedAt;
+    delete tx.deletedReason;
+    tx.restoredAt = new Date().toISOString();
+    save();
+    renderTrashModal();
+    render();
+    toast("تمت استعادة العملية ✅");
+  }
+
+  async function updateInstalledApp(){
+    const ok = confirm("سيتم تحديث كاش التطبيق وإعادة تحميل الصفحة. البيانات لن تُحذف.");
+    if(!ok) return;
+    try{
+      if("serviceWorker" in navigator){
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.update().catch(()=>{})));
+      }
+      if(window.caches){
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(k => k.startsWith("pfm-pwa-")).map(k => caches.delete(k)));
+      }
+      toast("تم تحديث التطبيق، سيتم إعادة التحميل...");
+      setTimeout(()=> location.reload(), 500);
+    }catch(e){
+      console.error(e);
+      toast("تعذر تحديث الكاش، جرّب Ctrl+F5");
+    }
+  }
+
   $("#btnLoadFromFile").addEventListener("click", async () => {
     const file = $("#importFile").files?.[0];
     if(!file){ toast("اختر ملف JSON أولاً"); return; }
@@ -1710,6 +1854,10 @@
         toast("ملف غير صالح");
         return;
       }
+      const txCount = Array.isArray(parsed.transactions) ? parsed.transactions.length : 0;
+      const ok = confirm(`سيتم استبدال البيانات الحالية بملف يحتوي على ${txCount} عملية. سيتم إنشاء نسخة أمان محلية قبل الاستيراد. هل تريد المتابعة؟`);
+      if(!ok) return;
+      createLocalSafetyBackup("before-import");
       state = parsed;
       save();
       closeModal("#modalImport");
@@ -1721,8 +1869,11 @@
   });
 
   $("#btnClearAll").addEventListener("click", () => {
-    const ok = confirm("هل أنت متأكد من مسح كل البيانات؟");
+    const ok = confirm("سيتم إنشاء نسخة أمان محلية ثم مسح كل البيانات من هذا الجهاز ومزامنة ذلك إذا كنت متصلاً. هل أنت متأكد؟");
     if(!ok) return;
+    const typed = prompt("للتأكيد اكتب كلمة: مسح");
+    if(typed !== "مسح"){ toast("تم إلغاء المسح"); return; }
+    createLocalSafetyBackup("before-clear-all");
     localStorage.removeItem(STORAGE_KEY);
     state = defaultData();
     save();
@@ -1795,11 +1946,14 @@
     openTxModal(tx);
   }
   function deleteTx(id){
-    const ok = confirm("حذف العملية؟");
+    const ok = confirm("نقل العملية إلى سلة المحذوفات؟ يمكنك استعادتها لاحقاً من الإعدادات.");
     if(!ok) return;
-    state.transactions = state.transactions.filter(t=>t.id!==id);
+    const tx = state.transactions.find(t=>t.id===id);
+    if(!tx) return;
+    tx.deletedAt = new Date().toISOString();
+    tx.deletedReason = "user-delete";
     save();
-    toast("تم الحذف");
+    toast("تم نقل العملية إلى سلة المحذوفات");
     render();
   }
 
@@ -1869,6 +2023,7 @@
     if(!cat) return;
     const ok = confirm(`حذف تصنيف "${cat.name}"؟`);
     if(!ok) return;
+    createLocalSafetyBackup("before-delete-category");
 
     // remove from categories
     state.categories = state.categories.filter(c=>c.id!==id);
@@ -2076,6 +2231,7 @@ window.addEventListener("pfm:apply", (ev)=>{
   let unsubSnap = null;
   let pushTimer = null;
   let dirty = false;
+  let cloudReady = false;
   let lastLocalStr = null;
   let lastAppliedRemoteHash = null;
   let lastSavedPulseTimer = null;
@@ -2103,7 +2259,7 @@ window.addEventListener("pfm:apply", (ev)=>{
     }, 1400);
   }
 
-  async function ensureDoc(docRef){
+  async function prepareCloudSession(docRef){
     const snap = await docRef.get();
     if(!snap.exists){
       const data = readLocal();
@@ -2115,11 +2271,36 @@ window.addEventListener("pfm:apply", (ev)=>{
         updatedByClientId: clientId,
         version: 1
       }, {merge:true});
+      lastLocalStr = localString();
+      dirty = false;
+      return { created: true, appliedRemote: false };
     }
+    const remote = snap.data() || {};
+    const remoteData = remote.data || null;
+    if(remoteData && Object.keys(remoteData).length > 0){
+      const remoteStr = JSON.stringify(remoteData);
+      const localStr = JSON.stringify(readLocal() || {});
+      const remoteHash = hashStr(remoteStr);
+      if(remoteHash !== hashStr(localStr)){
+        backupLocalBeforeRemote();
+        lastAppliedRemoteHash = remoteHash;
+        window.dispatchEvent(new CustomEvent("pfm:apply", {detail: remoteData}));
+      }
+      lastLocalStr = localString();
+      dirty = false;
+      setStatus("الحالة: تم جلب بيانات السحابة قبل بدء الحفظ التلقائي ✅");
+      setPill("☁️ متصل", "ok");
+      setLast(nowClock());
+      return { created: false, appliedRemote: true };
+    }
+    lastLocalStr = localString();
+    dirty = false;
+    return { created: false, appliedRemote: false };
   }
 
   async function pushToCloud(reason){
     if(!auth.currentUser){ setStatus("الحالة: غير متصل (سجّل الدخول)"); return; }
+    if(!cloudReady){ setStatus("الحالة: ينتظر اكتمال جلب السحابة قبل الحفظ"); return; }
     const uid = auth.currentUser.uid;
     const docRef = db.collection("pfm_users").doc(uid);
 
@@ -2152,6 +2333,7 @@ window.addEventListener("pfm:apply", (ev)=>{
   }
 
   function schedulePush(reason){
+    if(!cloudReady){ setStatus("الحالة: ينتظر اكتمال جلب السحابة قبل الحفظ"); return; }
     clearTimeout(pushTimer);
     pushTimer = setTimeout(()=> pushToCloud(reason), 800);
   }
@@ -2310,7 +2492,7 @@ window.addEventListener("pfm:apply", (ev)=>{
   window.addEventListener("pfm:changed", ()=>{
     // Debounce push only if logged in
     dirty = true;
-    if(!auth.currentUser) return;
+    if(!auth.currentUser || !cloudReady) return;
     const cur = localString();
     if(cur === lastLocalStr) return;
     lastLocalStr = cur;
@@ -2334,16 +2516,17 @@ window.addEventListener("pfm:apply", (ev)=>{
   auth.onAuthStateChanged(async (user)=>{
     updateAuthUI(user);
     if(unsubSnap){ try{ unsubSnap(); }catch(e){} unsubSnap=null; }
+    cloudReady = false;
     if(!user) return;
 
     const docRef = db.collection("pfm_users").doc(user.uid);
 
     // Ensure document exists then start realtime listener
     try{
-      await ensureDoc(docRef);
+      setStatus("الحالة: جارٍ جلب بيانات السحابة أولاً لحماية البيانات...");
+      await prepareCloudSession(docRef);
       startRealtime(docRef);
-      // First push to ensure cloud has latest (debounced)
-      schedulePush("بدء");
+      cloudReady = true;
     }catch(err){
       console.error(err);
       const code = err && err.code ? ` (${err.code})` : "";
@@ -2359,7 +2542,9 @@ window.addEventListener("pfm:apply", (ev)=>{
   // PWA Service Worker
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js").catch((err) => {
+      navigator.serviceWorker.register("./sw.js").then((reg) => {
+        reg.update().catch(()=>{});
+      }).catch((err) => {
         console.warn("SW registration failed:", err);
       });
     });
