@@ -3,10 +3,14 @@
     typeof module === "object" && module.exports
       ? require("./financial-model.js")
       : root.PFMFinancialModel;
-  const api = factory(financialModel);
+  const getDebtModel = () =>
+    typeof module === "object" && module.exports
+      ? require("./debt-model.js")
+      : root.PFMDebtModel;
+  const api = factory(financialModel, getDebtModel);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.PFMExpenseModel = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (FinancialModel) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (FinancialModel, getDebtModel) {
   "use strict";
 
   if (!FinancialModel) throw new Error("Financial model is required by expense model");
@@ -40,16 +44,8 @@
   }
 
   function getValidLinkedObligationId(state, transaction) {
-    if (!isActiveExpense(transaction) || typeof transaction.id !== "string") return null;
-    const links = state?.debtSettings?.paymentLinks;
-    const obligations = state?.debtSettings?.obligations;
-    if (!links || typeof links !== "object" || Array.isArray(links)) return null;
-    if (!obligations || typeof obligations !== "object" || Array.isArray(obligations)) return null;
-    const obligationId = links[transaction.id];
-    const obligation = obligations[obligationId];
-    return obligation && typeof obligation === "object" && !Array.isArray(obligation) && obligation.id === obligationId
-      ? obligationId
-      : null;
+    const debtModel = getDebtModel();
+    return debtModel?.getValidLinkedObligationId(state, transaction) || null;
   }
 
   function resolveExpenseClass(state, transaction) {

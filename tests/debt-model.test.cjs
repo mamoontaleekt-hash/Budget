@@ -61,6 +61,7 @@ test("invalid month addition returns null", () => assert.equal(Debt.addMonthsMon
 test("missing settings produces no obligations", () => assert.deepEqual(Debt.getObligations({ transactions: [] }), []));
 test("array settings produces no obligations", () => assert.deepEqual(Debt.getObligations({ debtSettings: { obligations: [] } }), []));
 test("mismatched embedded id is ignored", () => assert.equal(Debt.getObligation({ debtSettings: { obligations: { a: { id: "b" } } } }, "a"), null));
+test("structurally invalid obligation is ignored", () => assert.equal(Debt.getObligation({ debtSettings: { obligations: { bad: { id: "bad" } } } }, "bad"), null));
 test("valid obligation is returned", () => assert.equal(Debt.getObligation(stateWith(), "home").name, "دفعة المنزل"));
 test("missing obligation is null", () => assert.equal(Debt.getObligation(stateWith(), "none"), null));
 
@@ -289,6 +290,14 @@ test("valid linked payment wins over explicit class", () => {
 test("stale link does not force debt class", () => {
   const source = { ...stateWith([obligation()], [tx("p1", 100)], { p1: "ghost" }), expenseSettings: { transactionClasses: { p1: "exceptional" } } };
   assert.equal(Expense.resolveExpenseClass(source, source.transactions[0]), "exceptional");
+});
+test("link to structurally invalid obligation does not force debt class", () => {
+  const source = { ...stateWith([], [tx("p1", 100)], { p1: "bad" }), expenseSettings: { transactionClasses: { p1: "exceptional" } } };
+  source.debtSettings.obligations.bad = { id: "bad" };
+  assert.equal(Debt.getValidLinkedObligationId(source, source.transactions[0]), null);
+  assert.equal(Expense.getValidLinkedObligationId(source, source.transactions[0]), null);
+  assert.equal(Expense.resolveExpenseClass(source, source.transactions[0]), "exceptional");
+  assert.equal(Debt.isEligibleUnlinkedExpense(source, source.transactions[0]), true);
 });
 test("invalid link falls back to debt category", () => {
   const source = stateWith([obligation()], [tx("p1", 100, "2026-02-10", { categoryId: "ex_debt" })], { p1: "ghost" });

@@ -90,7 +90,7 @@
     if (typeof obligationId !== "string" || obligationId.length === 0) return null;
     const obligation = obligationsObject(state)?.[obligationId];
     if (!obligation || typeof obligation !== "object" || Array.isArray(obligation)) return null;
-    return obligation.id === obligationId ? obligation : null;
+    return obligation.id === obligationId && validateObligation(obligation).length === 0 ? obligation : null;
   }
 
   function getObligations(state) {
