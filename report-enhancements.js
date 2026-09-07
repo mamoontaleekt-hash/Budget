@@ -4,6 +4,8 @@
   const STORAGE_KEY = "pfm_data_v1";
   const FinancialModel = window.PFMFinancialModel;
   if (!FinancialModel) throw new Error("Financial model failed to load for reports");
+  const ExpenseModel = window.PFMExpenseModel;
+  if (!ExpenseModel) throw new Error("Expense model failed to load for reports");
   const fmt = new Intl.NumberFormat("ar-IQ", {
     style: "currency",
     currency: "IQD",
@@ -31,6 +33,10 @@
         financialSettings:
           parsed.financialSettings && typeof parsed.financialSettings === "object"
             ? parsed.financialSettings
+            : undefined,
+        expenseSettings:
+          parsed.expenseSettings && typeof parsed.expenseSettings === "object"
+            ? parsed.expenseSettings
             : undefined,
       };
     } catch (error) {
@@ -65,12 +71,17 @@
 
   function totalsForMonth(state, month) {
     const financials = FinancialModel.calculateMonthFinancials(state, month);
+    const expenses = ExpenseModel.calculateExpenseAnalytics(state, month);
     return {
       month,
       income: financials.trueIncome,
       expense: financials.totalExpenses,
       net: financials.netCashFlow,
       closingBalance: financials.closingBalance,
+      costOfLiving: expenses.costOfLiving,
+      exceptionalExpenses: expenses.exceptionalExpenses,
+      debtPayments: expenses.debtPayments,
+      nonLivingOutflows: expenses.nonLivingOutflows,
       count: financials.transactions.length,
     };
   }
@@ -144,7 +155,7 @@
 
       <div class="hr"></div>
       <div style="font-weight:800;margin-bottom:4px">ملخص آخر 12 شهر</div>
-      <div class="mini">دخل الشهر الحقيقي، المصروف، صافي الحركة، الرصيد الختامي، وعدد العمليات.</div>
+      <div class="mini">الدخل الحقيقي، إجمالي المصروف، تكلفة المعيشة، المصروف الاستثنائي، سداد الدين، صافي الحركة، والرصيد الختامي.</div>
       <div style="overflow:auto;margin-top:10px">
         <table>
           <thead>
@@ -152,13 +163,16 @@
               <th style="min-width:130px">الشهر</th>
               <th style="min-width:140px">الدخل الحقيقي</th>
               <th style="min-width:140px">المصروف</th>
+              <th style="min-width:140px">تكلفة المعيشة</th>
+              <th style="min-width:140px">استثنائي</th>
+              <th style="min-width:140px">سداد دين</th>
               <th style="min-width:140px">صافي الحركة</th>
               <th style="min-width:140px">الرصيد الختامي</th>
               <th style="min-width:100px">العمليات</th>
             </tr>
           </thead>
           <tbody id="monthlySummaryBody">
-            <tr><td colspan="6" class="muted">-</td></tr>
+            <tr><td colspan="9" class="muted">-</td></tr>
           </tbody>
         </table>
       </div>
@@ -177,6 +191,7 @@
       rows.push("لا توجد بيانات كافية لهذا الشهر بعد.");
     } else {
       rows.push(`صافي حركة دخل هذا الشهر ${money(current.net)} بعد مصروف ${money(current.expense)}.`);
+      rows.push(`تكلفة المعيشة ${money(current.costOfLiving)}، والمبالغ الخارجة غير المعيشية ${money(current.nonLivingOutflows)}.`);
       if (current.net < 0 && current.closingBalance >= 0) {
         rows.push(`مصاريف الشهر أعلى من دخله، لكن الرصيد الختامي ما زال موجباً عند ${money(current.closingBalance)}.`);
       }
@@ -272,6 +287,9 @@
             <td><b>${escapeHTML(monthLabel(row.month))}</b></td>
             <td>${money(row.income)}</td>
             <td>${money(row.expense)}</td>
+            <td>${money(row.costOfLiving)}</td>
+            <td>${money(row.exceptionalExpenses)}</td>
+            <td>${money(row.debtPayments)}</td>
             <td>${money(row.net)}</td>
             <td>${money(row.closingBalance)}</td>
             <td>${row.count}</td>
