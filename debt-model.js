@@ -100,6 +100,7 @@
   }
 
   function getTransaction(state, transactionId) {
+    if (typeof transactionId !== "string" || transactionId.length === 0) return null;
     const transactions = Array.isArray(state?.transactions) ? state.transactions : [];
     return transactions.find((transaction) => transaction?.id === transactionId) || null;
   }
@@ -382,7 +383,8 @@
   }
 
   function isEligibleUnlinkedExpense(state, transaction) {
-    if (!isActiveExpense(transaction) || getTransaction(state, transaction.id) !== transaction) return false;
+    if (!isActiveExpense(transaction) || typeof transaction.id !== "string" || transaction.id.length === 0) return false;
+    if (getTransaction(state, transaction.id) !== transaction) return false;
     return !getValidLinkedObligationId(state, transaction);
   }
 

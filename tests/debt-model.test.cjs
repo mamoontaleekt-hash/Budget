@@ -288,6 +288,15 @@ test("only the canonical unlinked duplicate is an eligible link candidate", () =
   assert.equal(Debt.isEligibleUnlinkedExpense(source, first), true);
   assert.equal(Debt.isEligibleUnlinkedExpense(source, duplicate), false);
 });
+test("transactions without non-empty string ids are not link candidates", () => {
+  const numeric = tx(123, 100);
+  const empty = tx("", 200);
+  const source = stateWith([obligation()], [numeric, empty]);
+  assert.equal(Debt.isEligibleUnlinkedExpense(source, numeric), false);
+  assert.equal(Debt.isEligibleUnlinkedExpense(source, empty), false);
+  assert.equal(Debt.withPaymentLink(source, "123", "home"), source);
+  assert.equal(Debt.withPaymentLink(source, "", "home"), source);
+});
 test("link helper refuses income", () => {
   const source = stateWith([obligation()], [tx("p1", 100, "2026-02-10", { type: "income" })]);
   assert.equal(Debt.withPaymentLink(source, "p1", "home"), source);
