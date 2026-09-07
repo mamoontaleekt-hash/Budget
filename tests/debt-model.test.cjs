@@ -194,6 +194,11 @@ test("future linked payment counts once reference reaches its date", () => {
   const source = stateWith([obligation()], [tx("p1", 300, "2026-04-10")], { p1: "home" });
   assert.equal(Debt.calculateObligation(source, "home", "2026-04-10").linkedPayments, 300);
 });
+test("undated linked payment is excluded from as of totals", () => {
+  const source = stateWith([obligation()], [tx("p1", 300, "")], { p1: "home" });
+  assert.equal(Debt.calculateObligation(source, "home", "2026-04-10").linkedPayments, 0);
+  assert.equal(Debt.calculateObligation(source, "home", "2026-04-10").paymentTransactions.length, 1);
+});
 
 test("selected month contains fixed outstanding", () => assert.equal(Debt.getPlannedPaymentsForMonth(stateWith(), "2026-02")[0].amount, 300));
 test("selected month omits other months", () => assert.deepEqual(Debt.getPlannedPaymentsForMonth(stateWith(), "2027-02"), []));
@@ -248,6 +253,19 @@ test("link helper refuses silent reassignment", () => {
   const other = obligation({ id: "car", name: "سيارة", type: "car" });
   const source = stateWith([obligation(), other], [tx("p1", 100)], { p1: "home" });
   assert.equal(Debt.withPaymentLink(source, "p1", "car"), source);
+});
+test("link helper repairs stale target through explicit link action", () => {
+  const source = stateWith([obligation()], [tx("p1", 100)], { p1: "ghost" });
+  const next = Debt.withPaymentLink(source, "p1", "home");
+  assert.equal(next.debtSettings.paymentLinks.p1, "home");
+});
+test("stale target leaves expense eligible for explicit repair", () => {
+  const source = stateWith([obligation()], [tx("p1", 100)], { p1: "ghost" });
+  assert.equal(Debt.isEligibleUnlinkedExpense(source, source.transactions[0]), true);
+});
+test("valid target keeps expense ineligible for reassignment", () => {
+  const source = stateWith([obligation()], [tx("p1", 100)], { p1: "home" });
+  assert.equal(Debt.isEligibleUnlinkedExpense(source, source.transactions[0]), false);
 });
 test("link helper refuses income", () => {
   const source = stateWith([obligation()], [tx("p1", 100, "2026-02-10", { type: "income" })]);

@@ -200,7 +200,7 @@
     const reference = normalizeReferenceDate(referenceDate);
     const paymentTransactions = getLinkedPaymentTransactions(state, obligation.id);
     const countedPaymentTransactions = paymentTransactions.filter(
-      (transaction) => !isDateOnly(transaction.date) || transaction.date <= reference
+      (transaction) => isDateOnly(transaction.date) && transaction.date <= reference
     );
     const futurePaymentTransactions = paymentTransactions.filter(
       (transaction) => isDateOnly(transaction.date) && transaction.date > reference
@@ -367,7 +367,7 @@
     const transaction = getTransaction(state, transactionId);
     if (!isActiveExpense(transaction) || typeof transactionId !== "string") return state;
     const currentLinks = paymentLinksObject(state) || {};
-    if (Object.prototype.hasOwnProperty.call(currentLinks, transactionId)) return state;
+    if (getValidLinkedObligationId(state, transaction)) return state;
     const paymentLinks = { ...currentLinks, [transactionId]: obligationId };
     return cleanDebtSettings(state, { obligations: { ...(obligationsObject(state) || {}) }, paymentLinks });
   }
@@ -382,7 +382,7 @@
   }
 
   function isEligibleUnlinkedExpense(state, transaction) {
-    return isActiveExpense(transaction) && !getValidLinkedObligationId(state, transaction) && !Object.prototype.hasOwnProperty.call(paymentLinksObject(state) || {}, transaction.id);
+    return isActiveExpense(transaction) && !getValidLinkedObligationId(state, transaction);
   }
 
   function validateObligation(input) {
