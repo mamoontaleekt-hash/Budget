@@ -208,7 +208,7 @@
     const allocatedSchedule = allocatePaymentsToSchedule(schedule, linkedPayments);
     const scheduledOutstanding = allocatedSchedule.filter((entry) => entry.outstandingAmount > 0);
     const reference = normalizeReferenceDate(referenceDate);
-    const overdueAmount = effectiveStatus === "active"
+    let overdueAmount = effectiveStatus === "active"
       ? scheduledOutstanding
         .filter((entry) => entry.dueDate < reference)
         .reduce((sum, entry) => sum + entry.outstandingAmount, 0)
@@ -231,6 +231,9 @@
           source: "manual",
         };
       }
+    }
+    if (effectiveStatus === "active" && nextDue?.source === "manual" && nextDue.date < reference) {
+      overdueAmount = nextDue.amount;
     }
 
     return {

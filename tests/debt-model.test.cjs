@@ -163,6 +163,10 @@ test("irregular amount is capped at remaining", () => {
   const item = obligation({ totalAmount: 250, scheduleMode: "irregular", manualNextDueDate: "2026-04-05", manualNextDueAmount: 90 });
   assert.equal(Debt.calculateObligation(stateWith([item]), "home").nextDue.amount, 50);
 });
+test("past irregular manual due is overdue", () => {
+  const item = obligation({ scheduleMode: "irregular", manualNextDueDate: "2026-04-05", manualNextDueAmount: 80 });
+  assert.equal(Debt.calculateObligation(stateWith([item]), "home", "2026-04-06").overdueAmount, 80);
+});
 
 test("selected month contains fixed outstanding", () => assert.equal(Debt.getPlannedPaymentsForMonth(stateWith(), "2026-02")[0].amount, 300));
 test("selected month omits other months", () => assert.deepEqual(Debt.getPlannedPaymentsForMonth(stateWith(), "2027-02"), []));
