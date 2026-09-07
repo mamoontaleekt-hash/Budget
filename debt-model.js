@@ -197,8 +197,15 @@
 
     const totalAmount = nonNegativeAmount(obligation.totalAmount);
     const paidBeforeTracking = nonNegativeAmount(obligation.paidBeforeTracking);
+    const reference = normalizeReferenceDate(referenceDate);
     const paymentTransactions = getLinkedPaymentTransactions(state, obligation.id);
-    const linkedPayments = sumPayments(paymentTransactions);
+    const countedPaymentTransactions = paymentTransactions.filter(
+      (transaction) => !isDateOnly(transaction.date) || transaction.date <= reference
+    );
+    const futurePaymentTransactions = paymentTransactions.filter(
+      (transaction) => isDateOnly(transaction.date) && transaction.date > reference
+    );
+    const linkedPayments = sumPayments(countedPaymentTransactions);
     const totalPaid = paidBeforeTracking + linkedPayments;
     const remaining = Math.max(totalAmount - totalPaid, 0);
     const overpayment = Math.max(totalPaid - totalAmount, 0);
@@ -207,7 +214,6 @@
     const schedule = generateFixedSchedule(obligation);
     const allocatedSchedule = allocatePaymentsToSchedule(schedule, linkedPayments);
     const scheduledOutstanding = allocatedSchedule.filter((entry) => entry.outstandingAmount > 0);
-    const reference = normalizeReferenceDate(referenceDate);
     let overdueAmount = effectiveStatus === "active"
       ? scheduledOutstanding
         .filter((entry) => entry.dueDate < reference)
@@ -225,11 +231,19 @@
         positiveAmount(obligation.manualNextDueAmount) &&
         remaining > 0
       ) {
-        nextDue = {
-          date: obligation.manualNextDueDate,
-          amount: Math.min(positiveAmount(obligation.manualNextDueAmount), remaining),
-          source: "manual",
-        };
+        const manualPayments = sumPayments(countedPaymentTransactions.filter(
+          (transaction) => isDateOnly(transaction.date) && transaction.date >= obligation.manualNextDueDate
+        ));
+        const manualOutstanding = Math.max(positiveAmount(obligation.manualNextDueAmount) - manualPayments, 0);
+        if (manualOutstanding <= 0) {
+          nextDue = null;
+        } else {
+          nextDue = {
+            date: obligation.manualNextDueDate,
+            amount: Math.min(manualOutstanding, remaining),
+            source: "manual",
+          };
+        }
       }
     }
     if (effectiveStatus === "active" && nextDue?.source === "manual" && nextDue.date < reference) {
@@ -247,6 +261,8 @@
       storedStatus,
       effectiveStatus,
       paymentTransactions,
+      countedPaymentTransactions,
+      futurePaymentTransactions,
       schedule,
       allocatedSchedule,
       scheduledOutstanding,
@@ -255,11 +271,11 @@
     };
   }
 
-  function getPlannedPaymentsForMonth(state, month) {
+  function getPlannedPaymentsForMonth(state, month, referenceDate) {
     if (!MONTH_PATTERN.test(String(month || ""))) return [];
     const rows = [];
     getObligations(state).forEach((obligation) => {
-      const calculation = calculateObligation(state, obligation, `${month}-01`);
+      const calculation = calculateObligation(state, obligation, referenceDate);
       if (!calculation || calculation.effectiveStatus !== "active") return;
       if (obligation.scheduleMode === "fixed") {
         calculation.scheduledOutstanding
@@ -284,12 +300,12 @@
     return rows.sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.name.localeCompare(b.name, "ar"));
   }
 
-  function getForecast(state, startMonth, months) {
+  function getForecast(state, startMonth, months, referenceDate) {
     const count = Number(months);
     if (!MONTH_PATTERN.test(String(startMonth || "")) || !Number.isInteger(count) || count <= 0) return [];
     return Array.from({ length: count }, (_, index) => {
       const month = addMonthsMonth(startMonth, index);
-      const payments = getPlannedPaymentsForMonth(state, month);
+      const payments = getPlannedPaymentsForMonth(state, month, referenceDate);
       return {
         month,
         amount: payments.reduce((sum, payment) => sum + payment.amount, 0),

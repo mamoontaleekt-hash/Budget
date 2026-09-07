@@ -167,6 +167,33 @@ test("past irregular manual due is overdue", () => {
   const item = obligation({ scheduleMode: "irregular", manualNextDueDate: "2026-04-05", manualNextDueAmount: 80 });
   assert.equal(Debt.calculateObligation(stateWith([item]), "home", "2026-04-06").overdueAmount, 80);
 });
+test("payment on manual due consumes it", () => {
+  const item = obligation({ totalAmount: 1000, paidBeforeTracking: 0, scheduleMode: "irregular", manualNextDueDate: "2026-04-05", manualNextDueAmount: 100 });
+  const source = stateWith([item], [tx("p1", 100, "2026-04-05")], { p1: "home" });
+  assert.equal(Debt.calculateObligation(source, "home", "2026-04-06").nextDue, null);
+  assert.equal(Debt.calculateObligation(source, "home", "2026-04-06").remaining, 900);
+});
+test("partial payment reduces manual due", () => {
+  const item = obligation({ totalAmount: 1000, paidBeforeTracking: 0, scheduleMode: "irregular", manualNextDueDate: "2026-04-05", manualNextDueAmount: 100 });
+  const source = stateWith([item], [tx("p1", 40, "2026-04-06")], { p1: "home" });
+  assert.equal(Debt.calculateObligation(source, "home", "2026-04-07").nextDue.amount, 60);
+});
+test("payment before manual due does not consume newly stated due", () => {
+  const item = obligation({ totalAmount: 1000, paidBeforeTracking: 0, scheduleMode: "irregular", manualNextDueDate: "2026-04-05", manualNextDueAmount: 100 });
+  const source = stateWith([item], [tx("p1", 40, "2026-04-01")], { p1: "home" });
+  assert.equal(Debt.calculateObligation(source, "home", "2026-04-07").nextDue.amount, 100);
+});
+test("future linked payment is not counted as of reference date", () => {
+  const source = stateWith([obligation()], [tx("p1", 300, "2026-04-10")], { p1: "home" });
+  const result = Debt.calculateObligation(source, "home", "2026-04-01");
+  assert.equal(result.linkedPayments, 0);
+  assert.equal(result.remaining, 1000);
+  assert.deepEqual(result.futurePaymentTransactions.map((item) => item.id), ["p1"]);
+});
+test("future linked payment counts once reference reaches its date", () => {
+  const source = stateWith([obligation()], [tx("p1", 300, "2026-04-10")], { p1: "home" });
+  assert.equal(Debt.calculateObligation(source, "home", "2026-04-10").linkedPayments, 300);
+});
 
 test("selected month contains fixed outstanding", () => assert.equal(Debt.getPlannedPaymentsForMonth(stateWith(), "2026-02")[0].amount, 300));
 test("selected month omits other months", () => assert.deepEqual(Debt.getPlannedPaymentsForMonth(stateWith(), "2027-02"), []));
