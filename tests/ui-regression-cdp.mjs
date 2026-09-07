@@ -230,16 +230,17 @@ try{
   assert.equal(backupRoundTrip.restoredSettings, true);
 
   await reload();
-  const sw = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,cacheKeys:await caches.keys(),financialAsset:!!(await caches.match('./financial-model.js'))}))`);
+  const sw = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,cacheKeys:await caches.keys(),financialAsset:!!(await caches.match('./financial-model.js?v=20260907-phase1')),reportAsset:!!(await caches.match('./report-enhancements.js?v=20260907-phase1'))}))`);
   assert.equal(sw.active, true);
   assert.equal(sw.controlled, true);
   assert.ok(sw.cacheKeys.includes("pfm-pwa-v6"));
   assert.equal(sw.financialAsset, true);
+  assert.equal(sw.reportAsset, true);
 
   const errorCountBeforeOffline = errors.length;
   await send("Network.emulateNetworkConditions", {offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
   await reload();
-  const offline = await evaluate(`({heading:document.querySelector('h1')?.innerText,model:!!window.PFMFinancialModel,reportScript:[...document.scripts].filter(script=>script.src.endsWith('/report-enhancements.js')).length,css:[...document.styleSheets].filter(sheet=>sheet.href?.endsWith('/mobile-enhancements.css')).length})`);
+  const offline = await evaluate(`({heading:document.querySelector('h1')?.innerText,model:!!window.PFMFinancialModel,reportScript:[...document.scripts].filter(script=>script.src.includes('/report-enhancements.js?v=20260907-phase1')).length,css:[...document.styleSheets].filter(sheet=>sheet.href?.endsWith('/mobile-enhancements.css')).length})`);
   assert.equal(offline.heading, "إدارة المصاريف الشخصية");
   assert.equal(offline.model, true);
   assert.equal(offline.reportScript, 1);

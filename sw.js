@@ -8,8 +8,8 @@ const APP_SHELL = [
   "./index.html",
   "./manifest.json",
   "./sw.js",
-  "./financial-model.js",
-  "./report-enhancements.js",
+  "./financial-model.js?v=20260907-phase1",
+  "./report-enhancements.js?v=20260907-phase1",
   "./mobile-enhancements.css",
   "./icons/icon-192.png",
   "./icons/icon-512.png"

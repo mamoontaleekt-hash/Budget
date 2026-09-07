@@ -21,10 +21,10 @@ new vm.Script(sw, { filename: "sw.js" });
 new vm.Script(model, { filename: "financial-model.js" });
 
 assert.equal(count(index, /<link rel="stylesheet" href="\.\/mobile-enhancements\.css">/g), 1);
-assert.equal(count(index, /<script src="\.\/financial-model\.js"><\/script>/g), 1);
-assert.equal(count(index, /<script src="\.\/report-enhancements\.js"><\/script>/g), 1);
-assert.ok(index.indexOf('<script src="./financial-model.js"></script>') < index.indexOf("Personal Finance Manager"));
-assert.ok(index.indexOf('<script src="./financial-model.js"></script>') < index.indexOf('<script src="./report-enhancements.js"></script>'));
+assert.equal(count(index, /<script src="\.\/financial-model\.js\?v=20260907-phase1"><\/script>/g), 1);
+assert.equal(count(index, /<script src="\.\/report-enhancements\.js\?v=20260907-phase1"><\/script>/g), 1);
+assert.ok(index.indexOf('<script src="./financial-model.js?v=20260907-phase1"></script>') < index.indexOf("Personal Finance Manager"));
+assert.ok(index.indexOf('<script src="./financial-model.js?v=20260907-phase1"></script>') < index.indexOf('<script src="./report-enhancements.js?v=20260907-phase1"></script>'));
 
 assert.equal(index.includes("function maybeSeed("), false);
 assert.equal(index.includes('note:"مثال: راتب ثابت"'), false);
@@ -68,7 +68,8 @@ assert.match(report, /FinancialModel\.calculateMonthFinancials\(state, month\)/)
 assert.match(report, /closingBalance: financials\.closingBalance/);
 assert.match(report, /parsed\.financialSettings/);
 assert.match(sw, /const CACHE_NAME = "pfm-pwa-v6";/);
-assert.ok(sw.includes('"./financial-model.js"'));
+assert.ok(sw.includes('"./financial-model.js?v=20260907-phase1"'));
+assert.ok(sw.includes('"./report-enhancements.js?v=20260907-phase1"'));
 assert.equal(sw.includes("enhanceHtml"), false);
 assert.equal(sw.includes("REPORT_ENHANCEMENT_SCRIPT"), false);
 assert.equal(sw.includes("MOBILE_ENHANCEMENT_STYLE"), false);
