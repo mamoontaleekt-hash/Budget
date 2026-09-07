@@ -1066,13 +1066,24 @@
     }
   });
 
+  function isValidAppState(value){
+    return !!value
+      && typeof value === "object"
+      && !Array.isArray(value)
+      && Array.isArray(value.categories)
+      && Array.isArray(value.transactions)
+      && !!value.budgets
+      && typeof value.budgets === "object"
+      && !Array.isArray(value.budgets);
+  }
+
   function load(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
       if(!raw) return defaultData();
       const parsed = JSON.parse(raw);
       // minimal migration safety
-      if(!parsed.categories || !parsed.transactions || !parsed.budgets) return defaultData();
+      if(!isValidAppState(parsed)) return defaultData();
       return parsed;
     }catch(e){
       console.warn("Load error", e);
@@ -2105,7 +2116,10 @@
   // Cloud -> apply incoming state without re-emitting
 window.addEventListener("pfm:apply", (ev)=>{
   try{
-    if(!ev || !ev.detail) return;
+    if(!ev || !isValidAppState(ev.detail)){
+      console.warn("Rejected invalid incoming app state");
+      return;
+    }
     state = ev.detail;
     save(false);
     render();
@@ -2233,6 +2247,21 @@ window.addEventListener("pfm:apply", (ev)=>{
       return s ? JSON.parse(s) : null;
     }catch(e){ return null; }
   }
+  function isValidAppState(value){
+    return !!value
+      && typeof value === "object"
+      && !Array.isArray(value)
+      && Array.isArray(value.categories)
+      && Array.isArray(value.transactions)
+      && !!value.budgets
+      && typeof value.budgets === "object"
+      && !Array.isArray(value.budgets);
+  }
+  function rejectInvalidRemote(source){
+    console.warn(`Rejected invalid remote app state (${source})`);
+    setStatus("الحالة: تم تجاهل بيانات سحابية غير صالحة لحماية بيانات هذا الجهاز.");
+    setPill("☁️ بيانات مرفوضة", "warn");
+  }
   function hashStr(s){
     let h = 0; for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i))|0; }
     return String(h);
@@ -2250,8 +2279,15 @@ window.addEventListener("pfm:apply", (ev)=>{
     const snap = await docRef.get();
     if(!snap.exists){
       const data = readLocal();
+      if(!isValidAppState(data)){
+        lastLocalStr = localString();
+        dirty = false;
+        setStatus("الحالة: لا توجد بيانات محلية صالحة للرفع؛ لم يتم إنشاء بيانات سحابية.");
+        setPill("☁️ جاهز", "ok");
+        return { created: false, appliedRemote: false, deferred: true };
+      }
       await docRef.set({
-        data: data || {},
+        data,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         updatedBy: auth.currentUser.uid,
@@ -2263,26 +2299,27 @@ window.addEventListener("pfm:apply", (ev)=>{
       return { created: true, appliedRemote: false };
     }
     const remote = snap.data() || {};
-    const remoteData = remote.data || null;
-    if(remoteData && Object.keys(remoteData).length > 0){
-      const remoteStr = JSON.stringify(remoteData);
-      const localStr = JSON.stringify(readLocal() || {});
-      const remoteHash = hashStr(remoteStr);
-      if(remoteHash !== hashStr(localStr)){
-        backupLocalBeforeRemote();
-        lastAppliedRemoteHash = remoteHash;
-        window.dispatchEvent(new CustomEvent("pfm:apply", {detail: remoteData}));
-      }
+    const remoteData = remote.data;
+    if(!isValidAppState(remoteData)){
+      rejectInvalidRemote("initial fetch");
       lastLocalStr = localString();
       dirty = false;
-      setStatus("الحالة: تم جلب بيانات السحابة قبل بدء الحفظ التلقائي ✅");
-      setPill("☁️ متصل", "ok");
-      setLast(nowClock());
-      return { created: false, appliedRemote: true };
+      return { created: false, appliedRemote: false, rejectedRemote: true };
+    }
+    const remoteStr = JSON.stringify(remoteData);
+    const localStr = JSON.stringify(readLocal() || {});
+    const remoteHash = hashStr(remoteStr);
+    if(remoteHash !== hashStr(localStr)){
+      backupLocalBeforeRemote();
+      lastAppliedRemoteHash = remoteHash;
+      window.dispatchEvent(new CustomEvent("pfm:apply", {detail: remoteData}));
     }
     lastLocalStr = localString();
     dirty = false;
-    return { created: false, appliedRemote: false };
+    setStatus("الحالة: تم جلب بيانات السحابة قبل بدء الحفظ التلقائي ✅");
+    setPill("☁️ متصل", "ok");
+    setLast(nowClock());
+    return { created: false, appliedRemote: true };
   }
 
   async function pushToCloud(reason){
@@ -2292,7 +2329,11 @@ window.addEventListener("pfm:apply", (ev)=>{
     const docRef = db.collection("pfm_users").doc(uid);
 
     const data = readLocal();
-    if(!data){ setStatus("الحالة: لا توجد بيانات محلية للحفظ"); return; }
+    if(!isValidAppState(data)){
+      setStatus("الحالة: لا توجد بيانات محلية صالحة للحفظ");
+      setPill("☁️ لم يتم الحفظ", "warn");
+      return;
+    }
 
     try{
       setStatus(`الحالة: جارٍ الحفظ تلقائياً... (${reason||"تغيير"})`);
@@ -2341,12 +2382,17 @@ window.addEventListener("pfm:apply", (ev)=>{
       if(!snap.exists) return;
 
       const remote = snap.data() || {};
-      const remoteData = remote.data || {};
+      const remoteData = remote.data;
       const remoteClientId = remote.updatedByClientId || null;
       lastSeenRemoteClientId = remoteClientId;
 
       // Ignore our own writes (prevents ping-pong and flicker)
       if(remoteClientId && remoteClientId === clientId){
+        return;
+      }
+
+      if(!isValidAppState(remoteData)){
+        rejectInvalidRemote("realtime update");
         return;
       }
 
@@ -2434,7 +2480,11 @@ window.addEventListener("pfm:apply", (ev)=>{
     try{
       const snap = await docRef.get();
       if(snap.exists){
-        const remoteData = (snap.data()||{}).data || {};
+        const remoteData = (snap.data()||{}).data;
+        if(!isValidAppState(remoteData)){
+          rejectInvalidRemote("manual fetch");
+          return;
+        }
         backupLocalBeforeRemote();
         window.dispatchEvent(new CustomEvent("pfm:apply", {detail: remoteData}));
         dirty = false;
@@ -2508,7 +2558,7 @@ window.addEventListener("pfm:apply", (ev)=>{
 
     const docRef = db.collection("pfm_users").doc(user.uid);
 
-    // Ensure document exists then start realtime listener
+    // Prepare safely, then start realtime listening even when creation is deferred.
     try{
       setStatus("الحالة: جارٍ جلب بيانات السحابة أولاً لحماية البيانات...");
       await prepareCloudSession(docRef);
@@ -2542,3 +2592,4 @@ window.addEventListener("pfm:apply", (ev)=>{
 
 </body>
 </html>
+
