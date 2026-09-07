@@ -2,6 +2,8 @@
   "use strict";
 
   const STORAGE_KEY = "pfm_data_v1";
+  const FinancialModel = window.PFMFinancialModel;
+  if (!FinancialModel) throw new Error("Financial model failed to load for reports");
   const fmt = new Intl.NumberFormat("ar-IQ", {
     style: "currency",
     currency: "IQD",
@@ -26,6 +28,10 @@
         categories: Array.isArray(parsed.categories) ? parsed.categories : [],
         transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
         budgets: parsed.budgets && typeof parsed.budgets === "object" ? parsed.budgets : {},
+        financialSettings:
+          parsed.financialSettings && typeof parsed.financialSettings === "object"
+            ? parsed.financialSettings
+            : undefined,
       };
     } catch (error) {
       console.warn("Report enhancements could not read local data", error);
@@ -58,14 +64,15 @@
   }
 
   function totalsForMonth(state, month) {
-    const txs = txInMonth(state, month);
-    const income = txs
-      .filter((tx) => tx.type === "income")
-      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
-    const expense = txs
-      .filter((tx) => tx.type === "expense")
-      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
-    return { month, income, expense, net: income - expense, count: txs.length };
+    const financials = FinancialModel.calculateMonthFinancials(state, month);
+    return {
+      month,
+      income: financials.trueIncome,
+      expense: financials.totalExpenses,
+      net: financials.netCashFlow,
+      closingBalance: financials.closingBalance,
+      count: financials.transactions.length,
+    };
   }
 
   function categoryName(state, id) {
@@ -137,20 +144,21 @@
 
       <div class="hr"></div>
       <div style="font-weight:800;margin-bottom:4px">ملخص آخر 12 شهر</div>
-      <div class="mini">الدخل، المصروف، الصافي، وعدد العمليات لكل شهر.</div>
+      <div class="mini">دخل الشهر الحقيقي، المصروف، صافي الحركة، الرصيد الختامي، وعدد العمليات.</div>
       <div style="overflow:auto;margin-top:10px">
         <table>
           <thead>
             <tr>
               <th style="min-width:130px">الشهر</th>
-              <th style="min-width:140px">الدخل</th>
+              <th style="min-width:140px">الدخل الحقيقي</th>
               <th style="min-width:140px">المصروف</th>
-              <th style="min-width:140px">الصافي</th>
+              <th style="min-width:140px">صافي الحركة</th>
+              <th style="min-width:140px">الرصيد الختامي</th>
               <th style="min-width:100px">العمليات</th>
             </tr>
           </thead>
           <tbody id="monthlySummaryBody">
-            <tr><td colspan="5" class="muted">-</td></tr>
+            <tr><td colspan="6" class="muted">-</td></tr>
           </tbody>
         </table>
       </div>
@@ -168,7 +176,10 @@
     if (current.income <= 0 && current.expense <= 0) {
       rows.push("لا توجد بيانات كافية لهذا الشهر بعد.");
     } else {
-      rows.push(`صافي هذا الشهر ${money(current.net)} بعد مصروف ${money(current.expense)}.`);
+      rows.push(`صافي حركة دخل هذا الشهر ${money(current.net)} بعد مصروف ${money(current.expense)}.`);
+      if (current.net < 0 && current.closingBalance >= 0) {
+        rows.push(`مصاريف الشهر أعلى من دخله، لكن الرصيد الختامي ما زال موجباً عند ${money(current.closingBalance)}.`);
+      }
     }
 
     if (previous.expense > 0) {
@@ -262,6 +273,7 @@
             <td>${money(row.income)}</td>
             <td>${money(row.expense)}</td>
             <td>${money(row.net)}</td>
+            <td>${money(row.closingBalance)}</td>
             <td>${row.count}</td>
           </tr>`
         )
@@ -308,3 +320,4 @@
   scheduleRender();
   setTimeout(scheduleRender, 300);
 })();
+
