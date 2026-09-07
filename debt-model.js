@@ -382,7 +382,8 @@
   }
 
   function isEligibleUnlinkedExpense(state, transaction) {
-    return isActiveExpense(transaction) && !getValidLinkedObligationId(state, transaction.id);
+    if (!isActiveExpense(transaction) || getTransaction(state, transaction.id) !== transaction) return false;
+    return !getValidLinkedObligationId(state, transaction);
   }
 
   function validateObligation(input) {

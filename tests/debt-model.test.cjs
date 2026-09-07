@@ -281,6 +281,13 @@ test("duplicate transaction ids count one canonical linked payment", () => {
   assert.equal(Expense.resolveExpenseClass(source, duplicate), "regular");
   assert.equal(Debt.isEligibleUnlinkedExpense(source, duplicate), false);
 });
+test("only the canonical unlinked duplicate is an eligible link candidate", () => {
+  const first = tx("duplicate", 100);
+  const duplicate = tx("duplicate", 900, "2026-02-11");
+  const source = stateWith([obligation()], [first, duplicate]);
+  assert.equal(Debt.isEligibleUnlinkedExpense(source, first), true);
+  assert.equal(Debt.isEligibleUnlinkedExpense(source, duplicate), false);
+});
 test("link helper refuses income", () => {
   const source = stateWith([obligation()], [tx("p1", 100, "2026-02-10", { type: "income" })]);
   assert.equal(Debt.withPaymentLink(source, "p1", "home"), source);
