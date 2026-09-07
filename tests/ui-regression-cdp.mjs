@@ -7,6 +7,7 @@ const port = 9351;
 const chrome = spawn(chromePath, [
   "--headless=new",
   "--disable-gpu",
+  "--no-sandbox",
   "--no-first-run",
   "--no-default-browser-check",
   `--remote-debugging-port=${port}`,
@@ -38,6 +39,7 @@ let nextId = 0;
 const pending = new Map();
 const eventWaiters = new Map();
 const errors = [];
+const isExpectedFirebaseResourceError = (error) => error.includes("www.gstatic.com/firebasejs/10.13.0/") && error.includes("Failed to load resource: net::ERR_");
 
 socket.addEventListener("message", (event) => {
   const message = JSON.parse(event.data);
@@ -50,8 +52,14 @@ socket.addEventListener("message", (event) => {
   }
   const queue = eventWaiters.get(message.method);
   if(queue?.length) queue.shift()(message.params || {});
-  if(message.method === "Runtime.exceptionThrown") errors.push(message.params?.exceptionDetails?.text || "Runtime exception");
-  if(message.method === "Log.entryAdded" && message.params?.entry?.level === "error") errors.push(message.params.entry.text);
+  if(message.method === "Runtime.exceptionThrown") {
+    const details=message.params?.exceptionDetails;
+    errors.push(details?.exception?.description || `${details?.text || "Runtime exception"}${details?.url ? ` at ${details.url}:${details.lineNumber || 0}` : ""}`);
+  }
+  if(message.method === "Log.entryAdded" && message.params?.entry?.level === "error") {
+    const entry=message.params.entry;
+    errors.push(`${entry.text}${entry.url ? ` (${entry.url})` : ""}`);
+  }
 });
 
 function send(method, params={}){
@@ -93,6 +101,7 @@ const synthetic = {
     {id:"in_salary",type:"income",name:"راتب"},
     {id:"in_other",type:"income",name:"دخل آخر"},
     {id:"ex_living",type:"expense",name:"معيشة"},
+    {id:"ex_debt",type:"expense",name:"دين"},
   ],
   transactions:[
     {id:"june-income",type:"income",amount:1000,date:"2026-06-01",categoryId:"in_salary",note:"راتب حزيران",createdAt:"2026-06-01"},
@@ -171,28 +180,138 @@ try{
   assert.ok(dashboard.kpiIncome.includes("٣٬٠٠٠٬٠٠٠"));
   assert.ok(dashboard.kpiClosing.includes("٨٠٠٬٠٠٠"));
 
+  await evaluate(`document.querySelector('#tabs .tab[data-tab="tx"]').click()`);
+  const incomeFieldHidden = await evaluate(`(() => {
+    document.querySelector('#btnAddTx2').click();
+    const type=document.querySelector('#txType');
+    type.value='income'; type.dispatchEvent(new Event('change',{bubbles:true}));
+    const hidden=document.querySelector('#txExpenseClassField').hidden;
+    document.querySelector('#modalTx [data-close]').click();
+    return hidden;
+  })()`);
+  assert.equal(incomeFieldHidden, true);
+
+  const created = await evaluate(`(() => {
+    const addExpense=(note,amount,expenseClass) => {
+      document.querySelector('#btnAddTx2').click();
+      const type=document.querySelector('#txType');
+      type.value='expense'; type.dispatchEvent(new Event('change',{bubbles:true}));
+      document.querySelector('#txDate').value='2026-08-10';
+      document.querySelector('#txCategory').value='ex_living';
+      document.querySelector('#txAmount').value=String(amount);
+      document.querySelector('#txNote').value=note;
+      document.querySelector('#txExpenseClass').value=expenseClass;
+      document.querySelector('#btnSaveTx').click();
+    };
+    addExpense('اختبار تلقائي',100000,'');
+    const afterAuto=JSON.parse(localStorage.getItem('pfm_data_v1'));
+    addExpense('اختبار معيشي صريح',110000,'regular');
+    addExpense('اختبار استثنائي',120000,'exceptional');
+    addExpense('اختبار سداد دين',130000,'debt_payment');
+    addExpense('اختبار تعديل التصنيف',140000,'regular');
+    const finalState=JSON.parse(localStorage.getItem('pfm_data_v1'));
+    return {
+      autoDidNotCreateSettings: !Object.hasOwn(afterAuto,'expenseSettings'),
+      ids:Object.fromEntries(finalState.transactions.filter(tx=>tx.note.startsWith('اختبار')).map(tx=>[tx.note,tx.id])),
+      originalPayloadUnchanged: !Object.hasOwn(finalState.transactions.find(tx=>tx.id==='aug-expense'),'expenseClass')
+    };
+  })()`);
+  assert.equal(created.autoDidNotCreateSettings, true);
+  assert.equal(created.originalPayloadUnchanged, true);
+
+  const editResult = await evaluate(`(() => {
+    const id=${JSON.stringify(created.ids["اختبار تعديل التصنيف"])};
+    document.querySelector('[data-edit="'+id+'"]').click();
+    document.querySelector('#txExpenseClass').value='exceptional';
+    document.querySelector('#btnSaveTx').click();
+    let state=JSON.parse(localStorage.getItem('pfm_data_v1'));
+    const afterExceptional=state.expenseSettings.transactionClasses[id];
+    document.querySelector('[data-edit="'+id+'"]').click();
+    document.querySelector('#txExpenseClass').value='';
+    document.querySelector('#btnSaveTx').click();
+    state=JSON.parse(localStorage.getItem('pfm_data_v1'));
+    const hasOverride=Object.hasOwn(state.expenseSettings.transactionClasses,id);
+    return {
+      afterExceptional,
+      hasOverride,
+      resolved:PFMExpenseModel.resolveExpenseClass(state,state.transactions.find(tx=>tx.id===id))
+    };
+  })()`);
+  assert.equal(editResult.afterExceptional, "exceptional");
+  assert.equal(editResult.hasOverride, false);
+  assert.equal(editResult.resolved, "regular");
+
+  const phase2Analytics = await evaluate(`PFMExpenseModel.calculateExpenseAnalytics(JSON.parse(localStorage.getItem('pfm_data_v1')), '2026-08')`);
+  assert.equal(phase2Analytics.regularExpenses, 2850000);
+  assert.equal(phase2Analytics.exceptionalExpenses, 120000);
+  assert.equal(phase2Analytics.debtPayments, 130000);
+  assert.equal(phase2Analytics.costOfLiving, 2850000);
+  assert.equal(phase2Analytics.nonLivingOutflows, 250000);
+  assert.equal(phase2Analytics.totalExpenses, 3100000);
+  assert.equal(phase2Analytics.regularExpenses + phase2Analytics.exceptionalExpenses + phase2Analytics.debtPayments, phase2Analytics.totalExpenses);
+  const phase2Financials = await evaluate(`PFMFinancialModel.calculateMonthFinancials(JSON.parse(localStorage.getItem('pfm_data_v1')), '2026-08')`);
+  assert.equal(phase2Financials.totalExpenses, 3100000);
+  assert.equal(phase2Financials.closingBalance, 200000);
+  assert.equal(phase2Financials.netCashFlow, -100000);
+
+  const classificationUi = await evaluate(`(() => {
+    const allText=document.querySelector('#txTableBody').innerText;
+    const filter=document.querySelector('#filterExpenseClass');
+    filter.value='exceptional'; filter.dispatchEvent(new Event('change',{bubbles:true}));
+    const filteredText=document.querySelector('#txTableBody').innerText;
+    const filteredRows=document.querySelectorAll('#txTableBody tr').length;
+    filter.value=''; filter.dispatchEvent(new Event('change',{bubbles:true}));
+    return {allText,filteredText,filteredRows};
+  })()`);
+  assert.ok(classificationUi.allText.includes("معيشي"));
+  assert.ok(classificationUi.allText.includes("استثنائي"));
+  assert.ok(classificationUi.allText.includes("سداد دين"));
+  assert.ok(classificationUi.filteredText.includes("اختبار استثنائي"));
+  assert.equal(classificationUi.filteredText.includes("راتب آب"), false);
+  assert.equal(classificationUi.filteredRows, 1);
+
+  await evaluate(`document.querySelector('#tabs .tab[data-tab="dash"]').click()`);
+  const phase2Dashboard = await evaluate(`(() => Object.fromEntries(['kpiExpense','kpiCostOfLiving','kpiExceptionalExpenses','kpiDebtPayments','kpiClosing','kpiNet','kpiSavingRate'].map(id => [id,document.querySelector('#'+id).innerText])))()`);
+  assert.ok(phase2Dashboard.kpiExpense.includes("٣٬١٠٠٬٠٠٠"));
+  assert.ok(phase2Dashboard.kpiCostOfLiving.includes("٢٬٨٥٠٬٠٠٠"));
+  assert.ok(phase2Dashboard.kpiExceptionalExpenses.includes("١٢٠٬٠٠٠"));
+  assert.ok(phase2Dashboard.kpiDebtPayments.includes("١٣٠٬٠٠٠"));
+  assert.ok(phase2Dashboard.kpiClosing.includes("٢٠٠٬٠٠٠"));
+  assert.ok(phase2Dashboard.kpiNet.length > 0);
+
   await evaluate(`(() => { const picker=document.querySelector('#monthPicker'); picker.value='2026-09'; picker.dispatchEvent(new Event('change',{bubbles:true})); document.querySelector('#tabs .tab[data-tab="budgets"]').click(); const select=document.querySelector('#openingBalanceMode'); select.value='carry'; select.dispatchEvent(new Event('change',{bubbles:true})); document.querySelector('#btnSaveFinancialSettings').click(); })()`);
   const september = await evaluate(`window.PFMFinancialModel.calculateMonthFinancials(JSON.parse(localStorage.getItem('pfm_data_v1')), '2026-09')`);
-  assert.equal(september.openingBalance, 800000);
-  assert.equal(september.closingBalance, 900000);
+  assert.equal(september.openingBalance, 200000);
+  assert.equal(september.closingBalance, 300000);
 
   await evaluate(`document.querySelector('#tabs .tab[data-tab="reports"]').click()`);
   await delay(300);
-  assert.equal(await evaluate(`document.querySelectorAll('#monthlySummaryBody tr').length > 0 && document.querySelector('#view-reports').innerText.includes('الدخل الحقيقي')`), true);
+  const reportText = await evaluate(`document.querySelector('#view-reports').innerText`);
+  assert.equal(await evaluate(`document.querySelectorAll('#monthlySummaryBody tr').length > 0`), true);
+  assert.ok(reportText.includes('الدخل الحقيقي'));
+  assert.ok(reportText.includes('تكلفة المعيشة'));
+  assert.ok(reportText.includes('استثنائي'));
+  assert.ok(reportText.includes('سداد دين'));
+  assert.ok(reportText.includes('٣٬١٠٠٬٠٠٠'));
+  assert.ok(reportText.includes('٢٬٨٥٠٬٠٠٠'));
 
   await evaluate(`document.querySelector('#tabs .tab[data-tab="budgets"]').click()`);
   const viewports = {};
   for(const width of [390,768,1200]){
     await send("Emulation.setDeviceMetricsOverride", {width,height:900,deviceScaleFactor:1,mobile:false});
     await delay(100);
+    await evaluate(`document.querySelector('#tabs .tab[data-tab="tx"]').click(); document.querySelector('#btnAddTx2').click()`);
     viewports[width] = await evaluate(`(() => ({
       appVisible: document.querySelector('.app').getBoundingClientRect().width > 0,
-      openingControlsVisible: document.querySelector('#openingBalanceMode').getBoundingClientRect().width > 0,
+      expenseClassVisible: document.querySelector('#txExpenseClass').getBoundingClientRect().width > 0,
       tabsVisible: [...document.querySelectorAll('#tabs .tab')].every(tab => tab.getBoundingClientRect().width > 0),
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: innerWidth
     }))()`);
+    await evaluate(`document.querySelector('#modalTx [data-close]').click(); document.querySelector('#tabs .tab[data-tab="budgets"]').click()`);
+    viewports[width].openingControlsVisible = await evaluate(`document.querySelector('#openingBalanceMode').getBoundingClientRect().width > 0`);
     assert.equal(viewports[width].appVisible, true);
+    assert.equal(viewports[width].expenseClassVisible, true);
     assert.equal(viewports[width].openingControlsVisible, true);
     assert.equal(viewports[width].tabsVisible, true);
   }
@@ -202,54 +321,82 @@ try{
     document.querySelector('#btnExport').click();
     const exported = document.querySelector('#exportText').value;
     const newBackup = JSON.parse(exported);
-    const expectedSettings = JSON.stringify(newBackup.financialSettings);
+    const expectedFinancialSettings = JSON.stringify(newBackup.financialSettings);
+    const expectedExpenseSettings = JSON.stringify(newBackup.expenseSettings);
+    const expectedTransactions = JSON.stringify(newBackup.transactions);
     document.querySelector('#modalExport [data-close]').click();
 
     const legacyBackup = structuredClone(newBackup);
     delete legacyBackup.financialSettings;
+    delete legacyBackup.expenseSettings;
     window.confirm = () => true;
     document.querySelector('#importText').value = JSON.stringify(legacyBackup);
     document.querySelector('#btnDoImport').click();
     const legacyState = JSON.parse(localStorage.getItem('pfm_data_v1'));
     const legacyFinancials = PFMFinancialModel.calculateMonthFinancials(legacyState, '2026-09');
 
+    const phase1Backup = structuredClone(newBackup);
+    delete phase1Backup.expenseSettings;
+    document.querySelector('#importText').value = JSON.stringify(phase1Backup);
+    document.querySelector('#btnDoImport').click();
+    const phase1State = JSON.parse(localStorage.getItem('pfm_data_v1'));
+
     document.querySelector('#importText').value = exported;
     document.querySelector('#btnDoImport').click();
     const restored = JSON.parse(localStorage.getItem('pfm_data_v1'));
 
     return {
-      exportHasSettings: Boolean(newBackup.financialSettings),
-      legacyHasNoSettings: !Object.hasOwn(legacyState, 'financialSettings'),
+      exportHasFinancialSettings: Boolean(newBackup.financialSettings),
+      exportHasExpenseSettings: Boolean(newBackup.expenseSettings),
+      legacyHasNoSettings: !Object.hasOwn(legacyState, 'financialSettings') && !Object.hasOwn(legacyState, 'expenseSettings'),
       legacyOpening: legacyFinancials.openingBalance,
-      restoredSettings: JSON.stringify(restored.financialSettings) === expectedSettings
+      legacyTransactionsUnchanged: JSON.stringify(legacyState.transactions) === expectedTransactions,
+      phase1FinancialSettingsPreserved: JSON.stringify(phase1State.financialSettings) === expectedFinancialSettings,
+      phase1HasNoExpenseSettings: !Object.hasOwn(phase1State,'expenseSettings'),
+      phase1TransactionsUnchanged: JSON.stringify(phase1State.transactions) === expectedTransactions,
+      restoredFinancialSettings: JSON.stringify(restored.financialSettings) === expectedFinancialSettings,
+      restoredExpenseSettings: JSON.stringify(restored.expenseSettings) === expectedExpenseSettings,
+      restoredTransactionsUnchanged: JSON.stringify(restored.transactions) === expectedTransactions
     };
   })()`);
-  assert.equal(backupRoundTrip.exportHasSettings, true);
+  assert.equal(backupRoundTrip.exportHasFinancialSettings, true);
+  assert.equal(backupRoundTrip.exportHasExpenseSettings, true);
   assert.equal(backupRoundTrip.legacyHasNoSettings, true);
   assert.equal(backupRoundTrip.legacyOpening, 0);
-  assert.equal(backupRoundTrip.restoredSettings, true);
+  assert.equal(backupRoundTrip.legacyTransactionsUnchanged, true);
+  assert.equal(backupRoundTrip.phase1FinancialSettingsPreserved, true);
+  assert.equal(backupRoundTrip.phase1HasNoExpenseSettings, true);
+  assert.equal(backupRoundTrip.phase1TransactionsUnchanged, true);
+  assert.equal(backupRoundTrip.restoredFinancialSettings, true);
+  assert.equal(backupRoundTrip.restoredExpenseSettings, true);
+  assert.equal(backupRoundTrip.restoredTransactionsUnchanged, true);
 
   await reload();
-  const sw = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,cacheKeys:await caches.keys(),financialAsset:!!(await caches.match('./financial-model.js?v=20260907-phase1')),reportAsset:!!(await caches.match('./report-enhancements.js?v=20260907-phase1'))}))`);
+  const sw = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,cacheKeys:await caches.keys(),financialAsset:!!(await caches.match('./financial-model.js?v=20260907-phase2')),expenseAsset:!!(await caches.match('./expense-model.js?v=20260907-phase2')),reportAsset:!!(await caches.match('./report-enhancements.js?v=20260907-phase2'))}))`);
   assert.equal(sw.active, true);
   assert.equal(sw.controlled, true);
-  assert.ok(sw.cacheKeys.includes("pfm-pwa-v6"));
+  assert.ok(sw.cacheKeys.includes("pfm-pwa-v7"));
   assert.equal(sw.financialAsset, true);
+  assert.equal(sw.expenseAsset, true);
   assert.equal(sw.reportAsset, true);
 
   const errorCountBeforeOffline = errors.length;
   await send("Network.emulateNetworkConditions", {offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
   await reload();
-  const offline = await evaluate(`({heading:document.querySelector('h1')?.innerText,model:!!window.PFMFinancialModel,reportScript:[...document.scripts].filter(script=>script.src.includes('/report-enhancements.js?v=20260907-phase1')).length,css:[...document.styleSheets].filter(sheet=>sheet.href?.endsWith('/mobile-enhancements.css')).length})`);
+  const offline = await evaluate(`({heading:document.querySelector('h1')?.innerText,financialModel:!!window.PFMFinancialModel,expenseModel:!!window.PFMExpenseModel,reportScript:[...document.scripts].filter(script=>script.src.includes('/report-enhancements.js?v=20260907-phase2')).length,css:[...document.styleSheets].filter(sheet=>sheet.href?.endsWith('/mobile-enhancements.css')).length})`);
   assert.equal(offline.heading, "إدارة المصاريف الشخصية");
-  assert.equal(offline.model, true);
+  assert.equal(offline.financialModel, true);
+  assert.equal(offline.expenseModel, true);
   assert.equal(offline.reportScript, 1);
   assert.equal(offline.css, 1);
-  assert.deepEqual(errors.slice(errorCountBeforeOffline), []);
+  const offlineErrors = errors.slice(errorCountBeforeOffline);
+  const unexpectedOfflineErrors = offlineErrors.filter(error => !isExpectedFirebaseResourceError(error));
+  assert.deepEqual(unexpectedOfflineErrors, []);
   await send("Network.emulateNetworkConditions", {offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
 
-  assert.deepEqual(errors, []);
-  console.log(JSON.stringify({result:"PASS",legacyBaseline,legacyConfigured,september,dashboard,panelStates,viewports,backupRoundTrip,sw,offline,errors}, null, 2));
+  const unexpectedErrors = errors.filter(error => !isExpectedFirebaseResourceError(error));
+  assert.deepEqual(unexpectedErrors, []);
+  console.log(JSON.stringify({result:"PASS",legacyBaseline,legacyConfigured,phase2Analytics,phase2Financials,september,dashboard,phase2Dashboard,panelStates,classificationUi,editResult,viewports,backupRoundTrip,sw,offline,offlineErrors,unexpectedErrors}, null, 2));
 } finally {
   try{ socket.close(); }catch{}
   chrome.kill();

@@ -240,6 +240,14 @@
       display:flex;gap:10px;align-items:flex-start;
       padding:10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.82);
     }
+    .phase2-kpis .kpi{
+      border-color:rgba(16,185,129,.22);
+      background:linear-gradient(145deg, rgba(16,185,129,.07), rgba(255,255,255,.96));
+    }
+    .expense-class-field{
+      margin-top:12px;padding:12px;border:1px solid rgba(16,185,129,.20);
+      border-radius:14px;background:rgba(16,185,129,.05);
+    }
     .pill{
       padding:6px 10px;
       border-radius:999px;
@@ -269,6 +277,7 @@
     @media (min-width: 980px){
       .kpi{grid-column: span 3}
       .phase1-primary .kpi{grid-column:span 4}
+      .phase2-kpis .kpi{grid-column:span 4}
     }
     table{
       width:100%;
@@ -486,6 +495,36 @@
           </div>
 
           <div class="hr"></div>
+          <div style="font-weight:800;margin-bottom:4px">تحليل المصروفات</div>
+          <div class="mini">إجمالي المصروفات يشمل جميع المبالغ الخارجة، بينما تكلفة المعيشة تشمل المصاريف المنتظمة فقط.</div>
+          <div class="kpis phase2-kpis" style="margin-top:10px">
+            <div class="kpi">
+              <div>
+                <div class="label">تكلفة المعيشة</div>
+                <div class="value" id="kpiCostOfLiving">—</div>
+                <div class="hint" id="kpiCostOfLivingHint">المصاريف المنتظمة فقط</div>
+              </div>
+              <span class="tag">🏠</span>
+            </div>
+            <div class="kpi">
+              <div>
+                <div class="label">مصروفات استثنائية</div>
+                <div class="value" id="kpiExceptionalExpenses">—</div>
+                <div class="hint">مصاريف غير متكررة حددتها يدوياً</div>
+              </div>
+              <span class="tag">✨</span>
+            </div>
+            <div class="kpi">
+              <div>
+                <div class="label">سداد الديون والأقساط</div>
+                <div class="value" id="kpiDebtPayments">—</div>
+                <div class="hint">يؤثر نقدياً ولا يدخل في تكلفة المعيشة</div>
+              </div>
+              <span class="tag">📉</span>
+            </div>
+          </div>
+
+          <div class="hr"></div>
 
           <div class="split">
             <div>
@@ -561,6 +600,15 @@
           </div>
 
           <div class="row" style="margin-top:10px">
+            <div>
+              <label class="mini" for="filterExpenseClass" style="display:block;margin-bottom:4px">نوع المصروف</label>
+              <select id="filterExpenseClass">
+                <option value="">الكل</option>
+                <option value="regular">معيشي</option>
+                <option value="exceptional">استثنائي</option>
+                <option value="debt_payment">سداد دين</option>
+              </select>
+            </div>
             <input id="filterFrom" type="date" placeholder="من" />
             <input id="filterTo" type="date" placeholder="إلى" />
             <input id="filterMin" type="number" inputmode="numeric" placeholder="أقل مبلغ" />
@@ -905,6 +953,17 @@
             <input id="txNote" type="text" placeholder="مثال: إيجار / سلفة / مشتريات" />
           </div>
 
+          <div class="expense-class-field" id="txExpenseClassField">
+            <label class="mini" for="txExpenseClass" style="display:block;margin-bottom:6px">نوع المصروف</label>
+            <select id="txExpenseClass" aria-describedby="txExpenseClassHelp" style="width:100%">
+              <option value="">تلقائي</option>
+              <option value="regular">معيشي منتظم</option>
+              <option value="exceptional">استثنائي</option>
+              <option value="debt_payment">سداد دين / قسط</option>
+            </select>
+            <div class="mini" id="txExpenseClassHelp" style="margin-top:7px">التلقائي يجعل تصنيف دين/سداد سدادَ دين، وباقي المصروفات معيشية. سداد الدين أو القسط يؤثر على الرصيد النقدي، لكنه لا يُحتسب ضمن تكلفة المعيشة.</div>
+          </div>
+
           <div class="help" style="margin-top:12px">
             <div><b>اقتراح:</b> أنشئ تصنيفات ثابتة: (إيجار) و(دين) و(كهرباء) و(ماء) و(مشتريات) ثم قسّم المشتريات لاحقاً إذا احتجت.</div>
           </div>
@@ -1104,7 +1163,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-  <script src="./financial-model.js?v=20260907-phase1"></script>
+  <script src="./financial-model.js?v=20260907-phase2"></script>
+  <script src="./expense-model.js?v=20260907-phase2"></script>
 
 <script>
 /** =========================
@@ -1117,6 +1177,8 @@
   const SAFETY_BACKUP_KEY = "pfm_safety_backup_latest_v1";
   const FinancialModel = window.PFMFinancialModel;
   if(!FinancialModel) throw new Error("Financial model failed to load");
+  const ExpenseModel = window.PFMExpenseModel;
+  if(!ExpenseModel) throw new Error("Expense model failed to load");
   const $ = (sel, root=document) => root.querySelector(sel);
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
@@ -1250,6 +1312,14 @@
   function totalsForMonth(month){
     return FinancialModel.calculateMonthFinancials(state, month);
   }
+  function expenseAnalyticsForMonth(month){
+    return ExpenseModel.calculateExpenseAnalytics(state, month);
+  }
+  function expenseClassLabel(value){
+    if(value === "exceptional") return "استثنائي";
+    if(value === "debt_payment") return "سداد دين";
+    return "معيشي";
+  }
 
   // --- Render functions
   function render(){
@@ -1269,6 +1339,7 @@
 
   function renderDashboard(){
     const financials = totalsForMonth(activeMonth);
+    const expenseAnalytics = expenseAnalyticsForMonth(activeMonth);
     $("#kpiAvailable").textContent = fmtCompact(financials.availableCash);
     $("#kpiClosing").textContent = fmtCompact(financials.closingBalance);
     $("#kpiExpense").textContent = fmtCompact(financials.totalExpenses);
@@ -1276,6 +1347,12 @@
     $("#kpiIncome").textContent = fmtCompact(financials.trueIncome);
     $("#kpiNet").textContent = fmtCompact(financials.netCashFlow);
     $("#kpiSavingRate").textContent = financials.savingsRate === null ? "—" : `${financials.savingsRate.toFixed(1)}%`;
+    $("#kpiCostOfLiving").textContent = fmtCompact(expenseAnalytics.costOfLiving);
+    $("#kpiExceptionalExpenses").textContent = fmtCompact(expenseAnalytics.exceptionalExpenses);
+    $("#kpiDebtPayments").textContent = fmtCompact(expenseAnalytics.debtPayments);
+    $("#kpiCostOfLivingHint").textContent = expenseAnalytics.costOfLivingRatio === null
+      ? "المصاريف المنتظمة فقط — النسبة غير متاحة دون دخل"
+      : `المصاريف المنتظمة فقط — ${expenseAnalytics.costOfLivingRatio.toFixed(1)}% من دخل الشهر الحقيقي`;
 
     const pill = $("#pillStatus");
     pill.className = "pill";
@@ -1335,6 +1412,7 @@
 
     const typeFilter = $("#filterType").value;
     const catFilter = $("#filterCategory").value;
+    const expenseClassFilter = $("#filterExpenseClass").value;
     const q = ($("#filterSearch").value || "").trim().toLowerCase();
     const from = $("#filterFrom").value;
     const to = $("#filterTo").value;
@@ -1348,6 +1426,7 @@
 
     if(typeFilter) txs = txs.filter(t => t.type===typeFilter);
     if(catFilter) txs = txs.filter(t => t.categoryId===catFilter);
+    if(expenseClassFilter) txs = txs.filter(t => ExpenseModel.resolveExpenseClass(state, t)===expenseClassFilter);
     if(q) txs = txs.filter(t => (t.note||"").toLowerCase().includes(q));
     if(from) txs = txs.filter(t => (t.date||"")>=from);
     if(to) txs = txs.filter(t => (t.date||"")<=to);
@@ -1363,9 +1442,14 @@
     tbody.innerHTML = txs.map(t=>{
       const signClass = t.type==="income" ? "pos" : "neg";
       const isLegacyOpening = FinancialModel.isLegacyOpeningTransaction(state, activeMonth, t.id);
+      const resolvedExpenseClass = ExpenseModel.resolveExpenseClass(state, t);
+      const explicitExpenseClass = ExpenseModel.getExplicitExpenseClass(state, t.id);
+      const expenseBadge = resolvedExpenseClass
+        ? ` <span class="pill ${resolvedExpenseClass === "exceptional" ? "warn" : resolvedExpenseClass === "debt_payment" ? "danger" : ""}" title="${explicitExpenseClass ? "تصنيف صريح" : "تصنيف تلقائي"}">${expenseClassLabel(resolvedExpenseClass)}</span>`
+        : "";
       const labelType = t.type==="income"
         ? `<span class="pill ok">إيراد</span>${isLegacyOpening ? ` <span class="pill warn">رصيد افتتاحي</span>` : ""}`
-        : `<span class="pill danger">مصروف</span>`;
+        : `<span class="pill danger">مصروف</span>${expenseBadge}`;
       return `<tr>
         <td>${escapeHTML(t.date||"")}</td>
         <td>${labelType}</td>
@@ -1633,7 +1717,8 @@
     const months = lastNMonths(activeMonth, 12);
     const series = months.map(m=>{
       const t = totalsForMonth(m);
-      return { month:m, income:t.trueIncome, expense:t.totalExpenses, net:t.netCashFlow };
+      const expenses = expenseAnalyticsForMonth(m);
+      return { month:m, income:t.trueIncome, expense:t.totalExpenses, costOfLiving:expenses.costOfLiving, net:t.netCashFlow };
     });
     drawTrend("trendChart", series);
 
@@ -1834,7 +1919,7 @@
     const innerH = h - pad*2;
 
     // find max
-    const maxV = Math.max(...series.flatMap(s=>[s.income,s.expense]), 1);
+    const maxV = Math.max(...series.flatMap(s=>[s.income,s.expense,s.costOfLiving]), 1);
 
     // grid lines
     ctx.strokeStyle = "rgba(255,255,255,.10)";
@@ -1850,7 +1935,7 @@
     // bars grouped
     const n = series.length;
     const groupW = innerW / n;
-    const barW = Math.max(6*dpr, groupW * 0.28);
+    const barW = Math.max(5*dpr, groupW * 0.20);
     const gap = barW * 0.25;
 
     series.forEach((s, idx)=>{
@@ -1858,14 +1943,19 @@
 
       const incomeH = (s.income/maxV)*innerH;
       const expH = (s.expense/maxV)*innerH;
+      const livingH = (s.costOfLiving/maxV)*innerH;
 
       // income bar
       ctx.fillStyle = "rgba(124,255,232,.80)";
-      ctx.fillRect(gx - barW - gap/2, pad + innerH - incomeH, barW, incomeH);
+      ctx.fillRect(gx - barW - gap, pad + innerH - incomeH, barW, incomeH);
 
       // expense bar
       ctx.fillStyle = "rgba(255,107,107,.80)";
-      ctx.fillRect(gx + gap/2, pad + innerH - expH, barW, expH);
+      ctx.fillRect(gx, pad + innerH - expH, barW, expH);
+
+      // regular cost-of-living bar
+      ctx.fillStyle = "rgba(96,165,250,.82)";
+      ctx.fillRect(gx + barW + gap, pad + innerH - livingH, barW, livingH);
 
       // month label every 2 steps
       if(idx%2===0){
@@ -1888,6 +1978,11 @@
     ctx.fillText("مصروف", w - pad, pad + 18*dpr);
     ctx.fillStyle = "rgba(255,107,107,.80)";
     ctx.fillRect(w - pad - 70*dpr, pad + 8*dpr, 10*dpr, 10*dpr);
+
+    ctx.fillStyle = "rgba(255,255,255,.78)";
+    ctx.fillText("تكلفة المعيشة", w - pad, pad + 36*dpr);
+    ctx.fillStyle = "rgba(96,165,250,.82)";
+    ctx.fillRect(w - pad - 92*dpr, pad + 26*dpr, 10*dpr, 10*dpr);
   }
 
   function shortMoney(v){
@@ -1923,13 +2018,14 @@
   $("#btnCategories3").addEventListener("click", () => openCategoriesModal());
 
   // Filters events
-  ["filterType","filterCategory","filterSearch","filterFrom","filterTo","filterMin","filterMax"].forEach(id=>{
+  ["filterType","filterCategory","filterExpenseClass","filterSearch","filterFrom","filterTo","filterMin","filterMax"].forEach(id=>{
     $("#"+id).addEventListener("input", () => renderTransactions());
     $("#"+id).addEventListener("change", () => renderTransactions());
   });
   $("#btnClearFilters").addEventListener("click", () => {
     $("#filterType").value = "";
     $("#filterCategory").value = "";
+    $("#filterExpenseClass").value = "";
     $("#filterSearch").value = "";
     $("#filterFrom").value = "";
     $("#filterTo").value = "";
@@ -2138,6 +2234,8 @@
     $("#txDate").value = tx?.date || "";
     $("#txAmount").value = tx?.amount ?? "";
     $("#txNote").value = tx?.note ?? "";
+    $("#txExpenseClass").value = tx ? (ExpenseModel.getExplicitExpenseClass(state, tx.id) || "") : "";
+    updateExpenseClassVisibility();
 
     openModal("#modalTx");
   }
@@ -2151,7 +2249,13 @@
     sel.innerHTML = cats.map(c => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join("");
     sel.value = selectedId && cats.some(c=>c.id===selectedId) ? selectedId : cats[0].id;
   }
-  $("#txType").addEventListener("change", () => fillTxCategories($("#txType").value, null));
+  function updateExpenseClassVisibility(){
+    $("#txExpenseClassField").hidden = $("#txType").value !== "expense";
+  }
+  $("#txType").addEventListener("change", () => {
+    fillTxCategories($("#txType").value, null);
+    updateExpenseClassVisibility();
+  });
 
   $("#btnSaveTx").addEventListener("click", () => {
     const type = $("#txType").value;
@@ -2164,13 +2268,19 @@
     if(!amount || amount<=0){ toast("أدخل مبلغاً صحيحاً"); return; }
     if(!type){ toast("اختر النوع"); return; }
 
+    let savedTransactionId = editingTxId;
     if(editingTxId){
       const idx = state.transactions.findIndex(t=>t.id===editingTxId);
       if(idx>=0){
         state.transactions[idx] = { ...state.transactions[idx], type, date, categoryId, amount, note };
       }
     }else{
-      state.transactions.push({ id: uid(), type, date, categoryId, amount, note, createdAt: new Date().toISOString() });
+      savedTransactionId = uid();
+      state.transactions.push({ id: savedTransactionId, type, date, categoryId, amount, note, createdAt: new Date().toISOString() });
+    }
+
+    if(type === "expense" && savedTransactionId){
+      state = ExpenseModel.withExplicitExpenseClass(state, savedTransactionId, $("#txExpenseClass").value);
     }
 
     save();
@@ -2442,6 +2552,15 @@ window.addEventListener("pfm:apply", (ev)=>{
       setPill("☁️ غير مهيأ", "warn");
     });
     setPill("☁️ غير مهيأ", "warn");
+    return;
+  }
+
+  if(typeof window.firebase === "undefined"){
+    btnOpen?.addEventListener("click", ()=>{
+      setStatus("الحالة: المزامنة السحابية غير متاحة حالياً. بيانات هذا الجهاز ما زالت تعمل محلياً.");
+      setPill("☁️ غير متاح", "warn");
+    });
+    setPill("☁️ غير متاح", "warn");
     return;
   }
 
@@ -2816,7 +2935,7 @@ window.addEventListener("pfm:apply", (ev)=>{
   }
 </script>
 
-<script src="./report-enhancements.js?v=20260907-phase1"></script>
+<script src="./report-enhancements.js?v=20260907-phase2"></script>
 
 </body>
 </html>
