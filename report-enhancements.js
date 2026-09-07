@@ -38,6 +38,10 @@
           parsed.expenseSettings && typeof parsed.expenseSettings === "object"
             ? parsed.expenseSettings
             : undefined,
+        debtSettings:
+          parsed.debtSettings && typeof parsed.debtSettings === "object"
+            ? parsed.debtSettings
+            : undefined,
       };
     } catch (error) {
       console.warn("Report enhancements could not read local data", error);

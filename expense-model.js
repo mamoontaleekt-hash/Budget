@@ -39,8 +39,22 @@
     return !!transaction && typeof transaction === "object" && transaction.type === "expense" && !transaction.deletedAt;
   }
 
+  function getValidLinkedObligationId(state, transaction) {
+    if (!isActiveExpense(transaction) || typeof transaction.id !== "string") return null;
+    const links = state?.debtSettings?.paymentLinks;
+    const obligations = state?.debtSettings?.obligations;
+    if (!links || typeof links !== "object" || Array.isArray(links)) return null;
+    if (!obligations || typeof obligations !== "object" || Array.isArray(obligations)) return null;
+    const obligationId = links[transaction.id];
+    const obligation = obligations[obligationId];
+    return obligation && typeof obligation === "object" && !Array.isArray(obligation) && obligation.id === obligationId
+      ? obligationId
+      : null;
+  }
+
   function resolveExpenseClass(state, transaction) {
     if (!isActiveExpense(transaction)) return null;
+    if (getValidLinkedObligationId(state, transaction)) return DEBT_PAYMENT;
     const explicit = getExplicitExpenseClass(state, transaction.id);
     if (explicit) return explicit;
     return transaction.categoryId === "ex_debt" ? DEBT_PAYMENT : REGULAR;
@@ -127,6 +141,7 @@
     EXCEPTIONAL,
     DEBT_PAYMENT,
     getExplicitExpenseClass,
+    getValidLinkedObligationId,
     resolveExpenseClass,
     withExplicitExpenseClass,
     calculateExpenseAnalytics,
