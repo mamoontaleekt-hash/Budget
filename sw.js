@@ -2,9 +2,7 @@
    - Caches app shell for offline open.
    - Network-first for HTML, cache-first for static assets.
 */
-const CACHE_NAME = "pfm-pwa-v4";
-const REPORT_ENHANCEMENT_SCRIPT = '<script src="./report-enhancements.js?v=20260616-report-1"></script>';
-const MOBILE_ENHANCEMENT_STYLE = '<link rel="stylesheet" href="./mobile-enhancements.css?v=20260616-mobile-1">';
+const CACHE_NAME = "pfm-pwa-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -16,29 +14,6 @@ const APP_SHELL = [
   "./icons/icon-512.png"
 ];
 
-async function enhanceHtml(response) {
-  const headers = new Headers(response.headers);
-  const contentType = headers.get("content-type") || "";
-  if (!contentType.includes("text/html")) return response;
-
-  const html = await response.text();
-  let enhanced = html;
-  if (!enhanced.includes("mobile-enhancements.css")) {
-    enhanced = enhanced.replace("</head>", `${MOBILE_ENHANCEMENT_STYLE}\n</head>`);
-  }
-  if (!enhanced.includes("report-enhancements.js")) {
-    enhanced = enhanced.replace("</body>", `${REPORT_ENHANCEMENT_SCRIPT}\n</body>`);
-  }
-
-  headers.set("content-type", "text/html; charset=utf-8");
-  headers.delete("content-length");
-  return new Response(enhanced, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
-}
-
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())
@@ -49,7 +24,11 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : Promise.resolve())));
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith("pfm-pwa-") && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      );
       await self.clients.claim();
     })()
   );
@@ -68,15 +47,13 @@ self.addEventListener("fetch", (event) => {
         (async () => {
           try {
             const fresh = await fetch(req);
-            const enhanced = await enhanceHtml(fresh.clone());
             const cache = await caches.open(CACHE_NAME);
-            cache.put(req, enhanced.clone());
-            return enhanced;
+            cache.put(req, fresh.clone());
+            return fresh;
           } catch (e) {
             const cached = await caches.match(req);
-            if (cached) return enhanceHtml(cached.clone());
-            const shell = await caches.match("./index.html");
-            return shell ? enhanceHtml(shell.clone()) : Response.error();
+            if (cached) return cached;
+            return (await caches.match("./index.html")) || Response.error();
           }
         })()
       );
