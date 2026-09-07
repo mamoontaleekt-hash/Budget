@@ -320,4 +320,3 @@
   scheduleRender();
   setTimeout(scheduleRender, 300);
 })();
-

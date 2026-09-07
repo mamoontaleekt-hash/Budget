@@ -74,4 +74,3 @@ assert.equal(sw.includes("REPORT_ENHANCEMENT_SCRIPT"), false);
 assert.equal(sw.includes("MOBILE_ENHANCEMENT_STYLE"), false);
 
 console.log("PASS Phase 1 syntax, loading, cloud-safety, optional-metadata, and PWA regression checks");
-

@@ -253,4 +253,3 @@ try{
   try{ socket.close(); }catch{}
   chrome.kill();
 }
-

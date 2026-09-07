@@ -305,4 +305,3 @@ test("realistic three-month fixture remains unchanged until explicitly configure
   }
   console.log(`PASS ${passed}/${tests.length} financial model tests`);
 })();
-
