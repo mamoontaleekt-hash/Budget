@@ -17,6 +17,7 @@
   const STATUSES = new Set(["active", "paused", "completed"]);
   const DATE_PATTERN = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
   const MONTH_PATTERN = /^(\d{4})-(0[1-9]|1[0-2])$/;
+  const transactionIndexes = new WeakMap();
 
   function finiteAmount(value) {
     if (typeof value === "number") return Number.isFinite(value) ? value : null;
@@ -102,7 +103,25 @@
   function getTransaction(state, transactionId) {
     if (typeof transactionId !== "string" || transactionId.length === 0) return null;
     const transactions = Array.isArray(state?.transactions) ? state.transactions : [];
-    return transactions.find((transaction) => transaction?.id === transactionId) || null;
+    let cached = transactionIndexes.get(transactions);
+    if (!cached || cached.length !== transactions.length) {
+      const firstIndexById = new Map();
+      transactions.forEach((transaction, index) => {
+        if (typeof transaction?.id === "string" && transaction.id.length > 0 && !firstIndexById.has(transaction.id)) {
+          firstIndexById.set(transaction.id, index);
+        }
+      });
+      cached = { length: transactions.length, firstIndexById };
+      transactionIndexes.set(transactions, cached);
+    }
+    const index = cached.firstIndexById.get(transactionId);
+    if (!Number.isInteger(index)) return null;
+    const transaction = transactions[index];
+    if (transaction?.id !== transactionId) {
+      transactionIndexes.delete(transactions);
+      return getTransaction(state, transactionId);
+    }
+    return transaction;
   }
 
   function isActiveExpense(transaction) {

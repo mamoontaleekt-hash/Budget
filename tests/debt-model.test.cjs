@@ -297,6 +297,19 @@ test("transactions without non-empty string ids are not link candidates", () => 
   assert.equal(Debt.withPaymentLink(source, "123", "home"), source);
   assert.equal(Debt.withPaymentLink(source, "", "home"), source);
 });
+test("bulk payment resolution uses the canonical id index instead of repeated linear find", () => {
+  const transactions = Array.from({ length: 5000 }, (_, index) => tx(`expense-${index}`, 1));
+  transactions.push(tx("linked", 250));
+  const guardedTransactions = new Proxy(transactions, {
+    get(target, property, receiver) {
+      if (property === "find") throw new Error("linear find must not be used");
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  const source = stateWith([obligation()], guardedTransactions, { linked: "home" });
+  assert.deepEqual(Debt.getLinkedPaymentTransactions(source, "home"), [transactions.at(-1)]);
+  assert.equal(Debt.calculateObligation(source, "home", "2026-02-28").linkedPayments, 250);
+});
 test("link helper refuses income", () => {
   const source = stateWith([obligation()], [tx("p1", 100, "2026-02-10", { type: "income" })]);
   assert.equal(Debt.withPaymentLink(source, "p1", "home"), source);
