@@ -128,6 +128,12 @@
     return !!transaction && typeof transaction === "object" && transaction.type === "expense" && !transaction.deletedAt;
   }
 
+  function isLinkableExpense(transaction) {
+    return isActiveExpense(transaction) &&
+      typeof transaction.id === "string" && transaction.id.length > 0 &&
+      isDateOnly(transaction.date) && positiveAmount(transaction.amount) !== null;
+  }
+
   function getValidLinkedObligationId(state, transactionOrId) {
     const transactionId = typeof transactionOrId === "string" ? transactionOrId : transactionOrId?.id;
     const transaction = getTransaction(state, transactionId);
@@ -385,7 +391,7 @@
   function withPaymentLink(state, transactionId, obligationId) {
     if (!state || typeof state !== "object" || !getObligation(state, obligationId)) return state;
     const transaction = getTransaction(state, transactionId);
-    if (!isActiveExpense(transaction) || typeof transactionId !== "string") return state;
+    if (!isLinkableExpense(transaction)) return state;
     const currentLinks = paymentLinksObject(state) || {};
     if (getValidLinkedObligationId(state, transaction)) return state;
     const paymentLinks = { ...currentLinks, [transactionId]: obligationId };
@@ -402,7 +408,7 @@
   }
 
   function isEligibleUnlinkedExpense(state, transaction) {
-    if (!isActiveExpense(transaction) || typeof transaction.id !== "string" || transaction.id.length === 0) return false;
+    if (!isLinkableExpense(transaction)) return false;
     if (getTransaction(state, transaction.id) !== transaction) return false;
     return !getValidLinkedObligationId(state, transaction);
   }

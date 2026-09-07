@@ -297,6 +297,17 @@ test("transactions without non-empty string ids are not link candidates", () => 
   assert.equal(Debt.withPaymentLink(source, "123", "home"), source);
   assert.equal(Debt.withPaymentLink(source, "", "home"), source);
 });
+test("transactions need a valid date and positive finite amount to be linked", () => {
+  const invalidDate = tx("bad-date", 100, "not-a-date");
+  const zero = tx("zero", 0);
+  const negative = tx("negative", -10);
+  const malformed = tx("malformed", "not-a-number");
+  const source = stateWith([obligation()], [invalidDate, zero, negative, malformed]);
+  [invalidDate, zero, negative, malformed].forEach((transaction) => {
+    assert.equal(Debt.isEligibleUnlinkedExpense(source, transaction), false);
+    assert.equal(Debt.withPaymentLink(source, transaction.id, "home"), source);
+  });
+});
 test("bulk payment resolution uses the canonical id index instead of repeated linear find", () => {
   const transactions = Array.from({ length: 5000 }, (_, index) => tx(`expense-${index}`, 1));
   transactions.push(tx("linked", 250));
