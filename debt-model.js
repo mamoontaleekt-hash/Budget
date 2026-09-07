@@ -109,9 +109,9 @@
   }
 
   function getValidLinkedObligationId(state, transactionOrId) {
-    const transaction = typeof transactionOrId === "string"
-      ? getTransaction(state, transactionOrId)
-      : transactionOrId;
+    const transactionId = typeof transactionOrId === "string" ? transactionOrId : transactionOrId?.id;
+    const transaction = getTransaction(state, transactionId);
+    if (typeof transactionOrId !== "string" && transaction !== transactionOrId) return null;
     if (!isActiveExpense(transaction) || typeof transaction.id !== "string") return null;
     const obligationId = paymentLinksObject(state)?.[transaction.id];
     return getObligation(state, obligationId) ? obligationId : null;
@@ -382,7 +382,7 @@
   }
 
   function isEligibleUnlinkedExpense(state, transaction) {
-    return isActiveExpense(transaction) && !getValidLinkedObligationId(state, transaction);
+    return isActiveExpense(transaction) && !getValidLinkedObligationId(state, transaction.id);
   }
 
   function validateObligation(input) {

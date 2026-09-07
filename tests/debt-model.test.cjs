@@ -268,6 +268,19 @@ test("valid target keeps expense ineligible for reassignment", () => {
   const source = stateWith([obligation()], [tx("p1", 100)], { p1: "home" });
   assert.equal(Debt.isEligibleUnlinkedExpense(source, source.transactions[0]), false);
 });
+test("duplicate transaction ids count one canonical linked payment", () => {
+  const first = tx("duplicate", 100);
+  const duplicate = tx("duplicate", 900, "2026-02-11");
+  const source = stateWith([obligation()], [first, duplicate], { duplicate: "home" });
+  const result = Debt.calculateObligation(source, "home", "2026-02-28");
+  assert.equal(result.linkedPayments, 100);
+  assert.deepEqual(result.paymentTransactions, [first]);
+  assert.equal(Debt.getValidLinkedObligationId(source, first), "home");
+  assert.equal(Debt.getValidLinkedObligationId(source, duplicate), null);
+  assert.equal(Expense.resolveExpenseClass(source, first), "debt_payment");
+  assert.equal(Expense.resolveExpenseClass(source, duplicate), "regular");
+  assert.equal(Debt.isEligibleUnlinkedExpense(source, duplicate), false);
+});
 test("link helper refuses income", () => {
   const source = stateWith([obligation()], [tx("p1", 100, "2026-02-10", { type: "income" })]);
   assert.equal(Debt.withPaymentLink(source, "p1", "home"), source);
