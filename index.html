@@ -222,6 +222,24 @@
     .kpi .label{color:var(--muted);font-size:12px}
     .kpi .value{font-size:18px;font-weight:900}
     .kpi .hint{color:var(--muted);font-size:11px;margin-top:2px}
+    .phase1-primary .kpi{
+      border-color:rgba(46,108,255,.20);
+      background:linear-gradient(145deg, rgba(46,108,255,.08), rgba(255,255,255,.96));
+    }
+    .phase1-primary .kpi .value{font-size:22px}
+    .opening-settings{
+      padding:14px;
+      border:1px solid rgba(46,108,255,.18);
+      border-radius:var(--radius2);
+      background:rgba(46,108,255,.05);
+    }
+    .opening-settings h3{margin:0 0 4px;font-size:14px}
+    .opening-mode-panel{margin-top:12px}
+    .legacy-opening-list{display:grid;gap:8px;margin-top:10px}
+    .legacy-opening-option{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.82);
+    }
     .pill{
       padding:6px 10px;
       border-radius:999px;
@@ -250,6 +268,7 @@
     }
     @media (min-width: 980px){
       .kpi{grid-column: span 3}
+      .phase1-primary .kpi{grid-column:span 4}
     }
     table{
       width:100%;
@@ -396,35 +415,63 @@
         <div class="hd">
           <div>
             <h2>ملخص الشهر</h2>
-            <p>إجمالي الإيرادات والمصاريف وصافي التدفق النقدي لهذا الشهر.</p>
+            <p>الرصيد المتاح والختامي، مع فصل رصيد البداية عن دخل الشهر الحقيقي.</p>
           </div>
           <div class="row">
             <span class="pill" id="pillStatus">—</span>
+            <span class="pill" id="pillSavingsStatus">—</span>
           </div>
         </div>
         <div class="bd">
-          <div class="kpis">
+          <div class="kpis phase1-primary">
             <div class="kpi">
               <div>
-                <div class="label">الإيرادات</div>
+                <div class="label">الرصيد المتاح</div>
+                <div class="value" id="kpiAvailable">—</div>
+                <div class="hint">الرصيد الافتتاحي + دخل الشهر الحقيقي</div>
+              </div>
+              <span class="tag">💳</span>
+            </div>
+            <div class="kpi">
+              <div>
+                <div class="label">الرصيد الختامي</div>
+                <div class="value" id="kpiClosing">—</div>
+                <div class="hint">الرصيد المتاح − مصروفات الشهر</div>
+              </div>
+              <span class="tag">🏁</span>
+            </div>
+            <div class="kpi">
+              <div>
+                <div class="label">مصروفات الشهر</div>
+                <div class="value" id="kpiExpense">—</div>
+                <div class="hint">مجموع عمليات المصروف الفعلية</div>
+              </div>
+              <span class="tag">🧾</span>
+            </div>
+          </div>
+
+          <div class="kpis" style="margin-top:12px">
+            <div class="kpi">
+              <div>
+                <div class="label">الرصيد الافتتاحي</div>
+                <div class="value" id="kpiOpening">—</div>
+                <div class="hint">مال موجود عند بداية الشهر، وليس دخلاً جديداً</div>
+              </div>
+              <span class="tag">🔓</span>
+            </div>
+            <div class="kpi">
+              <div>
+                <div class="label">دخل الشهر الحقيقي</div>
                 <div class="value" id="kpiIncome">—</div>
-                <div class="hint">مجموع عمليات الإيراد داخل الشهر</div>
+                <div class="hint">الإيرادات الجديدة فقط بعد استبعاد الرصيد المرحّل المحدد</div>
               </div>
               <span class="tag">💰</span>
             </div>
             <div class="kpi">
               <div>
-                <div class="label">المصاريف</div>
-                <div class="value" id="kpiExpense">—</div>
-                <div class="hint">مجموع عمليات الصرف داخل الشهر</div>
-              </div>
-              <span class="tag">🧾</span>
-            </div>
-            <div class="kpi">
-              <div>
-                <div class="label">الصافي</div>
+                <div class="label">صافي حركة الشهر</div>
                 <div class="value" id="kpiNet">—</div>
-                <div class="hint">الإيرادات − المصاريف</div>
+                <div class="hint">دخل الشهر الحقيقي − المصروفات</div>
               </div>
               <span class="tag">🧮</span>
             </div>
@@ -432,7 +479,7 @@
               <div>
                 <div class="label">معدل الادخار</div>
                 <div class="value" id="kpiSavingRate">—</div>
-                <div class="hint">الصافي ÷ الإيرادات</div>
+                <div class="hint">صافي حركة الشهر ÷ دخل الشهر الحقيقي</div>
               </div>
               <span class="tag">🏦</span>
             </div>
@@ -458,7 +505,7 @@
             </div>
             <div>
               <div style="font-weight:800;margin-bottom:4px">نظرة سريعة</div>
-              <div class="mini">إيراد مقابل مصروف داخل الشهر</div>
+              <div class="mini">دخل حقيقي مقابل مصروف داخل الشهر</div>
               <div style="margin-top:10px">
                 <canvas id="barIncomeExpense"></canvas>
               </div>
@@ -563,6 +610,55 @@
           <div class="help">
             <div><b>كيف تستخدمها؟</b> ضع “دخل مخطط” على أساس راتبينك (مثلاً: 750,000 + 2,350,000) ثم ضع ميزانية لكل تصنيف. ستشاهد “غير موزّع” وتعرف هل تخطّيت الدخل.</div>
           </div>
+
+          <div class="hr"></div>
+
+          <section class="opening-settings" aria-labelledby="openingBalanceHeading">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div>
+                <h3 id="openingBalanceHeading">الرصيد الافتتاحي للشهر</h3>
+                <div class="mini" id="openingBalanceDescription">الرصيد الافتتاحي مال موجود عند بداية الشهر، وليس دخلاً جديداً.</div>
+              </div>
+              <button class="btn small primary" id="btnSaveFinancialSettings" type="button">💾 حفظ إعداد الرصيد</button>
+            </div>
+            <div class="two" style="margin-top:12px">
+              <div>
+                <label for="openingBalanceMode" style="display:block;font-weight:800;margin-bottom:6px">طريقة تحديد الرصيد</label>
+                <select id="openingBalanceMode" aria-describedby="openingBalanceDescription" style="width:100%">
+                  <option value="">بدون إعداد — الرصيد الافتتاحي صفر</option>
+                  <option value="manual">إدخال يدوي</option>
+                  <option value="carry">ترحيل الرصيد الختامي من الشهر السابق</option>
+                  <option value="legacy">استخدام عمليات رصيد مرحّل قديمة</option>
+                </select>
+              </div>
+              <div class="kpi" style="border-radius:14px">
+                <div>
+                  <div class="label">الرصيد الافتتاحي الناتج</div>
+                  <div class="value" id="openingBalancePreview">—</div>
+                  <div class="hint" id="openingBalancePreviewHint">لا يوجد إعداد صريح لهذا الشهر</div>
+                </div>
+                <span class="tag">🔓</span>
+              </div>
+            </div>
+
+            <div class="opening-mode-panel" id="openingManualPanel" hidden>
+              <label for="openingBalanceAmount" style="display:block;font-weight:800;margin-bottom:6px">المبلغ عند بداية الشهر</label>
+              <input id="openingBalanceAmount" type="number" inputmode="decimal" step="any" value="0" aria-describedby="openingManualHelp" />
+              <div class="mini" id="openingManualHelp" style="margin-top:6px">يمكن أن يكون صفراً أو سالباً. لن تُنشأ أي عملية إيراد.</div>
+            </div>
+
+            <div class="opening-mode-panel" id="openingCarryPanel" hidden>
+              <div class="help">
+                <div>سيُحتسب الرصيد ديناميكياً من الرصيد الختامي للشهر السابق: <b id="carryPreviousMonth">—</b>.</div>
+                <div style="margin-top:4px">الرصيد الختامي السابق: <b id="carryPreviousClosing">—</b>. لا تُنشأ عملية جديدة ولا يُحفظ مبلغ مكرر.</div>
+              </div>
+            </div>
+
+            <div class="opening-mode-panel" id="openingLegacyPanel" hidden>
+              <div class="help">اختر يدوياً عمليات الإيراد القديمة التي تمثل رصيداً مرحّلاً. سيبقى السجل الأصلي كما هو، لكنه لن يُحتسب كدخل جديد عند اختياره كرصد افتتاحي.</div>
+              <div class="legacy-opening-list" id="legacyOpeningList" role="group" aria-label="عمليات الإيراد المؤهلة كرصد افتتاحي"></div>
+            </div>
+          </section>
 
           <div class="hr"></div>
 
@@ -1008,6 +1104,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <script src="./financial-model.js?v=20260907-phase1"></script>
 
 <script>
 /** =========================
@@ -1018,6 +1115,8 @@
 (function(){
   const STORAGE_KEY = "pfm_data_v1";
   const SAFETY_BACKUP_KEY = "pfm_safety_backup_latest_v1";
+  const FinancialModel = window.PFMFinancialModel;
+  if(!FinancialModel) throw new Error("Financial model failed to load");
   const $ = (sel, root=document) => root.querySelector(sel);
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
@@ -1149,10 +1248,7 @@
   }
   function sumAmount(arr){ return arr.reduce((s,x)=> s + (Number(x.amount)||0), 0); }
   function totalsForMonth(month){
-    const txs = txInMonth(month);
-    const income = sumAmount(txs.filter(t=>t.type==="income"));
-    const expense = sumAmount(txs.filter(t=>t.type==="expense"));
-    return { income, expense, net: income-expense, txs };
+    return FinancialModel.calculateMonthFinancials(state, month);
   }
 
   // --- Render functions
@@ -1172,21 +1268,30 @@
   }
 
   function renderDashboard(){
-    const {income, expense, net} = totalsForMonth(activeMonth);
-    $("#kpiIncome").textContent = fmtCompact(income);
-    $("#kpiExpense").textContent = fmtCompact(expense);
-    $("#kpiNet").textContent = fmtCompact(net);
-    const rate = income>0 ? (net/income)*100 : 0;
-    $("#kpiSavingRate").textContent = income>0 ? `${rate.toFixed(1)}%` : "—";
+    const financials = totalsForMonth(activeMonth);
+    $("#kpiAvailable").textContent = fmtCompact(financials.availableCash);
+    $("#kpiClosing").textContent = fmtCompact(financials.closingBalance);
+    $("#kpiExpense").textContent = fmtCompact(financials.totalExpenses);
+    $("#kpiOpening").textContent = fmtCompact(financials.openingBalance);
+    $("#kpiIncome").textContent = fmtCompact(financials.trueIncome);
+    $("#kpiNet").textContent = fmtCompact(financials.netCashFlow);
+    $("#kpiSavingRate").textContent = financials.savingsRate === null ? "—" : `${financials.savingsRate.toFixed(1)}%`;
 
     const pill = $("#pillStatus");
     pill.className = "pill";
-    if(net>=0 && expense<=income){ pill.classList.add("ok"); pill.textContent = "ضمن السيطرة ✅"; }
-    else if(net<0){ pill.classList.add("danger"); pill.textContent = "عجز (مصاريف أعلى من الدخل) ⚠️"; }
-    else { pill.classList.add("warn"); pill.textContent = "راقب المصاريف 🤏"; }
+    if(financials.closingBalance>=0){ pill.classList.add("ok"); pill.textContent = "الرصيد الختامي موجب ✅"; }
+    else { pill.classList.add("danger"); pill.textContent = "الرصيد الختامي سالب ⚠️"; }
+
+    const savingsPill = $("#pillSavingsStatus");
+    savingsPill.className = "pill";
+    if(financials.trueIncome<=0){
+      savingsPill.classList.add("warn");
+      savingsPill.textContent = financials.totalExpenses>0 ? "المصروف ممول من رصيد سابق" : "لا يوجد دخل جديد هذا الشهر";
+    }else if(financials.netCashFlow>=0){ savingsPill.classList.add("ok"); savingsPill.textContent = "ادخار من دخل الشهر"; }
+    else { savingsPill.classList.add("warn"); savingsPill.textContent = "مصاريف الشهر أعلى من دخله"; }
 
     drawPie("pieExpense", expenseBreakdown(activeMonth));
-    drawBarIncomeExpense("barIncomeExpense", income, expense);
+    drawBarIncomeExpense("barIncomeExpense", financials.trueIncome, financials.totalExpenses);
 
     renderOverspendList();
   }
@@ -1257,7 +1362,10 @@
 
     tbody.innerHTML = txs.map(t=>{
       const signClass = t.type==="income" ? "pos" : "neg";
-      const labelType = t.type==="income" ? `<span class="pill ok">إيراد</span>` : `<span class="pill danger">مصروف</span>`;
+      const isLegacyOpening = FinancialModel.isLegacyOpeningTransaction(state, activeMonth, t.id);
+      const labelType = t.type==="income"
+        ? `<span class="pill ok">إيراد</span>${isLegacyOpening ? ` <span class="pill warn">رصيد افتتاحي</span>` : ""}`
+        : `<span class="pill danger">مصروف</span>`;
       return `<tr>
         <td>${escapeHTML(t.date||"")}</td>
         <td>${labelType}</td>
@@ -1279,8 +1387,128 @@
     $$("[data-del]", tbody).forEach(b => b.addEventListener("click", () => deleteTx(b.getAttribute("data-del"))));
   }
 
+  function renderFinancialSettings(){
+    const settings = FinancialModel.getMonthFinancialSettings(state, activeMonth) || {};
+    const validModes = new Set(["manual", "carry", "legacy"]);
+    const configuredMode = validModes.has(settings.openingBalanceMode) ? settings.openingBalanceMode : "";
+    const modeSelect = $("#openingBalanceMode");
+    const amountInput = $("#openingBalanceAmount");
+    const legacyList = $("#legacyOpeningList");
+    const previousMonth = FinancialModel.getPreviousMonth(activeMonth);
+    const previousFinancials = previousMonth ? totalsForMonth(previousMonth) : null;
+    const selectedIds = new Set(
+      Array.isArray(settings.legacyOpeningTransactionIds)
+        ? settings.legacyOpeningTransactionIds.filter(id => typeof id === "string")
+        : []
+    );
+
+    modeSelect.value = configuredMode;
+    amountInput.value = Number.isFinite(Number(settings.openingBalanceAmount))
+      ? Number(settings.openingBalanceAmount)
+      : 0;
+    $("#carryPreviousMonth").textContent = previousMonth || "—";
+    $("#carryPreviousClosing").textContent = fmtCompact(previousFinancials?.closingBalance || 0);
+
+    const eligible = txInMonth(activeMonth)
+      .filter(transaction => transaction.type === "income" && typeof transaction.id === "string")
+      .sort((a,b) => (a.date||"").localeCompare(b.date||""));
+    legacyList.innerHTML = eligible.length
+      ? eligible.map(transaction => {
+          const id = `legacy-opening-${transaction.id}`;
+          const checked = selectedIds.has(transaction.id) ? " checked" : "";
+          return `<label class="legacy-opening-option" for="${escapeAttr(id)}">
+            <input id="${escapeAttr(id)}" type="checkbox" data-legacy-opening-id="${escapeAttr(transaction.id)}"${checked} />
+            <span>
+              <b>${escapeHTML(transaction.date||"")} — ${fmtCompact(transaction.amount)}</b>
+              <span class="mini" style="display:block">${escapeHTML(catName(transaction.categoryId))}${transaction.note ? ` — ${escapeHTML(transaction.note)}` : ""}</span>
+            </span>
+          </label>`;
+        }).join("")
+      : `<div class="muted">لا توجد عمليات إيراد نشطة في هذا الشهر للاختيار.</div>`;
+
+    function selectedLegacyAmount(){
+      const checkedIds = new Set(
+        $$("[data-legacy-opening-id]:checked", legacyList).map(input => input.getAttribute("data-legacy-opening-id"))
+      );
+      return eligible
+        .filter(transaction => checkedIds.has(transaction.id))
+        .reduce((sum, transaction) => sum + (Number(transaction.amount)||0), 0);
+    }
+
+    function updateModePanels(){
+      const mode = modeSelect.value;
+      $("#openingManualPanel").hidden = mode !== "manual";
+      $("#openingCarryPanel").hidden = mode !== "carry";
+      $("#openingLegacyPanel").hidden = mode !== "legacy";
+
+      let preview = 0;
+      let hint = "لا يوجد إعداد صريح لهذا الشهر";
+      if(mode === "manual"){
+        const amount = amountInput.value.trim() === "" ? Number.NaN : Number(amountInput.value);
+        preview = Number.isFinite(amount) ? amount : 0;
+        hint = "مبلغ يدوي؛ لا يُحتسب ضمن دخل الشهر";
+      }else if(mode === "carry"){
+        preview = previousFinancials?.closingBalance || 0;
+        hint = `مشتق ديناميكياً من ${previousMonth || "الشهر السابق"}`;
+      }else if(mode === "legacy"){
+        preview = selectedLegacyAmount();
+        hint = "مجموع عمليات الإيراد المحددة يدوياً";
+      }
+      $("#openingBalancePreview").textContent = fmtCompact(preview);
+      $("#openingBalancePreviewHint").textContent = hint;
+    }
+
+    modeSelect.onchange = updateModePanels;
+    amountInput.oninput = updateModePanels;
+    $$("[data-legacy-opening-id]", legacyList).forEach(input => input.onchange = updateModePanels);
+    updateModePanels();
+
+    $("#btnSaveFinancialSettings").onclick = () => {
+      const mode = modeSelect.value;
+      const existingRoot = state.financialSettings && typeof state.financialSettings === "object" && !Array.isArray(state.financialSettings)
+        ? state.financialSettings
+        : {};
+      const months = existingRoot.months && typeof existingRoot.months === "object" && !Array.isArray(existingRoot.months)
+        ? { ...existingRoot.months }
+        : {};
+
+      if(!mode){
+        delete months[activeMonth];
+        if(Object.keys(months).length === 0) delete state.financialSettings;
+        else state.financialSettings = { ...existingRoot, months };
+        save();
+        toast("تم ضبط الرصيد الافتتاحي على صفر لهذا الشهر");
+        render();
+        return;
+      }
+
+      const manualAmount = amountInput.value.trim() === "" ? Number.NaN : Number(amountInput.value);
+      if(mode === "manual" && !Number.isFinite(manualAmount)){
+        toast("أدخل مبلغاً رقمياً صالحاً للرصيد الافتتاحي");
+        return;
+      }
+      const legacyOpeningTransactionIds = $$("[data-legacy-opening-id]:checked", legacyList)
+        .map(input => input.getAttribute("data-legacy-opening-id"))
+        .filter(Boolean);
+      const current = months[activeMonth] && typeof months[activeMonth] === "object" && !Array.isArray(months[activeMonth])
+        ? months[activeMonth]
+        : {};
+      months[activeMonth] = {
+        ...current,
+        openingBalanceMode: mode,
+        openingBalanceAmount: Number.isFinite(manualAmount) ? manualAmount : Number(current.openingBalanceAmount)||0,
+        legacyOpeningTransactionIds,
+      };
+      state.financialSettings = { ...existingRoot, months };
+      save();
+      toast("تم حفظ إعداد الرصيد الافتتاحي ✅");
+      render();
+    };
+  }
+
   function renderBudgets(){
     const plan = getBudgetForMonth(activeMonth);
+    renderFinancialSettings();
 
     $("#planIncome1").value = plan.plan?.income1 ?? "";
     $("#planIncome2").value = plan.plan?.income2 ?? "";
@@ -1405,7 +1633,7 @@
     const months = lastNMonths(activeMonth, 12);
     const series = months.map(m=>{
       const t = totalsForMonth(m);
-      return { month:m, income:t.income, expense:t.expense, net:t.net };
+      return { month:m, income:t.trueIncome, expense:t.totalExpenses, net:t.netCashFlow };
     });
     drawTrend("trendChart", series);
 
@@ -1574,7 +1802,7 @@
     ctx.stroke();
 
     const values = [
-      { label:"إيراد", value: income, col: "rgba(124,255,232,.85)" },
+      { label:"دخل حقيقي", value: income, col: "rgba(124,255,232,.85)" },
       { label:"مصروف", value: expense, col: "rgba(255,107,107,.85)" },
     ];
 
@@ -1652,7 +1880,7 @@
     ctx.fillStyle = "rgba(255,255,255,.78)";
     ctx.font = `${12*dpr}px ${getFontFallback()}`;
     ctx.textAlign = "right";
-    ctx.fillText("إيراد", w - pad, pad);
+    ctx.fillText("دخل حقيقي", w - pad, pad);
     ctx.fillStyle = "rgba(124,255,232,.80)";
     ctx.fillRect(w - pad - 70*dpr, pad - 10*dpr, 10*dpr, 10*dpr);
 
@@ -2588,7 +2816,7 @@ window.addEventListener("pfm:apply", (ev)=>{
   }
 </script>
 
-<script src="./report-enhancements.js"></script>
+<script src="./report-enhancements.js?v=20260907-phase1"></script>
 
 </body>
 </html>
