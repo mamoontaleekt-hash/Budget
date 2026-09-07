@@ -11,7 +11,6 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
-<link rel="icon" href="data:;base64,=">
 <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>نظام إدارة المصاريف الشخصية (أونلاين - Firebase)</title>
@@ -355,6 +354,7 @@
       color: rgba(102,112,133,.95);
     }
   </style>
+  <link rel="stylesheet" href="./mobile-enhancements.css">
 </head>
 
 <body>
@@ -2099,19 +2099,6 @@
     toastTimer = setTimeout(()=>{ el.style.opacity="0"; }, 2200);
   }
 
-  // initial seed: helpful example for user
-  function maybeSeed(){
-    if(state.transactions.length>0) return;
-
-    // Add a gentle example to show how to use (can be deleted).
-    state.transactions.push(
-      { id: uid(), type:"income", date: `${activeMonth}-01`, categoryId:"in_fixed", amount: 750000, note:"مثال: راتب ثابت", createdAt: new Date().toISOString() },
-      { id: uid(), type:"expense", date: `${activeMonth}-02`, categoryId:"ex_grocery", amount: 25000, note:"مثال: سوبرماركت", createdAt: new Date().toISOString() }
-    );
-    save();
-  }
-  maybeSeed();
-
   // Buttons in dashboard & settings that navigate
   $("#btnGoBudgets").addEventListener("click", () => setTab("budgets"));
 
@@ -2551,5 +2538,8 @@ window.addEventListener("pfm:apply", (ev)=>{
   }
 </script>
 
+<script src="./report-enhancements.js"></script>
+
 </body>
 </html>
+
