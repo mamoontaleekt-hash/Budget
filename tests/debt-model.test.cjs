@@ -286,5 +286,8 @@ test("invalid fixed fields are reported", () => assert.deepEqual(Debt.validateOb
 test("irregular next due fields must appear together", () => assert.deepEqual(Debt.validateObligation(obligation({ scheduleMode: "irregular", manualNextDueDate: "2026-02-01" })), ["manualNextDue"]));
 test("negative paid before is rejected", () => assert.deepEqual(Debt.validateObligation(obligation({ paidBeforeTracking: -1 })), ["paidBeforeTracking"]));
 test("unknown type is rejected", () => assert.deepEqual(Debt.validateObligation(obligation({ type: "unknown" })), ["type"]));
+test("fixed configuration above schedule limit is rejected", () => {
+  assert.deepEqual(Debt.validateObligation(obligation({ totalAmount: 20000, paidBeforeTracking: 0, installmentAmount: 1 })), ["scheduleSize"]);
+});
 
 console.log(`${passed}/${passed} debt model tests passed`);

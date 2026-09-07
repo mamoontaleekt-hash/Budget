@@ -400,6 +400,12 @@
       if (!positiveAmount(input.installmentAmount)) errors.push("installmentAmount");
       if (!FREQUENCIES.has(input.frequency)) errors.push("frequency");
       if (!isDateOnly(input.firstDueDate)) errors.push("firstDueDate");
+      const total = positiveAmount(input.totalAmount);
+      const installment = positiveAmount(input.installmentAmount);
+      if (total && installment) {
+        const scheduledTotal = Math.max(total - nonNegativeAmount(input.paidBeforeTracking), 0);
+        if (Math.ceil(scheduledTotal / installment) > 10000) errors.push("scheduleSize");
+      }
     }
     if (input.scheduleMode === "irregular") {
       const hasDate = input.manualNextDueDate !== undefined && input.manualNextDueDate !== "";
