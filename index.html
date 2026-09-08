@@ -279,6 +279,13 @@
     .pill.ok{border-color: rgba(18,183,106,.25); background: rgba(18,183,106,.10); color:#067647}
     .pill.warn{border-color: rgba(245,159,0,.28); background: rgba(245,159,0,.10); color:#7a4c00}
     .pill.danger{border-color: rgba(229,72,77,.28); background: rgba(229,72,77,.10); color:#b42318}
+    .budget-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .budget-progress{height:7px;background:rgba(16,24,40,.08);border-radius:999px;overflow:hidden;margin-top:7px;min-width:100px}
+    .budget-progress span{display:block;height:100%;border-radius:inherit;background:var(--ok)}
+    .budget-progress span.warn{background:var(--warn)}
+    .budget-progress span.danger{background:var(--danger)}
+    @media(max-width:760px){.budget-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:430px){.budget-summary-grid{grid-template-columns:1fr}}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .row.end{justify-content:flex-end}
     .muted{color:var(--muted)}
@@ -609,12 +616,12 @@
 
           <div class="row" style="justify-content:space-between;align-items:flex-start">
             <div>
-              <div style="font-weight:800;margin-bottom:4px">التصنيفات التي تجاوزت ميزانيتها</div>
-              <div class="mini">يظهر هنا أي تصنيف تخطّى المبلغ المخطط له للشهر</div>
+              <div style="font-weight:800;margin-bottom:4px">تنبيهات الميزانية</div>
+              <div class="mini">تنبيهات مشتقة للشهر الحالي عند الاقتراب من الحد أو بلوغه أو تجاوزه</div>
             </div>
             <button class="btn small" id="btnGoBudgets">🧩 فتح تقسيم الميزانية</button>
           </div>
-          <div style="margin-top:10px" id="overspendList" class="mini">—</div>
+          <div style="margin-top:10px" id="budgetAlertsList" class="mini">—</div>
         </div>
       </div>
     </section>
@@ -718,6 +725,19 @@
           <div class="help">
             <div><b>كيف تستخدمها؟</b> ضع “دخل مخطط” على أساس راتبينك (مثلاً: 750,000 + 2,350,000) ثم ضع ميزانية لكل تصنيف. ستشاهد “غير موزّع” وتعرف هل تخطّيت الدخل.</div>
           </div>
+
+          <div class="budget-summary-grid" id="budgetSummary" style="margin-top:12px">
+            <div class="kpi"><div><div class="label">إجمالي الميزانية المخططة</div><div class="value" id="budgetSummaryPlanned">—</div></div><span class="tag">🧩</span></div>
+            <div class="kpi"><div><div class="label">المصروف ضمن تصنيفات لها ميزانية</div><div class="value" id="budgetSummaryActual">—</div></div><span class="tag">💳</span></div>
+            <div class="kpi"><div><div class="label">مصروف بدون ميزانية</div><div class="value" id="budgetSummaryUnbudgeted">—</div></div><span class="tag">ℹ️</span></div>
+            <div class="kpi"><div><div class="label">المتبقي من الميزانية</div><div class="value" id="budgetSummaryRemaining">—</div><div class="hint">ليس الرصيد الختامي</div></div><span class="tag">🎯</span></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <span class="pill" id="budgetOverallStatus">حالة الشهر: —</span>
+            <span class="pill warn" id="budgetWarningCount">اقترب/بلغ الحد: 0</span>
+            <span class="pill danger" id="budgetExceededCount">متجاوز: 0</span>
+          </div>
+          <div class="help" id="budgetAllocationWarning" style="display:none;margin-top:10px">مجموع الميزانيات يتجاوز الدخل المخطط.</div>
 
           <div class="hr"></div>
 
@@ -831,11 +851,13 @@
                   <th style="min-width:150px">الميزانية المخططة</th>
                   <th style="min-width:150px">المصروف الفعلي</th>
                   <th style="min-width:150px">المتبقي</th>
+                  <th style="min-width:110px">المستخدم</th>
+                  <th style="min-width:145px">الحالة</th>
                   <th>ملاحظة</th>
                 </tr>
               </thead>
               <tbody id="budgetTableBody">
-                <tr><td colspan="5" class="muted">—</td></tr>
+                <tr><td colspan="7" class="muted">—</td></tr>
               </tbody>
             </table>
           </div>
@@ -1375,6 +1397,7 @@
   <script src="./debt-model.js?v=20260908-phase3-corrective"></script>
   <script src="./shopping-model.js?v=20260908-phase4"></script>
   <script src="./tag-model.js?v=20260908-phase5"></script>
+  <script src="./budget-model.js?v=20260908-phase6"></script>
 
 <script>
 /** =========================
@@ -1395,6 +1418,8 @@
   if(!ShoppingModel) throw new Error("Shopping model failed to load");
   const TagModel = window.PFMTagModel;
   if(!TagModel) throw new Error("Tag model failed to load");
+  const BudgetModel = window.PFMBudgetModel;
+  if(!BudgetModel) throw new Error("Budget model failed to load");
   const SHOPPING_SHORT_LABELS = {
     meat:"لحوم", dairy:"ألبان", produce:"خضروات وفواكه", pantry:"مواد جافة ومعلبات",
     bakery:"مخبوزات", beverages:"مشروبات", frozen:"مجمدات", cleaning:"منظفات",
@@ -1621,32 +1646,39 @@
     drawPie("pieExpense", expenseBreakdown(activeMonth));
     drawBarIncomeExpense("barIncomeExpense", financials.trueIncome, financials.totalExpenses);
 
-    renderOverspendList();
+    renderBudgetAlerts();
   }
 
-  function renderOverspendList(){
-    const plan = getBudgetForMonth(activeMonth);
-    const actualByCat = expenseByCategory(activeMonth);
-    const overs = [];
-    for(const [catId, actual] of Object.entries(actualByCat)){
-      const planned = Number(plan.items?.[catId]?.amount || 0);
-      if(planned>0 && actual>planned){
-        overs.push({catId, planned, actual});
-      }
-    }
-    const box = $("#overspendList");
-    if(overs.length===0){
-      box.innerHTML = `<span class="muted">لا يوجد تجاوزات (أو لم تقم بتحديد ميزانيات بعد).</span>`;
+  function budgetStatusPresentation(status){
+    if(status===BudgetModel.WARNING) return { label:"اقتربت من الحد", cls:"warn" };
+    if(status===BudgetModel.AT_LIMIT) return { label:"تم استهلاك الميزانية", cls:"warn" };
+    if(status===BudgetModel.EXCEEDED) return { label:"تجاوز الميزانية", cls:"danger" };
+    if(status===BudgetModel.OK) return { label:"ضمن الميزانية", cls:"ok" };
+    return { label:"بدون ميزانية", cls:"" };
+  }
+
+  function renderBudgetAlerts(){
+    const analytics = BudgetModel.calculateBudgetAnalytics(state, activeMonth);
+    const box = $("#budgetAlertsList");
+    if(analytics.budgetedCategoryCount===0){
+      box.innerHTML = `<span class="muted">لا توجد ميزانيات محددة لهذا الشهر.${analytics.unbudgetedActualTotal>0 ? ` مصروف بدون ميزانية: ${fmtCompact(analytics.unbudgetedActualTotal)}.` : ""}</span>`;
       return;
     }
-    overs.sort((a,b)=> (b.actual-b.planned)-(a.actual-a.planned));
-    box.innerHTML = overs.map(o=>{
-      const diff = o.actual - o.planned;
-      return `<div class="row" style="justify-content:space-between;padding:10px;border:1px solid rgba(255,255,255,.06);border-radius:14px;background:rgba(7,12,28,.35);margin-bottom:8px">
-        <div><b>${escapeHTML(catName(o.catId))}</b><div class="mini">مخطط: ${fmtCompact(o.planned)} — فعلي: ${fmtCompact(o.actual)}</div></div>
-        <span class="pill danger">+${fmtCompact(diff)}</span>
+    if(analytics.alerts.length===0){
+      box.innerHTML = `<span class="muted">جميع التصنيفات ذات الميزانية ضمن الحدود.${analytics.unbudgetedActualTotal>0 ? ` مصروف بدون ميزانية: ${fmtCompact(analytics.unbudgetedActualTotal)}.` : ""}</span>`;
+      return;
+    }
+    const alertRows = analytics.alerts.slice(0,5).map(alert=>{
+      const view = budgetStatusPresentation(alert.status);
+      return `<div class="row" style="justify-content:space-between;padding:10px;border:1px solid var(--border);border-radius:14px;background:var(--panel);margin-bottom:8px">
+        <div><b>${escapeHTML(catName(alert.categoryId))}</b><div class="mini">${alert.percentUsed.toFixed(0)}% — ${view.label}</div></div>
+        <span class="pill ${view.cls}">${fmtCompact(alert.actualAmount)} / ${fmtCompact(alert.plannedAmount)}</span>
       </div>`;
     }).join("");
+    const unbudgetedNote = analytics.unbudgetedActualTotal>0
+      ? `<div class="help" style="margin-top:8px">مصروف بدون ميزانية: <b>${fmtCompact(analytics.unbudgetedActualTotal)}</b></div>`
+      : "";
+    box.innerHTML = alertRows + unbudgetedNote;
   }
 
   function renderFilterCategories(){
@@ -1962,7 +1994,8 @@
   }
 
   function renderBudgets(){
-    const plan = getBudgetForMonth(activeMonth);
+    const plan = BudgetModel.getMonthBudget(state, activeMonth);
+    const savedAnalytics = BudgetModel.calculateBudgetAnalytics(state, activeMonth);
     renderFinancialSettings();
 
     $("#planIncome1").value = plan.plan?.income1 ?? "";
@@ -1973,34 +2006,29 @@
     $("#planIncomeTotal").textContent = fmtCompact(planIncomeTotal);
 
     const expenseCats = categoriesByType("expense");
-    const actualByCat = expenseByCategory(activeMonth);
+    const actualByCat = savedAnalytics.actualsByCategory;
 
     const tbody = $("#budgetTableBody");
-    if(expenseCats.length===0){
-      tbody.innerHTML = `<tr><td colspan="5" class="muted">لا توجد تصنيفات مصروف. أضف تصنيفاً أولاً.</td></tr>`;
-      return;
-    }
-
     const rows = expenseCats.map(c=>{
       const planned = Number(plan.items?.[c.id]?.amount || 0);
       const note = plan.items?.[c.id]?.note || "";
       const actual = Number(actualByCat[c.id] || 0);
-      const remaining = planned - actual;
-      const remainingPill = planned>0
-        ? (remaining>=0 ? `<span class="pill ok">${fmtCompact(remaining)}</span>` : `<span class="pill danger">${fmtCompact(remaining)}</span>`)
-        : `<span class="pill">—</span>`;
-      return `<tr data-cat="${c.id}">
+      return `<tr data-cat="${c.id}" data-actual="${actual}">
         <td><b>${escapeHTML(c.name)}</b></td>
         <td>
           <input class="budgetInput" type="number" inputmode="numeric" placeholder="0" value="${planned||""}" />
         </td>
         <td>${fmtCompact(actual)}</td>
-        <td>${remainingPill}</td>
+        <td class="budgetRemaining">—</td>
+        <td class="budgetPercent">—</td>
+        <td class="budgetStatus">—</td>
         <td><input class="budgetNote" type="text" placeholder="اختياري (مثال: موعد السداد 10 كل شهر)" value="${escapeAttr(note)}" /></td>
       </tr>`;
     });
 
-    tbody.innerHTML = rows.join("");
+    tbody.innerHTML = rows.length
+      ? rows.join("")
+      : `<tr><td colspan="7" class="muted">لا توجد تصنيفات مصروف. أضف تصنيفاً أولاً.</td></tr>`;
 
     // live compute totals
     function recalc(){
@@ -2008,11 +2036,51 @@
       $("#planIncomeTotal").textContent = fmtCompact(planIncomeTotal);
 
       let plannedTotal = 0;
-      $$(".budgetInput", tbody).forEach(inp => plannedTotal += Number(inp.value||0));
+      let budgetedActualTotal = 0;
+      let warningCount = 0;
+      let atLimitCount = 0;
+      let exceededCount = 0;
+      let budgetedCount = 0;
+      const budgetedIds = new Set();
+      $$("tr[data-cat]", tbody).forEach(tr => {
+        const planned = Number($(".budgetInput", tr).value||0);
+        const actual = Number(tr.dataset.actual||0);
+        const result = BudgetModel.calculateCategoryBudgetStatus(planned, actual);
+        const view = budgetStatusPresentation(result.status);
+        if(result.plannedAmount>0){
+          budgetedCount += 1;
+          plannedTotal += result.plannedAmount;
+          budgetedActualTotal += result.actualAmount;
+          budgetedIds.add(tr.dataset.cat);
+        }
+        if(result.status===BudgetModel.WARNING) warningCount += 1;
+        if(result.status===BudgetModel.AT_LIMIT) atLimitCount += 1;
+        if(result.status===BudgetModel.EXCEEDED) exceededCount += 1;
+        $(".budgetRemaining", tr).innerHTML = result.remainingAmount===null
+          ? `<span class="pill">—</span>`
+          : `<span class="pill ${result.remainingAmount<0 ? "danger" : "ok"}">${fmtCompact(result.remainingAmount)}</span>`;
+        $(".budgetPercent", tr).innerHTML = result.percentUsed===null ? "—" : `${result.percentUsed.toFixed(0)}%<div class="budget-progress"><span class="${view.cls}" style="width:${Math.min(100,result.percentUsed)}%"></span></div>`;
+        $(".budgetStatus", tr).innerHTML = `<span class="pill ${view.cls}">${view.label}</span>`;
+      });
+      const unbudgetedActualTotal = Object.entries(actualByCat).reduce(
+        (sum,[categoryId,actual]) => sum + (budgetedIds.has(categoryId) ? 0 : Number(actual||0)), 0
+      );
       $("#planBudgetTotal").textContent = fmtCompact(plannedTotal);
       $("#planUnallocated").textContent = fmtCompact(planIncomeTotal - plannedTotal);
       const un = planIncomeTotal - plannedTotal;
-      $("#planUnallocated").style.color = un>=0 ? "#bfffe0" : "#ffd0d0";
+      $("#planUnallocated").style.color = un>=0 ? "var(--ok)" : "var(--danger)";
+      $("#budgetSummaryPlanned").textContent = fmtCompact(plannedTotal);
+      $("#budgetSummaryActual").textContent = fmtCompact(budgetedActualTotal);
+      $("#budgetSummaryUnbudgeted").textContent = fmtCompact(unbudgetedActualTotal);
+      $("#budgetSummaryRemaining").textContent = fmtCompact(plannedTotal-budgetedActualTotal);
+      $("#budgetSummaryRemaining").className = `value money ${plannedTotal-budgetedActualTotal<0 ? "neg" : "pos"}`;
+      const overallStatus = exceededCount>0 ? BudgetModel.EXCEEDED : atLimitCount>0 ? BudgetModel.AT_LIMIT : warningCount>0 ? BudgetModel.WARNING : budgetedCount>0 ? BudgetModel.OK : BudgetModel.NO_BUDGET;
+      const overallView = budgetStatusPresentation(overallStatus);
+      $("#budgetOverallStatus").className = `pill ${overallView.cls}`;
+      $("#budgetOverallStatus").textContent = `حالة الشهر: ${overallView.label}`;
+      $("#budgetWarningCount").textContent = `اقترب/بلغ الحد: ${warningCount+atLimitCount}`;
+      $("#budgetExceededCount").textContent = `متجاوز: ${exceededCount}`;
+      $("#budgetAllocationWarning").style.display = planIncomeTotal>0 && plannedTotal>planIncomeTotal ? "block" : "none";
     }
     recalc();
 
@@ -2125,9 +2193,8 @@
     }
 
     // plan vs actual table
-    const plan = getBudgetForMonth(activeMonth);
+    const budgetAnalytics = BudgetModel.calculateBudgetAnalytics(state, activeMonth);
     const expenseCats = categoriesByType("expense");
-    const actualByCat = expenseByCategory(activeMonth);
     const pv = $("#planVsActualBody");
 
     if(expenseCats.length===0){
@@ -2136,18 +2203,15 @@
     }
 
     pv.innerHTML = expenseCats.map(c=>{
-      const planned = Number(plan.items?.[c.id]?.amount || 0);
-      const actual = Number(actualByCat[c.id] || 0);
-      const diff = planned - actual; // positive = under budget
-      let status = `<span class="pill">بدون ميزانية</span>`;
-      if(planned>0){
-        status = diff>=0 ? `<span class="pill ok">ضمن الميزانية</span>` : `<span class="pill danger">تجاوز</span>`;
-      }
+      const planned = BudgetModel.getCategoryBudget(state, activeMonth, c.id)?.amount;
+      const result = BudgetModel.calculateCategoryBudgetStatus(planned, budgetAnalytics.actualsByCategory[c.id]);
+      const view = budgetStatusPresentation(result.status);
+      const status = `<span class="pill ${view.cls}">${view.label}${result.percentUsed===null ? "" : ` — ${result.percentUsed.toFixed(0)}%`}</span>`;
       return `<tr>
         <td><b>${escapeHTML(c.name)}</b></td>
-        <td>${planned>0 ? fmtCompact(planned) : "—"}</td>
-        <td>${fmtCompact(actual)}</td>
-        <td>${planned>0 ? fmtCompact(diff) : "—"}</td>
+        <td>${result.plannedAmount>0 ? fmtCompact(result.plannedAmount) : "—"}</td>
+        <td>${fmtCompact(result.actualAmount)}</td>
+        <td>${result.remainingAmount===null ? "—" : fmtCompact(result.remainingAmount)}</td>
         <td>${status}</td>
       </tr>`;
     }).join("");
@@ -2166,7 +2230,7 @@
 
   // --- Budget data access
   function getBudgetForMonth(month){
-    return state.budgets[month] || { plan:{income1:0,income2:0,note:""}, items:{} };
+    return BudgetModel.getMonthBudget(state, month);
   }
 
   // --- Breakdown helpers
@@ -3590,7 +3654,7 @@ window.addEventListener("pfm:apply", (ev)=>{
   }
 </script>
 
-<script src="./report-enhancements.js?v=20260907-phase3"></script>
+<script src="./report-enhancements.js?v=20260908-phase6"></script>
 
 </body>
 </html>

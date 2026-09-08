@@ -6,6 +6,8 @@
   if (!FinancialModel) throw new Error("Financial model failed to load for reports");
   const ExpenseModel = window.PFMExpenseModel;
   if (!ExpenseModel) throw new Error("Expense model failed to load for reports");
+  const BudgetModel = window.PFMBudgetModel;
+  if (!BudgetModel) throw new Error("Budget model failed to load for reports");
   const fmt = new Intl.NumberFormat("ar-IQ", {
     style: "currency",
     currency: "IQD",
@@ -103,10 +105,6 @@
         map[id] = (map[id] || 0) + (Number(tx.amount) || 0);
       });
     return map;
-  }
-
-  function budgetForMonth(state, month) {
-    return state.budgets?.[month] || { plan: {}, items: {} };
   }
 
   function ensureReportsPanel() {
@@ -261,17 +259,11 @@
       .filter((row) => row.value > 0)
       .sort((a, b) => b.value - a.value)[0];
 
-    const budget = budgetForMonth(state, activeMonth);
-    const planned = state.categories
-      .filter((category) => category.type === "expense")
-      .map((category) => {
-        const plannedAmount = Number(budget.items?.[category.id]?.amount || 0);
-        const actual = Number(byCategory[category.id] || 0);
-        return { plannedAmount, actual };
-      })
-      .filter((row) => row.plannedAmount > 0);
-    const overBudgetCount = planned.filter((row) => row.actual > row.plannedAmount).length;
-    const commitment = planned.length > 0 ? ((planned.length - overBudgetCount) / planned.length) * 100 : null;
+    const budgetAnalytics = BudgetModel.calculateBudgetAnalytics(state, activeMonth);
+    const overBudgetCount = budgetAnalytics.exceededCategoryCount;
+    const commitment = budgetAnalytics.budgetedCategoryCount > 0
+      ? ((budgetAnalytics.budgetedCategoryCount - overBudgetCount) / budgetAnalytics.budgetedCategoryCount) * 100
+      : null;
 
     $("#reportAvgExpense").textContent = avgExpense > 0 ? money(avgExpense) : "-";
     $("#reportBestNet").textContent = bestNet ? money(bestNet.net) : "-";
@@ -279,7 +271,7 @@
     $("#reportExpenseChange").textContent = signedExpenseChange(current, previous);
     $("#reportBudgetCommitment").textContent = commitment === null ? "-" : `${commitment.toFixed(0)}%`;
 
-    renderInsights({ current, previous, avgExpense, topCategory, plannedCount: planned.length, overBudgetCount });
+    renderInsights({ current, previous, avgExpense, topCategory, plannedCount: budgetAnalytics.budgetedCategoryCount, overBudgetCount });
 
     const monthlySummary = $("#monthlySummaryBody");
     if (monthlySummary) {
