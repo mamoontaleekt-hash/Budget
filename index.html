@@ -248,6 +248,16 @@
       margin-top:12px;padding:12px;border:1px solid rgba(16,185,129,.20);
       border-radius:14px;background:rgba(16,185,129,.05);
     }
+    .shopping-subcategory-field{
+      margin-top:12px;padding:12px;border:1px solid rgba(18,183,106,.22);
+      border-radius:14px;background:rgba(18,183,106,.06);
+    }
+    .shopping-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+    .shopping-option{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--border);border-radius:12px;background:var(--panel);cursor:pointer}
+    .shopping-option:has(input:checked){border-color:rgba(18,183,106,.55);background:rgba(18,183,106,.12)}
+    .shopping-option input{width:auto;margin:0;accent-color:var(--accent)}
+    .shopping-tags{display:block;margin-top:6px;color:var(--muted);font-size:12px;line-height:1.6}
+    @media(max-width:560px){.shopping-options{grid-template-columns:1fr}}
     .pill{
       padding:6px 10px;
       border-radius:999px;
@@ -641,6 +651,10 @@
                 <option value="debt_payment">سداد دين</option>
               </select>
             </div>
+            <div>
+              <label class="mini" for="filterShoppingSubcategory" style="display:block;margin-bottom:4px">محتوى التسوق</label>
+              <select id="filterShoppingSubcategory"><option value="">الكل</option></select>
+            </div>
             <input id="filterFrom" type="date" placeholder="من" />
             <input id="filterTo" type="date" placeholder="إلى" />
             <input id="filterMin" type="number" inputmode="numeric" placeholder="أقل مبلغ" />
@@ -894,6 +908,20 @@
 
           <div class="hr"></div>
 
+          <div id="shoppingReportSummary">
+            <div style="font-weight:800;margin-bottom:4px">ملخص مشتريات السوبرماركت</div>
+            <div class="mini">التصنيفات أدناه هي عدد الفواتير التي تضمنت الصنف، وليست توزيعاً مالياً للمبلغ.</div>
+            <div class="kpis" style="margin-top:10px">
+              <div class="kpi"><div><div class="label">إجمالي مشتريات السوبرماركت</div><div class="value" id="shoppingTotalAmount">—</div></div><span class="tag">🛒</span></div>
+              <div class="kpi"><div><div class="label">عدد فواتير التسوق</div><div class="value" id="shoppingReceiptCount">—</div></div><span class="tag">🧾</span></div>
+              <div class="kpi"><div><div class="label">عدد الفواتير المصنفة</div><div class="value" id="shoppingTaggedCount">—</div></div><span class="tag">✅</span></div>
+              <div class="kpi"><div><div class="label">عدد الفواتير غير المصنفة</div><div class="value" id="shoppingUntaggedCount">—</div></div><span class="tag">➖</span></div>
+            </div>
+            <div id="shoppingOccurrenceCounts" class="help" style="margin-top:10px"></div>
+          </div>
+
+          <div class="hr"></div>
+
           <div class="row" style="justify-content:space-between;align-items:flex-start">
             <div>
               <div style="font-weight:800;margin-bottom:4px">قائمة مقارنة: فعلي مقابل مخطط</div>
@@ -1026,6 +1054,11 @@
               <option value="debt_payment">سداد دين / قسط</option>
             </select>
             <div class="mini" id="txExpenseClassHelp" style="margin-top:7px">التلقائي يجعل تصنيف دين/سداد سدادَ دين، وباقي المصروفات معيشية. سداد الدين أو القسط يؤثر على الرصيد النقدي، لكنه لا يُحتسب ضمن تكلفة المعيشة.</div>
+          </div>
+          <div class="shopping-subcategory-field" id="txShoppingSubcategoryField" hidden>
+            <div style="font-weight:800">محتويات فاتورة التسوق</div>
+            <div class="mini" id="txShoppingSubcategoryHelp">يمكنك اختيار أكثر من نوع. لا يتم تقسيم أو تكرار مبلغ الفاتورة.</div>
+            <div class="shopping-options" id="txShoppingSubcategoryOptions" role="group" aria-describedby="txShoppingSubcategoryHelp"></div>
           </div>
           <div id="txDebtLinkInfo" class="linked-note" hidden></div>
 
@@ -1290,6 +1323,7 @@
   <script src="./financial-model.js?v=20260907-phase3"></script>
   <script src="./expense-model.js?v=20260907-phase3"></script>
   <script src="./debt-model.js?v=20260908-phase3-corrective"></script>
+  <script src="./shopping-model.js?v=20260908-phase4"></script>
 
 <script>
 /** =========================
@@ -1306,6 +1340,14 @@
   if(!ExpenseModel) throw new Error("Expense model failed to load");
   const DebtModel = window.PFMDebtModel;
   if(!DebtModel) throw new Error("Debt model failed to load");
+  const ShoppingModel = window.PFMShoppingModel;
+  if(!ShoppingModel) throw new Error("Shopping model failed to load");
+  const SHOPPING_SHORT_LABELS = {
+    meat:"لحوم", dairy:"ألبان", produce:"خضروات وفواكه", pantry:"مواد جافة ومعلبات",
+    bakery:"مخبوزات", beverages:"مشروبات", frozen:"مجمدات", cleaning:"منظفات",
+    personal_care:"عناية شخصية", baby:"مستلزمات أطفال", household:"مستلزمات منزلية",
+    snacks:"حلويات وسناكات", other:"أخرى", mixed:"فاتورة متنوعة"
+  };
   const $ = (sel, root=document) => root.querySelector(sel);
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
@@ -1449,6 +1491,15 @@
     if(value === "debt_payment") return "سداد دين";
     return "معيشي";
   }
+  function shoppingTagsHTML(transaction){
+    if(!ShoppingModel.isShoppingTransaction(transaction)) return "";
+    const ids = ShoppingModel.getShoppingSubcategories(state, transaction.id);
+    if(ids.length===0) return "";
+    const shown = ids.slice(0,2).map(id => SHOPPING_SHORT_LABELS[id] || id);
+    if(ids.length>2) shown.push(`+${ids.length-2}`);
+    const full = ids.map(id => ShoppingModel.getSubcategory(id)?.label || id).join(" · ");
+    return `<span class="shopping-tags" title="${escapeAttr(full)}">${shown.map(escapeHTML).join(" · ")}</span>`;
+  }
 
   // --- Render functions
   function render(){
@@ -1457,6 +1508,7 @@
 
     // Update filters category dropdown
     renderFilterCategories();
+    renderShoppingFilter();
 
     // Render views
     if(activeTab==="dash") renderDashboard();
@@ -1542,6 +1594,13 @@
       .map(c => `<option value="${c.id}">${escapeHTML(c.name)} (${c.type==="income"?"إيراد":"مصروف"})</option>`).join("");
     sel.value = prev;
   }
+  function renderShoppingFilter(){
+    const sel = $("#filterShoppingSubcategory");
+    const prev = sel.value;
+    sel.innerHTML = `<option value="">الكل</option>` + ShoppingModel.SUBCATEGORIES
+      .map(item => `<option value="${item.id}">${escapeHTML(item.label)}</option>`).join("");
+    sel.value = ShoppingModel.getSubcategory(prev) ? prev : "";
+  }
 
   function renderTransactions(){
     const tbody = $("#txTableBody");
@@ -1549,6 +1608,7 @@
     const typeFilter = $("#filterType").value;
     const catFilter = $("#filterCategory").value;
     const expenseClassFilter = $("#filterExpenseClass").value;
+    const shoppingSubcategoryFilter = $("#filterShoppingSubcategory").value;
     const q = ($("#filterSearch").value || "").trim().toLowerCase();
     const from = $("#filterFrom").value;
     const to = $("#filterTo").value;
@@ -1563,6 +1623,10 @@
     if(typeFilter) txs = txs.filter(t => t.type===typeFilter);
     if(catFilter) txs = txs.filter(t => t.categoryId===catFilter);
     if(expenseClassFilter) txs = txs.filter(t => ExpenseModel.resolveExpenseClass(state, t)===expenseClassFilter);
+    if(shoppingSubcategoryFilter) txs = txs.filter(t =>
+      ShoppingModel.isShoppingTransaction(t)
+      && ShoppingModel.getShoppingSubcategories(state, t.id).includes(shoppingSubcategoryFilter)
+    );
     if(q) txs = txs.filter(t => (t.note||"").toLowerCase().includes(q));
     if(from) txs = txs.filter(t => (t.date||"")>=from);
     if(to) txs = txs.filter(t => (t.date||"")<=to);
@@ -1592,7 +1656,7 @@
       return `<tr>
         <td>${escapeHTML(t.date||"")}</td>
         <td>${labelType}</td>
-        <td><span class="tag">🏷️ ${escapeHTML(catName(t.categoryId))}</span></td>
+        <td><span class="tag">🏷️ ${escapeHTML(catName(t.categoryId))}</span>${shoppingTagsHTML(t)}</td>
         <td class="money ${signClass}">${fmtCompact(t.amount)}</td>
         <td>${escapeHTML(t.note||"")}</td>
         <td>
@@ -1945,6 +2009,18 @@
   }
 
   function renderReports(){
+    const shopping = ShoppingModel.calculateShoppingAnalytics(state, activeMonth);
+    $("#shoppingTotalAmount").textContent = fmtCompact(shopping.totalShoppingAmount);
+    $("#shoppingReceiptCount").textContent = String(shopping.shoppingTransactionCount);
+    $("#shoppingTaggedCount").textContent = String(shopping.taggedShoppingTransactionCount);
+    $("#shoppingUntaggedCount").textContent = String(shopping.untaggedShoppingTransactionCount);
+    const occurrences = ShoppingModel.SUBCATEGORIES
+      .filter(item => shopping.countBySubcategory[item.id] > 0)
+      .map(item => `<div><b>${escapeHTML(item.label)}</b> — ${shopping.countBySubcategory[item.id]} فواتير</div>`);
+    $("#shoppingOccurrenceCounts").innerHTML = occurrences.length
+      ? `<div style="font-weight:800;margin-bottom:5px">عدد الفواتير التي تضمنت الصنف</div>${occurrences.join("")}`
+      : `<span class="muted">لا توجد فواتير مصنفة حسب محتوى التسوق في هذا الشهر.</span>`;
+
     // trend 12 months
     const months = lastNMonths(activeMonth, 12);
     const series = months.map(m=>{
@@ -2250,7 +2326,7 @@
   $("#btnCategories3").addEventListener("click", () => openCategoriesModal());
 
   // Filters events
-  ["filterType","filterCategory","filterExpenseClass","filterSearch","filterFrom","filterTo","filterMin","filterMax"].forEach(id=>{
+  ["filterType","filterCategory","filterExpenseClass","filterShoppingSubcategory","filterSearch","filterFrom","filterTo","filterMin","filterMax"].forEach(id=>{
     $("#"+id).addEventListener("input", () => renderTransactions());
     $("#"+id).addEventListener("change", () => renderTransactions());
   });
@@ -2258,6 +2334,7 @@
     $("#filterType").value = "";
     $("#filterCategory").value = "";
     $("#filterExpenseClass").value = "";
+    $("#filterShoppingSubcategory").value = "";
     $("#filterSearch").value = "";
     $("#filterFrom").value = "";
     $("#filterTo").value = "";
@@ -2474,7 +2551,9 @@
     $("#txDebtLinkInfo").innerHTML = linkedObligation
       ? `🔗 هذه العملية مرتبطة بـ <b>${escapeHTML(linkedObligation.name)}</b>. تصنيفها سداد دين تلقائياً. فك الارتباط من صفحة الديون لتغيير تصنيف المصروف.`
       : "";
+    renderShoppingSubcategoryOptions(tx ? ShoppingModel.getShoppingSubcategories(state, tx.id) : []);
     updateExpenseClassVisibility();
+    updateShoppingSubcategoryVisibility();
 
     openModal("#modalTx");
   }
@@ -2491,10 +2570,38 @@
   function updateExpenseClassVisibility(){
     $("#txExpenseClassField").hidden = $("#txType").value !== "expense";
   }
+  function renderShoppingSubcategoryOptions(selectedIds){
+    const selected = new Set(ShoppingModel.normalizeShoppingSubcategories(selectedIds));
+    const box = $("#txShoppingSubcategoryOptions");
+    box.innerHTML = ShoppingModel.SUBCATEGORIES.map(item => `
+      <label class="shopping-option">
+        <input type="checkbox" value="${item.id}" data-shopping-subcategory${selected.has(item.id) ? " checked" : ""} />
+        <span>${escapeHTML(item.label)}</span>
+      </label>`).join("");
+    $$('[data-shopping-subcategory]', box).forEach(input => input.addEventListener("change", () => {
+      if(!input.checked) return;
+      if(input.value === ShoppingModel.MIXED_ID){
+        $$('[data-shopping-subcategory]', box).forEach(other => { if(other !== input) other.checked = false; });
+      }else{
+        const mixed = $(`[data-shopping-subcategory][value="${ShoppingModel.MIXED_ID}"]`, box);
+        if(mixed) mixed.checked = false;
+      }
+    }));
+  }
+  function selectedShoppingSubcategories(){
+    return $$('[data-shopping-subcategory]:checked', $("#txShoppingSubcategoryOptions")).map(input => input.value);
+  }
+  function updateShoppingSubcategoryVisibility(){
+    $("#txShoppingSubcategoryField").hidden = !(
+      $("#txType").value === "expense" && $("#txCategory").value === ShoppingModel.SHOPPING_CATEGORY_ID
+    );
+  }
   $("#txType").addEventListener("change", () => {
     fillTxCategories($("#txType").value, null);
     updateExpenseClassVisibility();
+    updateShoppingSubcategoryVisibility();
   });
+  $("#txCategory").addEventListener("change", updateShoppingSubcategoryVisibility);
 
   $("#btnSaveTx").addEventListener("click", () => {
     const type = $("#txType").value;
@@ -2525,6 +2632,9 @@
 
     if(type === "expense" && savedTransactionId && !DebtModel.isValidDebtPaymentLink(state, savedTransactionId)){
       state = ExpenseModel.withExplicitExpenseClass(state, savedTransactionId, $("#txExpenseClass").value);
+    }
+    if(savedTransactionId && !$("#txShoppingSubcategoryField").hidden){
+      state = ShoppingModel.withShoppingSubcategories(state, savedTransactionId, selectedShoppingSubcategories());
     }
 
     save();
