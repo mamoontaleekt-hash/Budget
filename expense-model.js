@@ -3,10 +3,14 @@
     typeof module === "object" && module.exports
       ? require("./financial-model.js")
       : root.PFMFinancialModel;
-  const api = factory(financialModel);
+  const getDebtModel = () =>
+    typeof module === "object" && module.exports
+      ? require("./debt-model.js")
+      : root.PFMDebtModel;
+  const api = factory(financialModel, getDebtModel);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.PFMExpenseModel = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (FinancialModel) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (FinancialModel, getDebtModel) {
   "use strict";
 
   if (!FinancialModel) throw new Error("Financial model is required by expense model");
@@ -39,8 +43,14 @@
     return !!transaction && typeof transaction === "object" && transaction.type === "expense" && !transaction.deletedAt;
   }
 
+  function getValidLinkedObligationId(state, transaction) {
+    const debtModel = getDebtModel();
+    return debtModel?.getValidLinkedObligationId(state, transaction) || null;
+  }
+
   function resolveExpenseClass(state, transaction) {
     if (!isActiveExpense(transaction)) return null;
+    if (getValidLinkedObligationId(state, transaction)) return DEBT_PAYMENT;
     const explicit = getExplicitExpenseClass(state, transaction.id);
     if (explicit) return explicit;
     return transaction.categoryId === "ex_debt" ? DEBT_PAYMENT : REGULAR;
@@ -127,6 +137,7 @@
     EXCEPTIONAL,
     DEBT_PAYMENT,
     getExplicitExpenseClass,
+    getValidLinkedObligationId,
     resolveExpenseClass,
     withExplicitExpenseClass,
     calculateExpenseAnalytics,

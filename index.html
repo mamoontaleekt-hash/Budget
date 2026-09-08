@@ -381,6 +381,22 @@
       background: rgba(255,255,255,.92);
       color: rgba(102,112,133,.95);
     }
+    .debt-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .debt-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .debt-card{border:1px solid var(--border);border-radius:16px;padding:14px;background:rgba(255,255,255,.74)}
+    .debt-card h3{margin:0;font-size:15px}
+    .debt-progress{height:9px;background:rgba(16,24,40,.08);border-radius:999px;overflow:hidden;margin:10px 0}
+    .debt-progress span{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:inherit}
+    .debt-warning{padding:10px 12px;border:1px solid rgba(245,159,0,.28);background:rgba(245,159,0,.08);border-radius:14px}
+    .debt-empty{text-align:center;padding:30px 14px;border:1px dashed rgba(46,108,255,.3);border-radius:16px}
+    .debt-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .debt-form-grid label{display:block;margin-bottom:5px}
+    .debt-form-grid input,.debt-form-grid select{width:100%}
+    .linked-note{margin-top:10px;padding:10px;border-radius:12px;background:rgba(46,108,255,.08);border:1px solid rgba(46,108,255,.2)}
+    @media(max-width:760px){
+      .debt-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .debt-list,.debt-form-grid{grid-template-columns:1fr}
+    }
   </style>
   <link rel="stylesheet" href="./mobile-enhancements.css">
 </head>
@@ -414,6 +430,7 @@
       <div class="tab active" data-tab="dash">📊 لوحة التحكم</div>
       <div class="tab" data-tab="tx">🧾 العمليات</div>
       <div class="tab" data-tab="budgets">🧩 تقسيم الميزانية</div>
+      <div class="tab" data-tab="debts">📉 الديون والأقساط</div>
       <div class="tab" data-tab="reports">📈 التقارير</div>
       <div class="tab" data-tab="settings">⚙️ الإعدادات</div>
     </div>
@@ -522,6 +539,21 @@
               </div>
               <span class="tag">📉</span>
             </div>
+          </div>
+
+          <div class="hr"></div>
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="font-weight:800;margin-bottom:4px">ملخص الديون والأقساط</div>
+              <div class="mini">محسوب من عمليات السداد المرتبطة، من دون تغيير السجل المالي.</div>
+            </div>
+            <button class="btn small" id="btnGoDebts">📉 فتح الإدارة</button>
+          </div>
+          <div class="debt-summary-grid" style="margin-top:10px">
+            <div class="kpi"><div><div class="label">إجمالي المتبقي</div><div class="value" id="dashDebtRemaining">—</div></div><span class="tag">📉</span></div>
+            <div class="kpi"><div><div class="label">التزامات نشطة</div><div class="value" id="dashDebtActive">—</div></div><span class="tag">📋</span></div>
+            <div class="kpi"><div><div class="label">أقرب دفعة</div><div class="value" id="dashDebtNext">—</div><div class="hint" id="dashDebtNextHint">—</div></div><span class="tag">📅</span></div>
+            <div class="kpi"><div><div class="label">متأخر حتى اليوم</div><div class="value" id="dashDebtOverdue">—</div></div><span class="tag">⚠️</span></div>
           </div>
 
           <div class="hr"></div>
@@ -786,6 +818,38 @@
       </div>
     </section>
 
+    <!-- DEBTS -->
+    <section id="view-debts" class="grid" style="display:none">
+      <div class="card">
+        <div class="hd">
+          <div>
+            <h2>الديون والأقساط</h2>
+            <p>تابع أصل الالتزام والمدفوع والمتبقي. كل دفعة فعلية تبقى عملية مصروف واحدة في السجل.</p>
+          </div>
+          <button class="btn primary" id="btnAddDebt">➕ إضافة التزام</button>
+        </div>
+        <div class="bd">
+          <div class="debt-summary-grid">
+            <div class="kpi"><div><div class="label">القيمة الأصلية</div><div class="value" id="debtTotalOriginal">—</div></div><span class="tag">🧾</span></div>
+            <div class="kpi"><div><div class="label">إجمالي المدفوع</div><div class="value" id="debtTotalPaid">—</div></div><span class="tag">✅</span></div>
+            <div class="kpi"><div><div class="label">إجمالي المتبقي</div><div class="value" id="debtTotalRemaining">—</div></div><span class="tag">📉</span></div>
+            <div class="kpi"><div><div class="label">المتأخر حتى اليوم</div><div class="value" id="debtTotalOverdue">—</div></div><span class="tag">⚠️</span></div>
+          </div>
+          <div id="debtWarnings" style="margin-top:12px"></div>
+          <div class="hr"></div>
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div><div style="font-weight:800">الدفعات المخططة المعروفة</div><div class="mini">تبدأ من الشهر المحدد أعلى الصفحة، ولا تتضمن الالتزامات المتوقفة.</div></div>
+            <select id="debtForecastHorizon" aria-label="مدة التوقع"><option value="3">3 أشهر</option><option value="6">6 أشهر</option><option value="12">12 شهراً</option></select>
+          </div>
+          <div style="overflow:auto;margin-top:10px">
+            <table><thead><tr><th>الشهر</th><th>المبلغ المخطط</th><th>التفاصيل</th></tr></thead><tbody id="debtForecastBody"></tbody></table>
+          </div>
+          <div class="hr"></div>
+          <div id="debtList" class="debt-list"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- REPORTS -->
     <section id="view-reports" class="grid" style="display:none">
       <div class="card">
@@ -963,6 +1027,7 @@
             </select>
             <div class="mini" id="txExpenseClassHelp" style="margin-top:7px">التلقائي يجعل تصنيف دين/سداد سدادَ دين، وباقي المصروفات معيشية. سداد الدين أو القسط يؤثر على الرصيد النقدي، لكنه لا يُحتسب ضمن تكلفة المعيشة.</div>
           </div>
+          <div id="txDebtLinkInfo" class="linked-note" hidden></div>
 
           <div class="help" style="margin-top:12px">
             <div><b>اقتراح:</b> أنشئ تصنيفات ثابتة: (إيجار) و(دين) و(كهرباء) و(ماء) و(مشتريات) ثم قسّم المشتريات لاحقاً إذا احتجت.</div>
@@ -973,6 +1038,65 @@
           <button class="btn" data-close="#modalTx">إلغاء</button>
           <span class="mini muted" id="txEditingHint" style="margin-right:auto;display:none">وضع التعديل</span>
         </div>
+      </div>
+    </div>
+
+    <div class="modal" id="modalDebt">
+      <div class="dialog">
+        <div class="hd"><div><h3 id="debtModalTitle">إضافة التزام</h3><div class="mini">سجل معلومات الالتزام كما هي، من دون تعديل أي عملية مالية سابقة.</div></div><button class="btn icon" data-close="#modalDebt">✖</button></div>
+        <div class="bd">
+          <div class="debt-form-grid">
+            <div><label class="mini">الاسم</label><input id="debtName" type="text" placeholder="مثال: أقساط السيارة" /></div>
+            <div><label class="mini">النوع</label><select id="debtType"><option value="house">منزل</option><option value="car">سيارة</option><option value="appliance">أجهزة</option><option value="personal">شخصي</option><option value="installment">أقساط</option><option value="other">أخرى</option></select></div>
+            <div><label class="mini">القيمة الأصلية</label><input id="debtTotalAmount" type="number" inputmode="numeric" /></div>
+            <div><label class="mini">مدفوع قبل بدء المتابعة</label><input id="debtPaidBefore" type="number" inputmode="numeric" value="0" /></div>
+            <div><label class="mini">تاريخ البداية</label><input id="debtStartDate" type="date" /></div>
+            <div><label class="mini">طريقة الدفعات</label><select id="debtScheduleMode"><option value="fixed">جدول ثابت</option><option value="irregular">دفعات غير منتظمة</option></select></div>
+          </div>
+          <div id="debtFixedFields" class="debt-form-grid" style="margin-top:10px">
+            <div><label class="mini">قيمة الدفعة</label><input id="debtInstallmentAmount" type="number" inputmode="numeric" /></div>
+            <div><label class="mini">التكرار</label><select id="debtFrequency"><option value="monthly">شهري</option><option value="weekly">أسبوعي</option></select></div>
+            <div><label class="mini">أول استحقاق</label><input id="debtFirstDueDate" type="date" /></div>
+          </div>
+          <div id="debtIrregularFields" class="debt-form-grid" style="margin-top:10px;display:none">
+            <div><label class="mini">موعد الدفعة القادمة (اختياري)</label><input id="debtManualDueDate" type="date" /></div>
+            <div><label class="mini">مبلغ الدفعة القادمة (اختياري)</label><input id="debtManualDueAmount" type="number" inputmode="numeric" /></div>
+          </div>
+          <div class="debt-form-grid" style="margin-top:10px">
+            <div><label class="mini">الجهة (اختياري)</label><input id="debtCreditor" type="text" /></div>
+            <div><label class="mini">ملاحظة (اختياري)</label><input id="debtNote" type="text" /></div>
+          </div>
+        </div>
+        <div class="ft"><button class="btn primary" id="btnSaveDebt">💾 حفظ</button><button class="btn" data-close="#modalDebt">إلغاء</button></div>
+      </div>
+    </div>
+
+    <div class="modal" id="modalDebtDetails">
+      <div class="dialog">
+        <div class="hd"><div><h3 id="debtDetailsTitle">تفاصيل الالتزام</h3><div class="mini" id="debtDetailsSubtitle">—</div></div><button class="btn icon" data-close="#modalDebtDetails">✖</button></div>
+        <div class="bd" id="debtDetailsBody"></div>
+        <div class="ft" id="debtDetailsActions"></div>
+      </div>
+    </div>
+
+    <div class="modal" id="modalDebtPayment">
+      <div class="dialog">
+        <div class="hd"><div><h3>تسجيل دفعة</h3><div class="mini" id="debtPaymentFor">—</div></div><button class="btn icon" data-close="#modalDebtPayment">✖</button></div>
+        <div class="bd">
+          <div class="debt-form-grid"><div><label class="mini">التاريخ</label><input id="debtPaymentDate" type="date" /></div><div><label class="mini">المبلغ</label><input id="debtPaymentAmount" type="number" inputmode="numeric" /></div></div>
+          <div id="debtPaymentCategoryWrap" style="margin-top:10px;display:none"><label class="mini">فئة المصروف الموجودة</label><select id="debtPaymentCategory" style="width:100%" required></select></div>
+          <div style="margin-top:10px"><label class="mini">ملاحظة</label><input id="debtPaymentNote" type="text" style="width:100%" /></div>
+          <div class="help" id="debtPaymentCategoryHelp" style="margin-top:12px">سيُنشئ هذا الإجراء عملية مصروف واحدة بتصنيف دين/سداد ثم يربطها بهذا الالتزام.</div>
+        </div>
+        <div class="ft"><button class="btn primary" id="btnSaveDebtPayment">💾 تسجيل الدفعة</button><button class="btn" data-close="#modalDebtPayment">إلغاء</button></div>
+      </div>
+    </div>
+
+    <div class="modal" id="modalDebtLink">
+      <div class="dialog">
+        <div class="hd"><div><h3>ربط عملية موجودة</h3><div class="mini" id="debtLinkFor">اختر عملية مصروف غير مرتبطة.</div></div><button class="btn icon" data-close="#modalDebtLink">✖</button></div>
+        <div class="bd" id="debtLinkList"></div>
+        <div class="ft"><button class="btn" data-close="#modalDebtLink">إغلاق</button></div>
       </div>
     </div>
 
@@ -1163,8 +1287,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-  <script src="./financial-model.js?v=20260907-phase2"></script>
-  <script src="./expense-model.js?v=20260907-phase2"></script>
+  <script src="./financial-model.js?v=20260907-phase3"></script>
+  <script src="./expense-model.js?v=20260907-phase3"></script>
+  <script src="./debt-model.js?v=20260908-phase3-corrective"></script>
 
 <script>
 /** =========================
@@ -1179,6 +1304,8 @@
   if(!FinancialModel) throw new Error("Financial model failed to load");
   const ExpenseModel = window.PFMExpenseModel;
   if(!ExpenseModel) throw new Error("Expense model failed to load");
+  const DebtModel = window.PFMDebtModel;
+  if(!DebtModel) throw new Error("Debt model failed to load");
   const $ = (sel, root=document) => root.querySelector(sel);
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
@@ -1262,6 +1389,8 @@
   let activeTab = "dash";
   let activeMonth = thisMonth();
   let editingTxId = null;
+  let editingDebtId = null;
+  let activeDebtId = null;
 
   // --- DOM refs
   const monthPicker = $("#monthPicker");
@@ -1272,7 +1401,7 @@
   function setTab(tab){
     activeTab = tab;
     $$("#tabs .tab").forEach(t => t.classList.toggle("active", t.dataset.tab===tab));
-    $$("#view-dash, #view-tx, #view-budgets, #view-reports, #view-settings").forEach(v => v.style.display="none");
+    $$("#view-dash, #view-tx, #view-budgets, #view-debts, #view-reports, #view-settings").forEach(v => v.style.display="none");
     $(`#view-${tab}`).style.display = "block";
     render();
   }
@@ -1333,6 +1462,7 @@
     if(activeTab==="dash") renderDashboard();
     if(activeTab==="tx") renderTransactions();
     if(activeTab==="budgets") renderBudgets();
+    if(activeTab==="debts") renderDebts();
     if(activeTab==="reports") renderReports();
     if(activeTab==="settings") renderSettings();
   }
@@ -1340,6 +1470,7 @@
   function renderDashboard(){
     const financials = totalsForMonth(activeMonth);
     const expenseAnalytics = expenseAnalyticsForMonth(activeMonth);
+    const debtSummary = DebtModel.calculateSummary(state, todayISO());
     $("#kpiAvailable").textContent = fmtCompact(financials.availableCash);
     $("#kpiClosing").textContent = fmtCompact(financials.closingBalance);
     $("#kpiExpense").textContent = fmtCompact(financials.totalExpenses);
@@ -1353,6 +1484,11 @@
     $("#kpiCostOfLivingHint").textContent = expenseAnalytics.costOfLivingRatio === null
       ? "المصاريف المنتظمة فقط — النسبة غير متاحة دون دخل"
       : `المصاريف المنتظمة فقط — ${expenseAnalytics.costOfLivingRatio.toFixed(1)}% من دخل الشهر الحقيقي`;
+    $("#dashDebtRemaining").textContent = fmtCompact(debtSummary.totalRemaining);
+    $("#dashDebtActive").textContent = String(debtSummary.activeCount);
+    $("#dashDebtNext").textContent = debtSummary.nearestDue ? fmtCompact(debtSummary.nearestDue.amount) : "—";
+    $("#dashDebtNextHint").textContent = debtSummary.nearestDue ? `${debtSummary.nearestDue.date} — ${debtSummary.nearestDue.name}` : "لا توجد دفعة قادمة معروفة";
+    $("#dashDebtOverdue").textContent = fmtCompact(debtSummary.totalOverdue);
 
     const pill = $("#pillStatus");
     pill.className = "pill";
@@ -1444,12 +1580,15 @@
       const isLegacyOpening = FinancialModel.isLegacyOpeningTransaction(state, activeMonth, t.id);
       const resolvedExpenseClass = ExpenseModel.resolveExpenseClass(state, t);
       const explicitExpenseClass = ExpenseModel.getExplicitExpenseClass(state, t.id);
+      const linkedObligationId = DebtModel.getValidLinkedObligationId(state, t);
+      const linkedObligation = linkedObligationId ? DebtModel.getObligation(state, linkedObligationId) : null;
       const expenseBadge = resolvedExpenseClass
         ? ` <span class="pill ${resolvedExpenseClass === "exceptional" ? "warn" : resolvedExpenseClass === "debt_payment" ? "danger" : ""}" title="${explicitExpenseClass ? "تصنيف صريح" : "تصنيف تلقائي"}">${expenseClassLabel(resolvedExpenseClass)}</span>`
         : "";
+      const linkedBadge = linkedObligation ? ` <span class="pill ok" title="دفعة مرتبطة بالتزام">🔗 ${escapeHTML(linkedObligation.name)}</span>` : "";
       const labelType = t.type==="income"
         ? `<span class="pill ok">إيراد</span>${isLegacyOpening ? ` <span class="pill warn">رصيد افتتاحي</span>` : ""}`
-        : `<span class="pill danger">مصروف</span>${expenseBadge}`;
+        : `<span class="pill danger">مصروف</span>${expenseBadge}${linkedBadge}`;
       return `<tr>
         <td>${escapeHTML(t.date||"")}</td>
         <td>${labelType}</td>
@@ -1469,6 +1608,99 @@
     // bind action buttons
     $$("[data-edit]", tbody).forEach(b => b.addEventListener("click", () => editTx(b.getAttribute("data-edit"))));
     $$("[data-del]", tbody).forEach(b => b.addEventListener("click", () => deleteTx(b.getAttribute("data-del"))));
+  }
+
+  function debtTypeLabel(type){
+    return ({house:"منزل",car:"سيارة",appliance:"أجهزة",personal:"شخصي",installment:"أقساط",other:"أخرى"})[type] || "أخرى";
+  }
+
+  function debtStatusLabel(status){
+    return ({active:"نشط",paused:"متوقف مؤقتاً",completed:"مكتمل"})[status] || status;
+  }
+
+  function renderDebts(){
+    const summary = DebtModel.calculateSummary(state, todayISO());
+    $("#debtTotalOriginal").textContent = fmtCompact(summary.totalOriginal);
+    $("#debtTotalPaid").textContent = fmtCompact(summary.totalPaid);
+    $("#debtTotalRemaining").textContent = fmtCompact(summary.totalRemaining);
+    $("#debtTotalOverdue").textContent = fmtCompact(summary.totalOverdue);
+
+    const warnings = summary.obligations.filter(item => item.effectiveStatus === "active" && (item.overdueAmount > 0 || item.nextDue?.date === todayISO()));
+    $("#debtWarnings").innerHTML = warnings.length
+      ? warnings.map(item => `<div class="debt-warning" style="margin-bottom:8px"><b>${item.overdueAmount > 0 ? "دفعات متأخرة" : "دفعة مستحقة اليوم"}: ${escapeHTML(item.obligation.name)}</b><div class="mini">${item.overdueAmount > 0 ? fmtCompact(item.overdueAmount) : fmtCompact(item.nextDue.amount)}</div></div>`).join("")
+      : `<div class="mini muted">لا توجد تنبيهات استحقاق حالية.</div>`;
+
+    const horizon = Number($("#debtForecastHorizon").value || 3);
+    const forecast = DebtModel.getForecast(state, activeMonth, horizon);
+    $("#debtForecastBody").innerHTML = forecast.map(bucket => `<tr><td>${escapeHTML(bucket.month)}</td><td class="money">${fmtCompact(bucket.amount)}</td><td>${bucket.payments.length ? bucket.payments.map(payment => `${escapeHTML(payment.name)} — ${escapeHTML(payment.dueDate)}`).join("<br>") : `<span class="muted">لا توجد دفعات معروفة</span>`}</td></tr>`).join("");
+
+    const list = $("#debtList");
+    if(!summary.obligations.length){
+      list.innerHTML = `<div class="debt-empty" style="grid-column:1/-1"><div style="font-size:28px">📉</div><b>لا توجد التزامات مسجلة</b><div class="mini" style="margin:6px 0 12px">أضف أول دين أو قسط للبدء، ولن تتغير أي عملية قديمة.</div><button class="btn primary" data-debt-add-empty>➕ إضافة التزام</button></div>`;
+      $("[data-debt-add-empty]", list)?.addEventListener("click", () => openDebtModal());
+      return;
+    }
+    list.innerHTML = summary.obligations
+      .slice()
+      .sort((a,b) => a.effectiveStatus.localeCompare(b.effectiveStatus) || String(a.obligation.name).localeCompare(String(b.obligation.name), "ar"))
+      .map(item => {
+        const percent = item.totalAmount > 0 ? Math.min(100, (item.totalPaid / item.totalAmount) * 100) : 0;
+        const statusClass = item.effectiveStatus === "active" ? "ok" : item.effectiveStatus === "paused" ? "warn" : "";
+        return `<article class="debt-card">
+          <div class="row" style="justify-content:space-between"><div><h3>${escapeHTML(item.obligation.name)}</h3><div class="mini">${debtTypeLabel(item.obligation.type)}${item.obligation.creditor ? ` — ${escapeHTML(item.obligation.creditor)}` : ""}</div></div><span class="pill ${statusClass}">${debtStatusLabel(item.effectiveStatus)}</span></div>
+          <div class="debt-progress"><span style="width:${percent.toFixed(2)}%"></span></div>
+          <div class="row" style="justify-content:space-between"><span class="mini">مدفوع: <b>${fmtCompact(item.totalPaid)}</b></span><span class="mini">متبقي: <b>${fmtCompact(item.remaining)}</b></span></div>
+          ${item.overpayment > 0 ? `<div class="mini" style="color:var(--warn);margin-top:7px">زيادة مدفوعة: ${fmtCompact(item.overpayment)}</div>` : ""}
+          ${item.nextDue ? `<div class="mini" style="margin-top:7px">القادم: ${escapeHTML(item.nextDue.date)} — ${fmtCompact(item.nextDue.amount)}</div>` : `<div class="mini muted" style="margin-top:7px">لا توجد دفعة قادمة معروفة</div>`}
+          <button class="btn small" data-debt-open="${escapeAttr(item.obligation.id)}" style="margin-top:10px">عرض التفاصيل</button>
+        </article>`;
+      }).join("");
+    $$('[data-debt-open]', list).forEach(button => button.addEventListener("click", () => openDebtDetails(button.dataset.debtOpen)));
+  }
+
+  function openDebtDetails(obligationId){
+    const item = DebtModel.calculateObligation(state, obligationId, todayISO());
+    if(!item) return;
+    activeDebtId = obligationId;
+    $("#debtDetailsTitle").textContent = item.obligation.name;
+    $("#debtDetailsSubtitle").textContent = `${debtTypeLabel(item.obligation.type)} — ${debtStatusLabel(item.effectiveStatus)}`;
+    const paymentRows = item.paymentTransactions.length
+      ? item.paymentTransactions.slice().reverse().map(transaction => `<tr><td>${escapeHTML(transaction.date||"")}</td><td>${fmtCompact(transaction.amount)}</td><td>${escapeHTML(transaction.note||"")}</td><td><button class="btn small" data-unlink-payment="${escapeAttr(transaction.id)}">فك الارتباط</button></td></tr>`).join("")
+      : `<tr><td colspan="4" class="muted">لا توجد دفعات مرتبطة.</td></tr>`;
+    const scheduleRows = item.scheduledOutstanding.length
+      ? item.scheduledOutstanding.slice(0,12).map(row => `<tr><td>${escapeHTML(row.dueDate)}</td><td>${fmtCompact(row.amount)}</td><td>${fmtCompact(row.paidAmount)}</td><td>${fmtCompact(row.outstandingAmount)}</td></tr>`).join("")
+      : `<tr><td colspan="4" class="muted">لا توجد دفعات ثابتة متبقية.</td></tr>`;
+    $("#debtDetailsBody").innerHTML = `
+      <div class="debt-summary-grid">
+        <div class="kpi"><div><div class="label">القيمة الأصلية</div><div class="value">${fmtCompact(item.totalAmount)}</div></div></div>
+        <div class="kpi"><div><div class="label">مدفوع قبل المتابعة</div><div class="value">${fmtCompact(item.paidBeforeTracking)}</div></div></div>
+        <div class="kpi"><div><div class="label">دفعات مرتبطة</div><div class="value">${fmtCompact(item.linkedPayments)}</div></div></div>
+        <div class="kpi"><div><div class="label">المتبقي</div><div class="value">${fmtCompact(item.remaining)}</div></div></div>
+      </div>
+      ${item.overpayment > 0 ? `<div class="debt-warning" style="margin-top:12px">توجد زيادة مدفوعة قدرها <b>${fmtCompact(item.overpayment)}</b>. راجع العمليات المرتبطة.</div>` : ""}
+      <div class="hr"></div><div style="font-weight:800;margin-bottom:8px">سجل الدفعات المرتبطة</div>
+      <div style="overflow:auto"><table><thead><tr><th>التاريخ</th><th>المبلغ</th><th>الملاحظة</th><th>إجراء</th></tr></thead><tbody>${paymentRows}</tbody></table></div>
+      <div class="hr"></div><div style="font-weight:800;margin-bottom:8px">الجدول المتبقي (أول 12 دفعة)</div>
+      <div style="overflow:auto"><table><thead><tr><th>الاستحقاق</th><th>المخطط</th><th>الموزع</th><th>المتبقي</th></tr></thead><tbody>${scheduleRows}</tbody></table></div>
+      ${item.obligation.note ? `<div class="help" style="margin-top:12px">${escapeHTML(item.obligation.note)}</div>` : ""}`;
+    const paymentActions = item.effectiveStatus === "completed" ? "" : `
+      <button class="btn primary" data-record-debt-payment>➕ تسجيل دفعة</button>
+      <button class="btn" data-link-existing>🔗 ربط عملية</button>`;
+    $("#debtDetailsActions").innerHTML = `
+      ${paymentActions}
+      <button class="btn" data-edit-debt>✏️ تعديل</button>
+      ${item.effectiveStatus === "completed" ? "" : item.storedStatus === "paused" ? `<button class="btn" data-debt-status="active">استئناف</button>` : `<button class="btn" data-debt-status="paused">إيقاف مؤقت</button>`}
+      <button class="btn" data-close="#modalDebtDetails">إغلاق</button>`;
+    $$('[data-unlink-payment]', $("#debtDetailsBody")).forEach(button => button.addEventListener("click", () => unlinkDebtPayment(button.dataset.unlinkPayment)));
+    $("[data-record-debt-payment]", $("#debtDetailsActions"))?.addEventListener("click", openDebtPaymentModal);
+    $("[data-link-existing]", $("#debtDetailsActions"))?.addEventListener("click", openDebtLinkModal);
+    $("[data-edit-debt]", $("#debtDetailsActions"))?.addEventListener("click", () => openDebtModal(item.obligation));
+    $("[data-debt-status]", $("#debtDetailsActions"))?.addEventListener("click", event => {
+      state = DebtModel.withObligationStatus(state, activeDebtId, event.currentTarget.dataset.debtStatus);
+      save(); render(); openDebtDetails(activeDebtId);
+    });
+    $("[data-close]", $("#debtDetailsActions"))?.addEventListener("click", () => closeModal("#modalDebtDetails"));
+    openModal("#modalDebtDetails");
   }
 
   function renderFinancialSettings(){
@@ -2234,7 +2466,14 @@
     $("#txDate").value = tx?.date || "";
     $("#txAmount").value = tx?.amount ?? "";
     $("#txNote").value = tx?.note ?? "";
-    $("#txExpenseClass").value = tx ? (ExpenseModel.getExplicitExpenseClass(state, tx.id) || "") : "";
+    const linkedObligationId = tx ? DebtModel.getValidLinkedObligationId(state, tx) : null;
+    const linkedObligation = linkedObligationId ? DebtModel.getObligation(state, linkedObligationId) : null;
+    $("#txExpenseClass").value = linkedObligation ? "debt_payment" : tx ? (ExpenseModel.getExplicitExpenseClass(state, tx.id) || "") : "";
+    $("#txExpenseClass").disabled = !!linkedObligation;
+    $("#txDebtLinkInfo").hidden = !linkedObligation;
+    $("#txDebtLinkInfo").innerHTML = linkedObligation
+      ? `🔗 هذه العملية مرتبطة بـ <b>${escapeHTML(linkedObligation.name)}</b>. تصنيفها سداد دين تلقائياً. فك الارتباط من صفحة الديون لتغيير تصنيف المصروف.`
+      : "";
     updateExpenseClassVisibility();
 
     openModal("#modalTx");
@@ -2267,6 +2506,11 @@
     if(!date){ toast("أدخل التاريخ (يدوياً)"); return; }
     if(!amount || amount<=0){ toast("أدخل مبلغاً صحيحاً"); return; }
     if(!type){ toast("اختر النوع"); return; }
+    const existingTransaction = editingTxId ? state.transactions.find(transaction => transaction.id === editingTxId) : null;
+    if(existingTransaction && DebtModel.getValidLinkedObligationId(state, existingTransaction) && type !== "expense"){
+      toast("فك ارتباط العملية من الالتزام قبل تحويلها إلى إيراد");
+      return;
+    }
 
     let savedTransactionId = editingTxId;
     if(editingTxId){
@@ -2279,7 +2523,7 @@
       state.transactions.push({ id: savedTransactionId, type, date, categoryId, amount, note, createdAt: new Date().toISOString() });
     }
 
-    if(type === "expense" && savedTransactionId){
+    if(type === "expense" && savedTransactionId && !DebtModel.isValidDebtPaymentLink(state, savedTransactionId)){
       state = ExpenseModel.withExplicitExpenseClass(state, savedTransactionId, $("#txExpenseClass").value);
     }
 
@@ -2304,6 +2548,155 @@
     save();
     toast("تم نقل العملية إلى سلة المحذوفات");
     render();
+  }
+
+  // --- Debt and installment management
+  function updateDebtScheduleFields(){
+    const fixed = $("#debtScheduleMode").value === "fixed";
+    $("#debtFixedFields").style.display = fixed ? "grid" : "none";
+    $("#debtIrregularFields").style.display = fixed ? "none" : "grid";
+  }
+
+  function openDebtModal(item=null){
+    editingDebtId = item?.id || null;
+    $("#debtModalTitle").textContent = item ? "تعديل الالتزام" : "إضافة التزام";
+    $("#debtName").value = item?.name || "";
+    $("#debtType").value = item?.type || "house";
+    $("#debtTotalAmount").value = item?.totalAmount ?? "";
+    $("#debtPaidBefore").value = item?.paidBeforeTracking ?? 0;
+    $("#debtStartDate").value = item?.startDate || "";
+    $("#debtScheduleMode").value = item?.scheduleMode || "fixed";
+    $("#debtInstallmentAmount").value = item?.installmentAmount ?? "";
+    $("#debtFrequency").value = item?.frequency || "monthly";
+    $("#debtFirstDueDate").value = item?.firstDueDate || "";
+    $("#debtManualDueDate").value = item?.manualNextDueDate || "";
+    $("#debtManualDueAmount").value = item?.manualNextDueAmount ?? "";
+    $("#debtCreditor").value = item?.creditor || "";
+    $("#debtNote").value = item?.note || "";
+    updateDebtScheduleFields();
+    closeModal("#modalDebtDetails");
+    openModal("#modalDebt");
+  }
+
+  $("#debtScheduleMode").addEventListener("change", updateDebtScheduleFields);
+  $("#btnAddDebt").addEventListener("click", () => openDebtModal());
+  $("#debtForecastHorizon").addEventListener("change", () => renderDebts());
+  $("#btnSaveDebt").addEventListener("click", () => {
+    const existing = editingDebtId ? DebtModel.getObligation(state, editingDebtId) : null;
+    const item = {
+      id: editingDebtId || uid(),
+      name: ($("#debtName").value || "").trim(),
+      type: $("#debtType").value,
+      totalAmount: Number($("#debtTotalAmount").value),
+      paidBeforeTracking: Number($("#debtPaidBefore").value || 0),
+      startDate: $("#debtStartDate").value,
+      scheduleMode: $("#debtScheduleMode").value,
+      creditor: ($("#debtCreditor").value || "").trim(),
+      note: ($("#debtNote").value || "").trim(),
+      status: existing?.status || "active",
+      createdAt: existing?.createdAt || new Date().toISOString(),
+    };
+    if(item.scheduleMode === "fixed"){
+      item.installmentAmount = Number($("#debtInstallmentAmount").value);
+      item.frequency = $("#debtFrequency").value;
+      item.firstDueDate = $("#debtFirstDueDate").value;
+    }else{
+      const manualDate = $("#debtManualDueDate").value;
+      const manualAmount = $("#debtManualDueAmount").value;
+      if(manualDate || manualAmount){
+        item.manualNextDueDate = manualDate;
+        item.manualNextDueAmount = Number(manualAmount);
+      }
+    }
+    const errors = DebtModel.validateObligation(item);
+    if(errors.length){ toast("أكمل الحقول المطلوبة بقيم صحيحة"); return; }
+    state = DebtModel.withObligation(state, item);
+    activeDebtId = item.id;
+    save(); closeModal("#modalDebt"); render();
+    toast(existing ? "تم تحديث الالتزام ✅" : "تمت إضافة الالتزام ✅");
+  });
+
+  function openDebtPaymentModal(){
+    const item = DebtModel.calculateObligation(state, activeDebtId, todayISO());
+    if(!item || item.effectiveStatus === "completed") return;
+    const categories = Array.isArray(state.categories) ? state.categories : [];
+    const debtCategory = categories.find(category => category?.id === "ex_debt" && category.type === "expense");
+    const expenseCategories = categories.filter(category => category && category.type === "expense" && typeof category.id === "string" && category.id.length > 0);
+    const categoryWrap = $("#debtPaymentCategoryWrap");
+    const categorySelect = $("#debtPaymentCategory");
+    const categoryHelp = $("#debtPaymentCategoryHelp");
+    if(debtCategory){
+      categoryWrap.style.display = "none";
+      categorySelect.disabled = true;
+      categorySelect.innerHTML = "";
+      categoryHelp.textContent = "سيُنشئ هذا الإجراء عملية مصروف واحدة بفئة دين/سداد ثم يربطها بهذا الالتزام.";
+    }else{
+      categoryWrap.style.display = "block";
+      categorySelect.disabled = expenseCategories.length === 0;
+      categorySelect.innerHTML = `<option value="">${expenseCategories.length ? "اختر فئة مصروف موجودة" : "لا توجد فئات مصروف متاحة"}</option>${expenseCategories.map(category => `<option value="${escapeAttr(category.id)}">${escapeHTML(category.name || category.id)}</option>`).join("")}`;
+      categoryHelp.textContent = expenseCategories.length
+        ? "فئة دين/سداد غير متاحة. اختر فئة مصروف موجودة للعملية المالية؛ سيبقى الرابط مصنّفاً كسداد دين في التحليلات."
+        : "لا يمكن تسجيل الدفعة لأن فئة مصروف موجودة مطلوبة. أضف فئة من إدارة التصنيفات أولاً.";
+    }
+    $("#debtPaymentFor").textContent = item.obligation.name;
+    $("#debtPaymentDate").value = "";
+    $("#debtPaymentAmount").value = item.nextDue?.amount || "";
+    $("#debtPaymentNote").value = `دفعة ${item.obligation.name}`;
+    closeModal("#modalDebtDetails");
+    openModal("#modalDebtPayment");
+  }
+
+  $("#btnSaveDebtPayment").addEventListener("click", () => {
+    const obligation = DebtModel.getObligation(state, activeDebtId);
+    const date = $("#debtPaymentDate").value;
+    const amount = Number($("#debtPaymentAmount").value);
+    const note = ($("#debtPaymentNote").value || "").trim();
+    if(!obligation || !DebtModel.isDateOnly(date)){ toast("أدخل تاريخاً صحيحاً"); return; }
+    if(!Number.isFinite(amount) || amount <= 0){ toast("أدخل مبلغاً صحيحاً"); return; }
+    const categories = Array.isArray(state.categories) ? state.categories : [];
+    let category = categories.find(item => item?.id === "ex_debt" && item.type === "expense");
+    if(!category){
+      const selectedCategoryId = $("#debtPaymentCategory").value;
+      category = categories.find(item => item?.id === selectedCategoryId && item.type === "expense" && typeof item.id === "string" && item.id.length > 0);
+      if(!category){
+        const hasExpenseCategory = categories.some(item => item && item.type === "expense" && typeof item.id === "string" && item.id.length > 0);
+        toast(hasExpenseCategory ? "اختر فئة مصروف موجودة" : "لا يمكن تسجيل الدفعة: أضف فئة مصروف أولاً");
+        return;
+      }
+    }
+    const transactionId = uid();
+    const transaction = { id:transactionId, type:"expense", categoryId:category.id, amount, date, note, createdAt:new Date().toISOString() };
+    state = { ...state, transactions:[...state.transactions, transaction] };
+    state = DebtModel.withPaymentLink(state, transactionId, obligation.id);
+    save(); closeModal("#modalDebtPayment"); render();
+    toast("تم تسجيل الدفعة وربط العملية ✅");
+    openDebtDetails(obligation.id);
+  });
+
+  function openDebtLinkModal(){
+    const obligation = DebtModel.getObligation(state, activeDebtId);
+    if(!obligation) return;
+    const candidates = state.transactions
+      .filter(transaction => DebtModel.isEligibleUnlinkedExpense(state, transaction))
+      .slice().sort((a,b) => String(b.date||"").localeCompare(String(a.date||"")));
+    $("#debtLinkFor").textContent = `الربط مع: ${obligation.name}`;
+    $("#debtLinkList").innerHTML = candidates.length
+      ? candidates.map(transaction => `<div class="row" style="justify-content:space-between;padding:10px;border-bottom:1px solid var(--border)"><div><b>${escapeHTML(transaction.date||"")} — ${fmtCompact(transaction.amount)}</b><div class="mini">${escapeHTML(catName(transaction.categoryId))}${transaction.note ? ` — ${escapeHTML(transaction.note)}` : ""}</div></div><button class="btn small" data-link-payment="${escapeAttr(transaction.id)}">ربط</button></div>`).join("")
+      : `<div class="debt-empty"><b>لا توجد عملية مصروف مؤهلة</b><div class="mini">يمكنك تسجيل دفعة جديدة أو فك ارتباط عملية من التزام آخر أولاً.</div></div>`;
+    $$('[data-link-payment]', $("#debtLinkList")).forEach(button => button.addEventListener("click", () => {
+      const before = state;
+      state = DebtModel.withPaymentLink(state, button.dataset.linkPayment, activeDebtId);
+      if(state === before){ toast("تعذر الربط؛ العملية مرتبطة مسبقاً أو غير صالحة"); return; }
+      save(); closeModal("#modalDebtLink"); render(); toast("تم ربط العملية ✅"); openDebtDetails(activeDebtId);
+    }));
+    closeModal("#modalDebtDetails");
+    openModal("#modalDebtLink");
+  }
+
+  function unlinkDebtPayment(transactionId){
+    if(!DebtModel.isValidDebtPaymentLink(state, transactionId)) return;
+    state = DebtModel.withoutPaymentLink(state, transactionId);
+    save(); render(); toast("تم فك الارتباط وبقيت العملية كما هي"); openDebtDetails(activeDebtId);
   }
 
   // --- Categories modal logic
@@ -2450,6 +2843,7 @@
 
   // Buttons in dashboard & settings that navigate
   $("#btnGoBudgets").addEventListener("click", () => setTab("budgets"));
+  $("#btnGoDebts").addEventListener("click", () => setTab("debts"));
 
   // Cloud -> apply incoming state without re-emitting
 window.addEventListener("pfm:apply", (ev)=>{
@@ -2935,7 +3329,7 @@ window.addEventListener("pfm:apply", (ev)=>{
   }
 </script>
 
-<script src="./report-enhancements.js?v=20260907-phase2"></script>
+<script src="./report-enhancements.js?v=20260907-phase3"></script>
 
 </body>
 </html>
