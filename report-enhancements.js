@@ -109,9 +109,12 @@
   }
   function renderMetricRows(comparison) {
     const definitions = [["الدخل الحقيقي", "trueIncome"], ["إجمالي المصروف", "totalExpenses"], ["تكلفة المعيشة (المصروف المنتظم)", "costOfLiving"], ["المصروف الاستثنائي", "exceptionalExpenses"], ["سداد الدين", "debtPayments"], ["التدفقات غير المعيشية", "nonLivingOutflows"], ["صافي الحركة النقدية", "netCashFlow"], ["الرصيد الختامي", "closingBalance"]];
+    const favorableIncreaseMetrics = new Set(["trueIncome", "netCashFlow", "closingBalance"]);
     $("#monthlyComparisonBody").innerHTML = definitions.map(([label, key]) => {
       const metric = comparison.metrics[key];
-      const deltaClass = metric.delta > 0 ? "delta-up" : metric.delta < 0 ? "delta-down" : "";
+      const favorableIncrease = favorableIncreaseMetrics.has(key);
+      const adverseChange = favorableIncrease ? metric.delta < 0 : metric.delta > 0;
+      const deltaClass = metric.delta === 0 ? "" : adverseChange ? "delta-up" : "delta-down";
       return `<tr><td><b>${escapeHTML(label)}</b></td><td>${money(metric.current)}</td><td>${money(metric.previous)}</td><td class="${deltaClass}">${signedMoney(metric.delta)}</td><td>${stateText(metric)}</td></tr>`;
     }).join("");
   }

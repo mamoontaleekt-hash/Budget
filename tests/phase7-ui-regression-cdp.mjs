@@ -60,8 +60,9 @@ try {
   assert.deepEqual(model.ups.map((x) => x[0]), ["grocery", "health", "fuel"]); assert.deepEqual(model.ups.map((x) => x[2]), [0.6, 0.3, 0.1]); assert.deepEqual(model.downs[0], ["restaurants", -200000]);
   assert.ok(Object.values(model.invariants).every(Boolean));
 
-  const ui = await evaluate(`({selector:document.querySelector('#comparisonMonthPicker').value,metrics:document.querySelector('#monthlyComparisonBody').innerText,up:document.querySelector('#increaseDriversList').innerText,down:document.querySelector('#decreaseDriversList').innerText,gross:document.querySelector('#grossDriverSummary').innerText,insights:document.querySelector('#reportInsights').innerText})`);
+  const ui = await evaluate(`({selector:document.querySelector('#comparisonMonthPicker').value,metrics:document.querySelector('#monthlyComparisonBody').innerText,deltaClasses:Object.fromEntries([...document.querySelectorAll('#monthlyComparisonBody tr')].map(row=>[row.cells[0].innerText,row.cells[3].className])),up:document.querySelector('#increaseDriversList').innerText,down:document.querySelector('#decreaseDriversList').innerText,gross:document.querySelector('#grossDriverSummary').innerText,insights:document.querySelector('#reportInsights').innerText})`);
   assert.equal(ui.selector, "2026-08"); assert.match(ui.metrics, /30\.0%/); assert.match(ui.up, /السوبرماركت/); assert.match(ui.up, /60\.0%/); assert.match(ui.down, /المطاعم/); assert.match(ui.insights, /أكبر مساهم/); assert.doesNotMatch(ui.insights, /غلاء|بسبب السفر|بسبب مناسبة/);
+  assert.equal(ui.deltaClasses["الدخل الحقيقي"], "delta-down"); assert.equal(ui.deltaClasses["إجمالي المصروف"], "delta-up"); assert.equal(ui.deltaClasses["صافي الحركة النقدية"], "delta-down"); assert.equal(ui.deltaClasses["الرصيد الختامي"], "delta-down");
 
   const storedBefore = await evaluate(`localStorage.getItem('pfm_data_v1')`);
   await evaluate(`(() => { const p=document.querySelector('#comparisonMonthPicker'); p.value='2026-07'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`); await delay(200);
