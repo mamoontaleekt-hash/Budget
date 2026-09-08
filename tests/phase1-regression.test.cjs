@@ -34,7 +34,7 @@ new vm.Script(shoppingModel, { filename: "shopping-model.js" });
 new vm.Script(tagModel, { filename: "tag-model.js" });
 new vm.Script(budgetModel, { filename: "budget-model.js" });
 
-assert.equal(count(index, /<link rel="stylesheet" href="\.\/mobile-enhancements\.css">/g), 1);
+assert.equal(count(index, /<link rel="stylesheet" href="\.\/mobile-enhancements\.css\?v=20260908-ux1">/g), 1);
 assert.equal(count(index, /<script src="\.\/financial-model\.js\?v=20260907-phase3"><\/script>/g), 1);
 assert.equal(count(index, /<script src="\.\/expense-model\.js\?v=20260907-phase3"><\/script>/g), 1);
 assert.equal(count(index, /<script src="\.\/debt-model\.js\?v=20260908-phase3-corrective"><\/script>/g), 1);
@@ -128,7 +128,8 @@ assert.match(report, /parsed\.financialSettings/);
 assert.match(report, /parsed\.expenseSettings/);
 assert.match(report, /parsed\.debtSettings/);
 assert.match(report, /ExpenseModel\.calculateExpenseAnalytics\(state, month\)/);
-assert.match(sw, /const CACHE_NAME = "pfm-pwa-v14";/);
+assert.match(sw, /const CACHE_NAME = "pfm-pwa-v15";/);
+assert.ok(sw.includes('"./mobile-enhancements.css?v=20260908-ux1"'));
 assert.match(sw, /\.\/tag-model\.js\?v=20260908-phase5/);
 assert.match(sw, /\.\/budget-model\.js\?v=20260908-phase6/);
 assert.ok(sw.includes('"./financial-model.js?v=20260907-phase3"'));

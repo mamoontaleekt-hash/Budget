@@ -157,7 +157,7 @@ try{
 
   await controlledReload();
   const pwa=await evaluate(`navigator.serviceWorker.ready.then(async registration=>({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,keys:await caches.keys(),tag:!!(await caches.match('./tag-model.js?v=20260908-phase5'))}))`);
-  assert.equal(pwa.active,true); assert.equal(pwa.controlled,true); assert.ok(pwa.keys.includes("pfm-pwa-v14")); assert.equal(pwa.tag,true); assert.equal(pwa.keys.includes("pfm-pwa-v10"),false);
+  assert.equal(pwa.active,true); assert.equal(pwa.controlled,true); assert.ok(pwa.keys.includes("pfm-pwa-v15")); assert.equal(pwa.tag,true); assert.equal(pwa.keys.includes("pfm-pwa-v10"),false);
   const errorCount=errors.length;
   await send("Network.emulateNetworkConditions",{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0}); await controlledReload();
   assert.deepEqual(await evaluate(`({heading:document.querySelector('h1')?.innerText,tag:!!window.PFMTagModel})`),{heading:"إدارة المصاريف الشخصية",tag:true});
