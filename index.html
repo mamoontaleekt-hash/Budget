@@ -257,7 +257,16 @@
     .shopping-option:has(input:checked){border-color:rgba(18,183,106,.55);background:rgba(18,183,106,.12)}
     .shopping-option input{width:auto;margin:0;accent-color:var(--accent)}
     .shopping-tags{display:block;margin-top:6px;color:var(--muted);font-size:12px;line-height:1.6}
-    @media(max-width:560px){.shopping-options{grid-template-columns:1fr}}
+    .transaction-tag-field{margin-top:12px;padding:12px;border:1px solid rgba(124,255,232,.22);border-radius:14px;background:rgba(124,255,232,.05)}
+    .tag-options{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .tag-option{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid var(--border);border-radius:999px;background:var(--panel);cursor:pointer}
+    .tag-option:has(input:checked){border-color:rgba(124,255,232,.65);background:rgba(124,255,232,.13)}
+    .tag-option.archived{border-style:dashed;color:var(--muted)}
+    .tag-option input{width:auto;margin:0;accent-color:var(--accent)}
+    .transaction-tags{display:block;margin-top:6px;color:var(--accent);font-size:12px;line-height:1.6}
+    .tag-management-list{display:grid;gap:8px;margin-top:12px}
+    .tag-management-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+    @media(max-width:560px){.shopping-options{grid-template-columns:1fr}.tag-management-row{align-items:flex-start;flex-direction:column}}
     .pill{
       padding:6px 10px;
       border-radius:999px;
@@ -620,6 +629,7 @@
           </div>
           <div class="row">
             <button class="btn small" id="btnCategories">🏷️ إدارة التصنيفات</button>
+            <button class="btn small" id="btnTags">#️⃣ إدارة الوسوم</button>
             <button class="btn small" id="btnAddTx2">➕ إضافة عملية</button>
           </div>
         </div>
@@ -654,6 +664,10 @@
             <div>
               <label class="mini" for="filterShoppingSubcategory" style="display:block;margin-bottom:4px">محتوى التسوق</label>
               <select id="filterShoppingSubcategory"><option value="">الكل</option></select>
+            </div>
+            <div>
+              <label class="mini" for="filterTransactionTag" style="display:block;margin-bottom:4px">وسم العملية</label>
+              <select id="filterTransactionTag"><option value="">الكل</option></select>
             </div>
             <input id="filterFrom" type="date" placeholder="من" />
             <input id="filterTo" type="date" placeholder="إلى" />
@@ -976,6 +990,16 @@
 
             <div class="card" style="box-shadow:none">
               <div class="hd">
+                <div><h2>وسوم العمليات</h2><p>وسوم مرنة لأي إيراد أو مصروف، من دون تغيير الحسابات.</p></div>
+                <button class="btn small" id="btnTagsSettings">#️⃣ إدارة</button>
+              </div>
+              <div class="bd">
+                <div id="tagAnalyticsSummary" class="mini">لا توجد وسوم بعد.</div>
+              </div>
+            </div>
+
+            <div class="card" style="box-shadow:none">
+              <div class="hd">
                 <div>
                   <h2>البيانات</h2>
                   <p>تصدير/استيراد (JSON) — مهم للنسخ الاحتياطي.</p>
@@ -1059,6 +1083,12 @@
             <div style="font-weight:800">محتويات فاتورة التسوق</div>
             <div class="mini" id="txShoppingSubcategoryHelp">يمكنك اختيار أكثر من نوع. لا يتم تقسيم أو تكرار مبلغ الفاتورة.</div>
             <div class="shopping-options" id="txShoppingSubcategoryOptions" role="group" aria-describedby="txShoppingSubcategoryHelp"></div>
+          </div>
+          <div class="transaction-tag-field" id="txTagField">
+            <div style="font-weight:800">وسوم العملية</div>
+            <div class="mini" id="txTagHelp">يمكنك اختيار أكثر من وسم. الوسوم للتنظيم والبحث ولا تغيّر المبلغ أو التصنيف المالي.</div>
+            <div class="tag-options" id="txTagOptions" role="group" aria-describedby="txTagHelp"></div>
+            <button class="btn small" id="btnManageTagsFromTx" type="button" style="margin-top:10px">#️⃣ إدارة الوسوم</button>
           </div>
           <div id="txDebtLinkInfo" class="linked-note" hidden></div>
 
@@ -1169,6 +1199,26 @@
         <div class="ft">
           <button class="btn" data-close="#modalCategories">تم</button>
         </div>
+      </div>
+    </div>
+
+    <div class="modal" id="modalTags">
+      <div class="dialog">
+        <div class="hd">
+          <div><h3>إدارة وسوم العمليات</h3><div class="mini">أنشئ وسوماً باسمك. الأرشفة تحافظ على الوسوم التاريخية ولا تحذفها.</div></div>
+          <button class="btn icon" data-close="#modalTags">✖</button>
+        </div>
+        <div class="bd">
+          <div class="row">
+            <input id="newTagName" type="text" placeholder="اسم الوسم" style="flex:1" />
+            <button class="btn small primary" id="btnCreateTag" type="button">➕ إنشاء</button>
+          </div>
+          <div style="font-weight:800;margin-top:16px">الوسوم النشطة</div>
+          <div class="tag-management-list" id="activeTagsList"></div>
+          <div style="font-weight:800;margin-top:18px">الوسوم المؤرشفة</div>
+          <div class="tag-management-list" id="archivedTagsList"></div>
+        </div>
+        <div class="ft"><button class="btn" data-close="#modalTags">تم</button></div>
       </div>
     </div>
 
@@ -1324,6 +1374,7 @@
   <script src="./expense-model.js?v=20260907-phase3"></script>
   <script src="./debt-model.js?v=20260908-phase3-corrective"></script>
   <script src="./shopping-model.js?v=20260908-phase4"></script>
+  <script src="./tag-model.js?v=20260908-phase5"></script>
 
 <script>
 /** =========================
@@ -1342,6 +1393,8 @@
   if(!DebtModel) throw new Error("Debt model failed to load");
   const ShoppingModel = window.PFMShoppingModel;
   if(!ShoppingModel) throw new Error("Shopping model failed to load");
+  const TagModel = window.PFMTagModel;
+  if(!TagModel) throw new Error("Tag model failed to load");
   const SHOPPING_SHORT_LABELS = {
     meat:"لحوم", dairy:"ألبان", produce:"خضروات وفواكه", pantry:"مواد جافة ومعلبات",
     bakery:"مخبوزات", beverages:"مشروبات", frozen:"مجمدات", cleaning:"منظفات",
@@ -1462,7 +1515,7 @@
   $$("[data-close]").forEach(b => b.addEventListener("click", () => closeModal(b.getAttribute("data-close"))));
   document.addEventListener("keydown", (e) => {
     if(e.key==="Escape"){
-      $$(".modal.open").forEach(m => m.classList.remove("open"));
+      $$(".modal.open").at(-1)?.classList.remove("open");
     }
   });
 
@@ -1500,6 +1553,15 @@
     const full = ids.map(id => ShoppingModel.getSubcategory(id)?.label || id).join(" · ");
     return `<span class="shopping-tags" title="${escapeAttr(full)}">${shown.map(escapeHTML).join(" · ")}</span>`;
   }
+  function transactionTagsHTML(transaction){
+    const ids = TagModel.getTransactionTags(state, transaction.id);
+    if(ids.length===0) return "";
+    const tags = ids.map(id => TagModel.getTag(state, id)).filter(Boolean);
+    const shown = tags.slice(0,2).map(tag => `#${tag.name}${tag.status === "archived" ? " (مؤرشف)" : ""}`);
+    if(tags.length>2) shown.push(`+${tags.length-2}`);
+    const full = tags.map(tag => `#${tag.name}${tag.status === "archived" ? " (مؤرشف)" : ""}`).join(" · ");
+    return `<span class="transaction-tags" title="${escapeAttr(full)}">${shown.map(escapeHTML).join(" · ")}</span>`;
+  }
 
   // --- Render functions
   function render(){
@@ -1509,6 +1571,7 @@
     // Update filters category dropdown
     renderFilterCategories();
     renderShoppingFilter();
+    renderTagFilter();
 
     // Render views
     if(activeTab==="dash") renderDashboard();
@@ -1601,6 +1664,16 @@
       .map(item => `<option value="${item.id}">${escapeHTML(item.label)}</option>`).join("");
     sel.value = ShoppingModel.getSubcategory(prev) ? prev : "";
   }
+  function renderTagFilter(){
+    const sel = $("#filterTransactionTag");
+    const prev = sel.value;
+    const historicalIds = new Set(Object.values(state.tagSettings?.transactionTags || {}).flat().filter(id => typeof id === "string"));
+    const definitions = TagModel.getTagDefinitions(state).filter(tag => tag.status === "active" || historicalIds.has(tag.id));
+    sel.innerHTML = `<option value="">الكل</option>` + definitions.map(tag =>
+      `<option value="${escapeAttr(tag.id)}">${escapeHTML(tag.name)}${tag.status === "archived" ? " (مؤرشف)" : ""}</option>`
+    ).join("");
+    sel.value = definitions.some(tag => tag.id === prev) ? prev : "";
+  }
 
   function renderTransactions(){
     const tbody = $("#txTableBody");
@@ -1609,6 +1682,7 @@
     const catFilter = $("#filterCategory").value;
     const expenseClassFilter = $("#filterExpenseClass").value;
     const shoppingSubcategoryFilter = $("#filterShoppingSubcategory").value;
+    const transactionTagFilter = $("#filterTransactionTag").value;
     const q = ($("#filterSearch").value || "").trim().toLowerCase();
     const from = $("#filterFrom").value;
     const to = $("#filterTo").value;
@@ -1627,6 +1701,7 @@
       ShoppingModel.isShoppingTransaction(t)
       && ShoppingModel.getShoppingSubcategories(state, t.id).includes(shoppingSubcategoryFilter)
     );
+    if(transactionTagFilter) txs = txs.filter(t => TagModel.getTransactionTags(state, t.id).includes(transactionTagFilter));
     if(q) txs = txs.filter(t => (t.note||"").toLowerCase().includes(q));
     if(from) txs = txs.filter(t => (t.date||"")>=from);
     if(to) txs = txs.filter(t => (t.date||"")<=to);
@@ -1658,7 +1733,7 @@
         <td>${labelType}</td>
         <td><span class="tag">🏷️ ${escapeHTML(catName(t.categoryId))}</span>${shoppingTagsHTML(t)}</td>
         <td class="money ${signClass}">${fmtCompact(t.amount)}</td>
-        <td>${escapeHTML(t.note||"")}</td>
+        <td>${escapeHTML(t.note||"")}${transactionTagsHTML(t)}</td>
         <td>
           <div class="actions">
             <button class="btn small" data-edit="${t.id}">✏️ تعديل</button>
@@ -2079,7 +2154,14 @@
   }
 
   function renderSettings(){
-    // nothing heavy here; categories modal used
+    const analytics = TagModel.calculateTagAnalytics(state, activeMonth);
+    const occurrences = TagModel.getTagDefinitions(state)
+      .filter(tag => analytics.countByTag[tag.id] > 0)
+      .sort((a,b) => analytics.countByTag[b.id] - analytics.countByTag[a.id])
+      .map(tag => `${escapeHTML(tag.name)} — ${analytics.countByTag[tag.id]} عمليات${tag.status === "archived" ? " (مؤرشف)" : ""}`);
+    $("#tagAnalyticsSummary").innerHTML = `
+      <div><b>عمليات موسومة:</b> ${analytics.taggedTransactionCount} · <b>غير موسومة:</b> ${analytics.untaggedTransactionCount}</div>
+      <div style="margin-top:8px">${occurrences.length ? occurrences.join("<br>") : "لا توجد مرات استخدام للوسوم في هذا الشهر."}</div>`;
   }
 
   // --- Budget data access
@@ -2324,9 +2406,12 @@
   $("#btnCategories").addEventListener("click", () => openCategoriesModal());
   $("#btnCategories2").addEventListener("click", () => openCategoriesModal());
   $("#btnCategories3").addEventListener("click", () => openCategoriesModal());
+  $("#btnTags").addEventListener("click", () => openTagsModal());
+  $("#btnTagsSettings").addEventListener("click", () => openTagsModal());
+  $("#btnManageTagsFromTx").addEventListener("click", () => openTagsModal());
 
   // Filters events
-  ["filterType","filterCategory","filterExpenseClass","filterShoppingSubcategory","filterSearch","filterFrom","filterTo","filterMin","filterMax"].forEach(id=>{
+  ["filterType","filterCategory","filterExpenseClass","filterShoppingSubcategory","filterTransactionTag","filterSearch","filterFrom","filterTo","filterMin","filterMax"].forEach(id=>{
     $("#"+id).addEventListener("input", () => renderTransactions());
     $("#"+id).addEventListener("change", () => renderTransactions());
   });
@@ -2335,6 +2420,7 @@
     $("#filterCategory").value = "";
     $("#filterExpenseClass").value = "";
     $("#filterShoppingSubcategory").value = "";
+    $("#filterTransactionTag").value = "";
     $("#filterSearch").value = "";
     $("#filterFrom").value = "";
     $("#filterTo").value = "";
@@ -2552,6 +2638,7 @@
       ? `🔗 هذه العملية مرتبطة بـ <b>${escapeHTML(linkedObligation.name)}</b>. تصنيفها سداد دين تلقائياً. فك الارتباط من صفحة الديون لتغيير تصنيف المصروف.`
       : "";
     renderShoppingSubcategoryOptions(tx ? ShoppingModel.getShoppingSubcategories(state, tx.id) : []);
+    renderTransactionTagOptions(tx ? TagModel.getTransactionTags(state, tx.id) : []);
     updateExpenseClassVisibility();
     updateShoppingSubcategoryVisibility();
 
@@ -2590,6 +2677,24 @@
   }
   function selectedShoppingSubcategories(){
     return $$('[data-shopping-subcategory]:checked', $("#txShoppingSubcategoryOptions")).map(input => input.value);
+  }
+  function renderTransactionTagOptions(selectedIds){
+    const selected = new Set(TagModel.normalizeTagIds(state, selectedIds));
+    const assigned = new Set(editingTxId ? TagModel.getTransactionTags(state, editingTxId) : []);
+    const definitions = TagModel.getTagDefinitions(state).filter(tag => tag.status === "active" || assigned.has(tag.id));
+    const box = $("#txTagOptions");
+    if(definitions.length===0){
+      box.innerHTML = `<span class="mini muted">لا توجد وسوم نشطة. افتح إدارة الوسوم لإنشاء وسم.</span>`;
+      return;
+    }
+    box.innerHTML = definitions.map(tag => `
+      <label class="tag-option${tag.status === "archived" ? " archived" : ""}">
+        <input type="checkbox" value="${escapeAttr(tag.id)}" data-transaction-tag${selected.has(tag.id) ? " checked" : ""} />
+        <span>#${escapeHTML(tag.name)}${tag.status === "archived" ? " — مؤرشف" : ""}</span>
+      </label>`).join("");
+  }
+  function selectedTransactionTags(){
+    return $$('[data-transaction-tag]:checked', $("#txTagOptions")).map(input => input.value);
   }
   function updateShoppingSubcategoryVisibility(){
     $("#txShoppingSubcategoryField").hidden = !(
@@ -2636,6 +2741,9 @@
     if(savedTransactionId && !$("#txShoppingSubcategoryField").hidden){
       state = ShoppingModel.withShoppingSubcategories(state, savedTransactionId, selectedShoppingSubcategories());
     }
+    if(savedTransactionId){
+      state = TagModel.withTransactionTags(state, savedTransactionId, selectedTransactionTags());
+    }
 
     save();
     closeModal("#modalTx");
@@ -2659,6 +2767,49 @@
     toast("تم نقل العملية إلى سلة المحذوفات");
     render();
   }
+
+  // --- User-defined transaction tag management
+  function openTagsModal(){
+    renderTagsModal();
+    openModal("#modalTags");
+  }
+  function renderTagsModal(){
+    const selectedInOpenForm = selectedTransactionTags();
+    const renderList = (tags, archived) => tags.length ? tags.map(tag => `
+      <div class="tag-management-row">
+        <div><b>#${escapeHTML(tag.name)}</b>${archived ? ` <span class="pill">مؤرشف</span>` : ""}</div>
+        <div class="row">
+          <button class="btn small" data-rename-tag="${escapeAttr(tag.id)}">✏️ إعادة تسمية</button>
+          <button class="btn small${archived ? "" : " danger"}" data-${archived ? "restore" : "archive"}-tag="${escapeAttr(tag.id)}">${archived ? "↩️ استعادة" : "📦 أرشفة"}</button>
+        </div>
+      </div>`).join("") : `<div class="mini muted">لا توجد وسوم ${archived ? "مؤرشفة" : "نشطة"}.</div>`;
+    const definitions = TagModel.getTagDefinitions(state);
+    $("#activeTagsList").innerHTML = renderList(definitions.filter(tag => tag.status === "active"), false);
+    $("#archivedTagsList").innerHTML = renderList(definitions.filter(tag => tag.status === "archived"), true);
+    $$('[data-rename-tag]', $("#modalTags")).forEach(button => button.addEventListener("click", () => {
+      const id = button.getAttribute("data-rename-tag");
+      const current = TagModel.getTag(state, id);
+      const name = prompt("الاسم الجديد للوسم:", current?.name || "");
+      if(name === null) return;
+      const result = TagModel.renameTag(state, id, name);
+      if(result.error){ toast(result.error === "duplicate" ? "يوجد وسم نشط بهذا الاسم" : "اسم الوسم مطلوب"); return; }
+      state = result.state; save(); renderTagsModal(); renderTagFilter(); renderTransactionTagOptions(selectedInOpenForm); render(); toast("تمت إعادة تسمية الوسم ✅");
+    }));
+    $$('[data-archive-tag]', $("#modalTags")).forEach(button => button.addEventListener("click", () => {
+      state = TagModel.archiveTag(state, button.getAttribute("data-archive-tag")); save(); renderTagsModal(); renderTransactionTagOptions(selectedInOpenForm); render(); toast("تمت أرشفة الوسم");
+    }));
+    $$('[data-restore-tag]', $("#modalTags")).forEach(button => button.addEventListener("click", () => {
+      const id = button.getAttribute("data-restore-tag"); const next = TagModel.restoreTag(state, id);
+      if(next === state){ toast("تعذرت الاستعادة: يوجد وسم نشط بالاسم نفسه"); return; }
+      state = next; save(); renderTagsModal(); renderTransactionTagOptions(selectedInOpenForm); render(); toast("تمت استعادة الوسم ✅");
+    }));
+  }
+  $("#btnCreateTag").addEventListener("click", () => {
+    const selectedInOpenForm = selectedTransactionTags();
+    const result = TagModel.createTag(state, $("#newTagName").value);
+    if(result.error){ toast(result.error === "duplicate" ? "يوجد وسم نشط بهذا الاسم" : "أدخل اسم الوسم"); return; }
+    state = result.state; $("#newTagName").value = ""; save(); renderTagsModal(); renderTransactionTagOptions(selectedInOpenForm); render(); toast("تم إنشاء الوسم ✅");
+  });
 
   // --- Debt and installment management
   function updateDebtScheduleFields(){

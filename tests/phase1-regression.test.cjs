@@ -14,6 +14,7 @@ const model = read("financial-model.js");
 const expenseModel = read("expense-model.js");
 const debtModel = read("debt-model.js");
 const shoppingModel = read("shopping-model.js");
+const tagModel = read("tag-model.js");
 const count = (text, pattern) => [...text.matchAll(pattern)].length;
 
 const inlineScripts = [...index.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
@@ -25,17 +26,20 @@ new vm.Script(model, { filename: "financial-model.js" });
 new vm.Script(expenseModel, { filename: "expense-model.js" });
 new vm.Script(debtModel, { filename: "debt-model.js" });
 new vm.Script(shoppingModel, { filename: "shopping-model.js" });
+new vm.Script(tagModel, { filename: "tag-model.js" });
 
 assert.equal(count(index, /<link rel="stylesheet" href="\.\/mobile-enhancements\.css">/g), 1);
 assert.equal(count(index, /<script src="\.\/financial-model\.js\?v=20260907-phase3"><\/script>/g), 1);
 assert.equal(count(index, /<script src="\.\/expense-model\.js\?v=20260907-phase3"><\/script>/g), 1);
 assert.equal(count(index, /<script src="\.\/debt-model\.js\?v=20260908-phase3-corrective"><\/script>/g), 1);
 assert.equal(count(index, /<script src="\.\/shopping-model\.js\?v=20260908-phase4"><\/script>/g), 1);
+assert.equal(count(index, /<script src="\.\/tag-model\.js\?v=20260908-phase5"><\/script>/g), 1);
 assert.equal(count(index, /<script src="\.\/report-enhancements\.js\?v=20260907-phase3"><\/script>/g), 1);
 assert.ok(index.indexOf('<script src="./financial-model.js?v=20260907-phase3"></script>') < index.indexOf('<script src="./expense-model.js?v=20260907-phase3"></script>'));
 assert.ok(index.indexOf('<script src="./expense-model.js?v=20260907-phase3"></script>') < index.indexOf('<script src="./debt-model.js?v=20260908-phase3-corrective"></script>'));
 assert.ok(index.indexOf('<script src="./debt-model.js?v=20260908-phase3-corrective"></script>') < index.indexOf("Personal Finance Manager"));
 assert.ok(index.indexOf('<script src="./shopping-model.js?v=20260908-phase4"></script>') < index.indexOf("Personal Finance Manager"));
+assert.ok(index.indexOf('<script src="./tag-model.js?v=20260908-phase5"></script>') < index.indexOf("Personal Finance Manager"));
 assert.ok(index.indexOf('<script src="./debt-model.js?v=20260908-phase3-corrective"></script>') < index.indexOf('<script src="./report-enhancements.js?v=20260907-phase3"></script>'));
 
 assert.equal(index.includes("function maybeSeed("), false);
@@ -65,6 +69,7 @@ assert.ok(defaultStart >= 0 && defaultEnd > defaultStart);
 assert.equal(index.slice(defaultStart, defaultEnd).includes("financialSettings"), false);
 assert.equal(index.slice(defaultStart, defaultEnd).includes("expenseSettings"), false);
 assert.equal(index.slice(defaultStart, defaultEnd).includes("debtSettings"), false);
+assert.equal(index.slice(defaultStart, defaultEnd).includes("tagSettings"), false);
 
 for (const id of [
   "kpiAvailable",
@@ -92,6 +97,10 @@ for (const id of [
   "modalDebtPayment",
   "modalDebtLink",
   "txDebtLinkInfo",
+  "txTagOptions",
+  "filterTransactionTag",
+  "modalTags",
+  "tagAnalyticsSummary",
 ]) {
   assert.ok(index.includes(`id="${id}"`), `missing UI control ${id}`);
 }
@@ -102,16 +111,17 @@ assert.match(report, /parsed\.financialSettings/);
 assert.match(report, /parsed\.expenseSettings/);
 assert.match(report, /parsed\.debtSettings/);
 assert.match(report, /ExpenseModel\.calculateExpenseAnalytics\(state, month\)/);
-assert.match(sw, /const CACHE_NAME = "pfm-pwa-v9";/);
+assert.match(sw, /const CACHE_NAME = "pfm-pwa-v10";/);
+assert.match(sw, /\.\/tag-model\.js\?v=20260908-phase5/);
 assert.ok(sw.includes('"./financial-model.js?v=20260907-phase3"'));
 assert.ok(sw.includes('"./expense-model.js?v=20260907-phase3"'));
 assert.ok(sw.includes('"./debt-model.js?v=20260908-phase3-corrective"'));
 assert.ok(sw.includes('"./shopping-model.js?v=20260908-phase4"'));
-assert.ok(sw.includes('const STALE_SHELL_ASSETS = ["./debt-model.js?v=20260907-phase3"]'));
+assert.match(sw, /const STALE_SHELL_ASSETS = \[[\s\S]*\.\/debt-model\.js\?v=20260907-phase3[\s\S]*\.\/tag-model\.js[\s\S]*\];/);
 assert.ok(sw.includes("STALE_SHELL_ASSETS.map((asset) => cache.delete(asset))"));
 assert.ok(sw.includes('"./report-enhancements.js?v=20260907-phase3"'));
 assert.equal(sw.includes("enhanceHtml"), false);
 assert.equal(sw.includes("REPORT_ENHANCEMENT_SCRIPT"), false);
 assert.equal(sw.includes("MOBILE_ENHANCEMENT_STYLE"), false);
 
-console.log("PASS Phase 1/2/3 syntax, loading, cloud-safety, optional-metadata, and PWA regression checks");
+console.log("PASS Phase 1–5 syntax, loading, cloud-safety, optional-metadata, and PWA regression checks");
