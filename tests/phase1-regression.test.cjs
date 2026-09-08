@@ -113,6 +113,11 @@ for (const id of [
   "filterTransactionTag",
   "modalTags",
   "tagAnalyticsSummary",
+  "dashboardComparisonRows",
+  "dashboardAttentionList",
+  "dashboardTopCategory",
+  "dashboardDriverHighlight",
+  "dashboardQuickActionsHeading",
 ]) {
   assert.ok(index.includes(`id="${id}"`), `missing UI control ${id}`);
 }
@@ -123,7 +128,7 @@ assert.match(report, /parsed\.financialSettings/);
 assert.match(report, /parsed\.expenseSettings/);
 assert.match(report, /parsed\.debtSettings/);
 assert.match(report, /ExpenseModel\.calculateExpenseAnalytics\(state, month\)/);
-assert.match(sw, /const CACHE_NAME = "pfm-pwa-v13";/);
+assert.match(sw, /const CACHE_NAME = "pfm-pwa-v14";/);
 assert.match(sw, /\.\/tag-model\.js\?v=20260908-phase5/);
 assert.match(sw, /\.\/budget-model\.js\?v=20260908-phase6/);
 assert.ok(sw.includes('"./financial-model.js?v=20260907-phase3"'));
@@ -134,6 +139,8 @@ assert.match(sw, /const STALE_SHELL_ASSETS = \[[\s\S]*\.\/debt-model\.js\?v=2026
 assert.ok(sw.includes("STALE_SHELL_ASSETS.map((asset) => cache.delete(asset))"));
 assert.ok(sw.includes('"./comparison-model.js?v=20260908-phase7"'));
 assert.ok(sw.includes('"./category-analytics-model.js?v=20260908-phase8"'));
+assert.ok(sw.includes('"./dashboard-model.js?v=20260908-phase9"'));
+assert.ok(index.includes('<script src="./dashboard-model.js?v=20260908-phase9"></script>'));
 assert.ok(sw.includes('"./report-enhancements.js?v=20260908-phase8"'));
 assert.ok(sw.includes('"./report-enhancements.js?v=20260908-phase7"'));
 assert.ok(sw.includes('"./report-enhancements.js?v=20260908-phase6"'));
@@ -141,4 +148,4 @@ assert.equal(sw.includes("enhanceHtml"), false);
 assert.equal(sw.includes("REPORT_ENHANCEMENT_SCRIPT"), false);
 assert.equal(sw.includes("MOBILE_ENHANCEMENT_STYLE"), false);
 
-console.log("PASS Phase 1–6 syntax, loading, cloud-safety, optional-metadata, and PWA regression checks");
+console.log("PASS Phase 1–9 syntax, loading, cloud-safety, optional-metadata, and PWA regression checks");

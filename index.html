@@ -244,6 +244,30 @@
       border-color:rgba(16,185,129,.22);
       background:linear-gradient(145deg, rgba(16,185,129,.07), rgba(255,255,255,.96));
     }
+    .dashboard-section{margin-top:14px}
+    .dashboard-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+    .dashboard-section-head h3{font-size:14px;margin:0 0 4px}
+    .dashboard-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .dashboard-summary-row,.dashboard-highlight,.attention-item{
+      border:1px solid var(--border);border-radius:14px;background:var(--panel);padding:11px 12px;min-width:0
+    }
+    .dashboard-summary-row .value{font-size:14px;font-weight:900;margin-top:4px;overflow-wrap:anywhere}
+    .dashboard-note{padding:9px 11px;border:1px solid rgba(245,159,0,.26);border-radius:12px;background:rgba(245,159,0,.08);color:#7a4c00;font-size:12px;margin-bottom:10px}
+    .dashboard-highlights{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+    .dashboard-highlight strong{display:block;margin-top:4px;line-height:1.6;overflow-wrap:anywhere}
+    .attention-list{display:grid;gap:8px}
+    .attention-item{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .attention-item.danger,.dashboard-highlight.danger{border-color:rgba(229,72,77,.25);background:rgba(229,72,77,.06)}
+    .attention-item.warn,.dashboard-highlight.warn{border-color:rgba(245,159,0,.28);background:rgba(245,159,0,.06)}
+    .attention-item.ok,.dashboard-highlight.ok{border-color:rgba(18,183,106,.25);background:rgba(18,183,106,.06)}
+    .dashboard-quick-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .dashboard-quick-actions .btn{width:100%}
+    @media(max-width:760px){
+      .dashboard-summary-grid{grid-template-columns:1fr}
+      .dashboard-highlights{grid-template-columns:1fr}
+      .dashboard-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media(max-width:420px){.dashboard-quick-actions{grid-template-columns:1fr}.attention-item{align-items:flex-start;flex-direction:column}}
     .expense-class-field{
       margin-top:12px;padding:12px;border:1px solid rgba(16,185,129,.20);
       border-radius:14px;background:rgba(16,185,129,.05);
@@ -538,6 +562,32 @@
           </div>
 
           <div class="hr"></div>
+          <section class="dashboard-section" aria-labelledby="dashboardComparisonHeading">
+            <div class="dashboard-section-head">
+              <div>
+                <h3 id="dashboardComparisonHeading">مقارنة بالشهر السابق</h3>
+                <div class="mini" id="dashboardComparisonMonths">—</div>
+              </div>
+              <button class="btn small" id="btnDashboardComparisonReports" type="button">📈 عرض المقارنة بالتفصيل</button>
+            </div>
+            <div class="dashboard-note" id="dashboardIncompleteNote" hidden>الشهر الحالي غير مكتمل؛ المقارنة مع شهر كامل قد لا تكون مباشرة.</div>
+            <div class="dashboard-note" id="dashboardComparisonEmpty" hidden>لا توجد بيانات كافية للمقارنة بين الشهرين.</div>
+            <div class="dashboard-summary-grid" id="dashboardComparisonRows">
+              <div class="dashboard-summary-row"><div class="mini">إجمالي المصروفات</div><div class="value" id="dashboardExpenseComparison">—</div></div>
+              <div class="dashboard-summary-row"><div class="mini">تكلفة المعيشة</div><div class="value" id="dashboardLivingComparison">—</div></div>
+              <div class="dashboard-summary-row"><div class="mini">صافي الحركة النقدية</div><div class="value" id="dashboardNetComparison">—</div></div>
+            </div>
+          </section>
+
+          <div class="hr"></div>
+          <section class="dashboard-section" aria-labelledby="dashboardAttentionHeading">
+            <div class="dashboard-section-head">
+              <div><h3 id="dashboardAttentionHeading">يحتاج انتباهك</h3><div class="mini">أهم الحالات القابلة للإجراء، مرتبة حسب الأولوية.</div></div>
+            </div>
+            <div class="attention-list" id="dashboardAttentionList">—</div>
+          </section>
+
+          <div class="hr"></div>
           <div style="font-weight:800;margin-bottom:4px">تحليل المصروفات</div>
           <div class="mini">إجمالي المصروفات يشمل جميع المبالغ الخارجة، بينما تكلفة المعيشة تشمل المصاريف المنتظمة فقط.</div>
           <div class="kpis phase2-kpis" style="margin-top:10px">
@@ -566,6 +616,18 @@
               <span class="tag">📉</span>
             </div>
           </div>
+          <div class="dashboard-highlights">
+            <div class="dashboard-highlight">
+              <div class="mini">أكبر تصنيف هذا الشهر</div>
+              <strong id="dashboardTopCategory">لا توجد بيانات مصروف لهذا الشهر.</strong>
+              <button class="btn small ghost" id="btnDashboardCategoryReports" type="button" style="margin-top:8px">فتح التقارير</button>
+            </div>
+            <div class="dashboard-highlight">
+              <div class="mini">أكبر محرك للتغير</div>
+              <strong id="dashboardDriverHighlight">لا توجد بيانات مقارنة كافية.</strong>
+              <button class="btn small ghost" id="btnDashboardDriverReports" type="button" style="margin-top:8px">فتح التقارير</button>
+            </div>
+          </div>
 
           <div class="hr"></div>
           <div class="row" style="justify-content:space-between;align-items:flex-start">
@@ -575,6 +637,7 @@
             </div>
             <button class="btn small" id="btnGoDebts">📉 فتح الإدارة</button>
           </div>
+          <div class="dashboard-highlight" id="dashboardDebtAttention" style="margin-top:10px">—</div>
           <div class="debt-summary-grid" style="margin-top:10px">
             <div class="kpi"><div><div class="label">إجمالي المتبقي</div><div class="value" id="dashDebtRemaining">—</div></div><span class="tag">📉</span></div>
             <div class="kpi"><div><div class="label">التزامات نشطة</div><div class="value" id="dashDebtActive">—</div></div><span class="tag">📋</span></div>
@@ -622,6 +685,17 @@
             <button class="btn small" id="btnGoBudgets">🧩 فتح تقسيم الميزانية</button>
           </div>
           <div style="margin-top:10px" id="budgetAlertsList" class="mini">—</div>
+
+          <div class="hr"></div>
+          <section class="dashboard-section" aria-labelledby="dashboardQuickActionsHeading">
+            <div class="dashboard-section-head"><div><h3 id="dashboardQuickActionsHeading">إجراءات سريعة</h3><div class="mini">انتقل مباشرة إلى الإجراء أو العرض المناسب.</div></div></div>
+            <div class="dashboard-quick-actions">
+              <button class="btn primary" id="btnDashboardAddTx" type="button">➕ إضافة عملية</button>
+              <button class="btn" id="btnDashboardBudgets" type="button">🧩 تقسيم الميزانية</button>
+              <button class="btn" id="btnDashboardDebts" type="button">📉 إدارة الديون</button>
+              <button class="btn" id="btnDashboardReports" type="button">📈 فتح التقارير</button>
+            </div>
+          </section>
         </div>
       </div>
     </section>
@@ -1400,6 +1474,7 @@
   <script src="./budget-model.js?v=20260908-phase6"></script>
   <script src="./comparison-model.js?v=20260908-phase7"></script>
   <script src="./category-analytics-model.js?v=20260908-phase8"></script>
+  <script src="./dashboard-model.js?v=20260908-phase9"></script>
 
 <script>
 /** =========================
@@ -1422,6 +1497,12 @@
   if(!TagModel) throw new Error("Tag model failed to load");
   const BudgetModel = window.PFMBudgetModel;
   if(!BudgetModel) throw new Error("Budget model failed to load");
+  const ComparisonModel = window.PFMComparisonModel;
+  if(!ComparisonModel) throw new Error("Comparison model failed to load");
+  const CategoryAnalyticsModel = window.PFMCategoryAnalyticsModel;
+  if(!CategoryAnalyticsModel) throw new Error("Category analytics model failed to load");
+  const DashboardModel = window.PFMDashboardModel;
+  if(!DashboardModel) throw new Error("Dashboard model failed to load");
   const SHOPPING_SHORT_LABELS = {
     meat:"لحوم", dairy:"ألبان", produce:"خضروات وفواكه", pantry:"مواد جافة ومعلبات",
     bakery:"مخبوزات", beverages:"مشروبات", frozen:"مجمدات", cleaning:"منظفات",
@@ -1554,6 +1635,16 @@
     const c = state.categories.find(x=>x.id===id);
     return c ? c.name : "غير مصنف";
   }
+  function dashboardCategoryName(id){
+    if(!id || id===ComparisonModel.UNCATEGORIZED) return "غير مصنف";
+    const category = state.categories.find(item=>item.id===id);
+    return category ? category.name : `تصنيف غير موجود (${id})`;
+  }
+  function dashboardMonthLabel(month){
+    const match = /^(\d{4})-(\d{2})$/.exec(String(month||""));
+    if(!match) return String(month||"—");
+    return new Intl.DateTimeFormat("ar-IQ", {month:"long",year:"numeric"}).format(new Date(Number(match[1]),Number(match[2])-1,1));
+  }
 
   // --- Transactions helpers
   function txInMonth(month){
@@ -1610,9 +1701,10 @@
   }
 
   function renderDashboard(){
-    const financials = totalsForMonth(activeMonth);
-    const expenseAnalytics = expenseAnalyticsForMonth(activeMonth);
-    const debtSummary = DebtModel.calculateSummary(state, todayISO());
+    const dashboard = DashboardModel.calculateDashboardSummary(state, activeMonth, todayISO());
+    const financials = dashboard.financials;
+    const expenseAnalytics = dashboard.expenses;
+    const debtSummary = dashboard.debt;
     $("#kpiAvailable").textContent = fmtCompact(financials.availableCash);
     $("#kpiClosing").textContent = fmtCompact(financials.closingBalance);
     $("#kpiExpense").textContent = fmtCompact(financials.totalExpenses);
@@ -1645,10 +1737,84 @@
     }else if(financials.netCashFlow>=0){ savingsPill.classList.add("ok"); savingsPill.textContent = "ادخار من دخل الشهر"; }
     else { savingsPill.classList.add("warn"); savingsPill.textContent = "مصاريف الشهر أعلى من دخله"; }
 
-    drawPie("pieExpense", expenseBreakdown(activeMonth));
+    drawPie("pieExpense", dashboard.categoryRankings.current.map(item=>({label:dashboardCategoryName(item.categoryId),value:item.amount})));
     drawBarIncomeExpense("barIncomeExpense", financials.trueIncome, financials.totalExpenses);
 
-    renderBudgetAlerts();
+    renderDashboardComparison(dashboard.comparison);
+    renderDashboardHighlights(dashboard);
+    renderDashboardAttention(dashboard.attention);
+    renderDashboardDebtAttention(dashboard.debtAttention);
+    renderBudgetAlerts(dashboard.budget);
+  }
+
+  function dashboardMetricText(metric, kind){
+    const currentPrevious = `<div class="mini">الحالي ${fmtCompact(metric.current)} · السابق ${fmtCompact(metric.previous)}</div>`;
+    if(metric.delta===0) return `لم يتغير.${currentPrevious}`;
+    const direction = metric.delta>0 ? "أعلى" : "أقل";
+    const percent = metric.percentChange===null ? "" : ` (${metric.delta>0?"+":"−"}${Math.abs(metric.percentChange).toFixed(1)}%)`;
+    if(kind==="net"){
+      const wording = metric.delta>0 ? "تحسن" : "تراجع";
+      return `${wording} بـ ${fmtCompact(metric.absoluteDelta)}${currentPrevious}`;
+    }
+    return `${direction} بـ ${fmtCompact(metric.absoluteDelta)}${kind==="expense"?percent:""}${currentPrevious}`;
+  }
+
+  function renderDashboardComparison(comparison){
+    $("#dashboardComparisonMonths").textContent = `${dashboardMonthLabel(comparison.currentMonth)} مقابل ${dashboardMonthLabel(comparison.comparisonMonth)}`;
+    $("#dashboardIncompleteNote").hidden = !comparison.isIncompleteCurrentMonth;
+    $("#dashboardComparisonEmpty").hidden = comparison.hasAnyActivity;
+    $("#dashboardComparisonRows").hidden = !comparison.hasAnyActivity;
+    if(!comparison.hasAnyActivity) return;
+    $("#dashboardExpenseComparison").innerHTML = dashboardMetricText(comparison.metrics.totalExpenses,"expense");
+    $("#dashboardLivingComparison").innerHTML = dashboardMetricText(comparison.metrics.costOfLiving,"living");
+    $("#dashboardNetComparison").innerHTML = dashboardMetricText(comparison.metrics.netCashFlow,"net");
+  }
+
+  function renderDashboardHighlights(dashboard){
+    const top = dashboard.topCategory;
+    $("#dashboardTopCategory").textContent = top
+      ? `${dashboardCategoryName(top.categoryId)} — ${fmtCompact(top.amount)} — ${top.share===null?"—":`${(top.share*100).toFixed(1)}%`}`
+      : "لا توجد بيانات مصروف لهذا الشهر.";
+    const highlight = dashboard.driverHighlight;
+    let text = "لا توجد بيانات مقارنة كافية.";
+    if(highlight?.kind==="increase") text = `أكبر مساهم في زيادة المصروف: ${dashboardCategoryName(highlight.driver.categoryId)} +${fmtCompact(highlight.driver.delta)}`;
+    if(highlight?.kind==="decrease") text = `أكبر مساهم في خفض المصروف: ${dashboardCategoryName(highlight.driver.categoryId)} −${fmtCompact(highlight.driver.absoluteDelta)}`;
+    if(highlight?.kind==="composition_changed") text = "إجمالي المصروف ثابت، لكن توزيع الإنفاق تغيّر.";
+    if(dashboard.comparison.hasAnyActivity && !highlight) text = "لا يوجد تغير جوهري في توزيع المصروف.";
+    $("#dashboardDriverHighlight").textContent = text;
+  }
+
+  function dashboardAttentionPresentation(item){
+    if(item.type==="overdue_debt") return {cls:"danger",text:`يوجد قسط متأخر بقيمة ${fmtCompact(item.amount)}.`,action:"فتح الديون"};
+    if(item.type==="budget_alert"){
+      const status = item.status===BudgetModel.EXCEEDED ? "تجاوز ميزانيته" : item.status===BudgetModel.AT_LIMIT ? "بلغ حد ميزانيته" : "اقترب من حد ميزانيته";
+      return {cls:item.status===BudgetModel.EXCEEDED?"danger":"warn",text:`تصنيف ${dashboardCategoryName(item.categoryId)} ${status}: ${fmtCompact(item.actualAmount)} من ${fmtCompact(item.plannedAmount)}.`,action:"فتح الميزانية"};
+    }
+    if(item.type==="negative_closing") return {cls:"danger",text:`الرصيد الختامي المتوقع حسب العمليات المسجلة سالب بمقدار ${fmtCompact(item.amount)}.`,action:"فتح التقارير"};
+    if(item.type==="negative_net") return {cls:"warn",text:`مصروفات الشهر تتجاوز دخل الشهر الحقيقي بمقدار ${fmtCompact(item.amount)}.`,action:"فتح التقارير"};
+    if(item.type==="expense_increase") return {cls:"warn",text:`مصروف الشهر أعلى من الشهر السابق بمقدار ${fmtCompact(item.amount)}${item.percentChange===null?"":` (+${item.percentChange.toFixed(1)}%)`}.`,action:"فتح المقارنة"};
+    if(item.type==="unbudgeted_spending") return {cls:"warn",text:`يوجد مصروف بلا ميزانية محددة بقيمة ${fmtCompact(item.amount)}.`,action:"فتح الميزانية"};
+    return {cls:"ok",text:"لا توجد حالات ذات أولوية تتطلب إجراءً الآن.",action:""};
+  }
+
+  function renderDashboardAttention(items){
+    $("#dashboardAttentionList").innerHTML = items.map(item=>{
+      const view = dashboardAttentionPresentation(item);
+      const button = item.target ? `<button class="btn small" type="button" data-dashboard-target="${item.target}">${view.action}</button>` : "";
+      return `<div class="attention-item ${view.cls}"><span>${escapeHTML(view.text)}</span>${button}</div>`;
+    }).join("");
+  }
+
+  function renderDashboardDebtAttention(attention){
+    let text = "لا توجد التزامات مسجلة.";
+    let cls = "ok";
+    if(attention.state==="overdue"){ text=`الأولوية الآن: دفعات متأخرة بقيمة ${fmtCompact(attention.amount)}.`; cls="danger"; }
+    if(attention.state==="due_today"){ text=`دفعة مستحقة اليوم: ${fmtCompact(attention.amount)} — ${attention.due.name}.`; cls="warn"; }
+    if(attention.state==="upcoming"){ text=`أقرب دفعة: ${fmtCompact(attention.amount)} بتاريخ ${attention.due.date} — ${attention.due.name}.`; cls=""; }
+    if(attention.state==="unknown"){ text="توجد التزامات نشطة، ولا توجد دفعة قادمة معروفة."; cls=""; }
+    const box=$("#dashboardDebtAttention");
+    box.className=`dashboard-highlight ${cls}`;
+    box.textContent=text;
   }
 
   function budgetStatusPresentation(status){
@@ -1659,8 +1825,7 @@
     return { label:"بدون ميزانية", cls:"" };
   }
 
-  function renderBudgetAlerts(){
-    const analytics = BudgetModel.calculateBudgetAnalytics(state, activeMonth);
+  function renderBudgetAlerts(analytics = BudgetModel.calculateBudgetAnalytics(state, activeMonth)){
     const box = $("#budgetAlertsList");
     if(analytics.budgetedCategoryCount===0){
       box.innerHTML = `<span class="muted">لا توجد ميزانيات محددة لهذا الشهر.${analytics.unbudgetedActualTotal>0 ? ` مصروف بدون ميزانية: ${fmtCompact(analytics.unbudgetedActualTotal)}.` : ""}</span>`;
@@ -1670,17 +1835,22 @@
       box.innerHTML = `<span class="muted">جميع التصنيفات ذات الميزانية ضمن الحدود.${analytics.unbudgetedActualTotal>0 ? ` مصروف بدون ميزانية: ${fmtCompact(analytics.unbudgetedActualTotal)}.` : ""}</span>`;
       return;
     }
-    const alertRows = analytics.alerts.slice(0,5).map(alert=>{
+    const aggregate = [
+      analytics.exceededCategoryCount ? `${analytics.exceededCategoryCount} متجاوزة` : "",
+      analytics.atLimitCategoryCount ? `${analytics.atLimitCategoryCount} عند الحد` : "",
+      analytics.warningCategoryCount ? `${analytics.warningCategoryCount} قريبة من الحد` : ""
+    ].filter(Boolean).join(" · ");
+    const alertRows = analytics.alerts.slice(0,3).map(alert=>{
       const view = budgetStatusPresentation(alert.status);
       return `<div class="row" style="justify-content:space-between;padding:10px;border:1px solid var(--border);border-radius:14px;background:var(--panel);margin-bottom:8px">
-        <div><b>${escapeHTML(catName(alert.categoryId))}</b><div class="mini">${alert.percentUsed.toFixed(0)}% — ${view.label}</div></div>
+        <div><b>${escapeHTML(dashboardCategoryName(alert.categoryId))}</b><div class="mini">${alert.percentUsed.toFixed(0)}% — ${view.label}</div></div>
         <span class="pill ${view.cls}">${fmtCompact(alert.actualAmount)} / ${fmtCompact(alert.plannedAmount)}</span>
       </div>`;
     }).join("");
     const unbudgetedNote = analytics.unbudgetedActualTotal>0
       ? `<div class="help" style="margin-top:8px">مصروف بدون ميزانية: <b>${fmtCompact(analytics.unbudgetedActualTotal)}</b></div>`
       : "";
-    box.innerHTML = alertRows + unbudgetedNote;
+    box.innerHTML = (aggregate ? `<div class="pill" style="margin-bottom:8px">${escapeHTML(aggregate)}</div>` : "") + alertRows + unbudgetedNote;
   }
 
   function renderFilterCategories(){
@@ -2237,19 +2407,13 @@
 
   // --- Breakdown helpers
   function expenseByCategory(month){
-    const txs = txInMonth(month).filter(t=>t.type==="expense");
-    const map = {};
-    txs.forEach(t=>{
-      const k = t.categoryId || "uncat";
-      map[k] = (map[k]||0) + Number(t.amount||0);
-    });
-    return map;
+    return ComparisonModel.getMonthCategoryExpenses(state,month);
   }
 
   function expenseBreakdown(month){
     const by = expenseByCategory(month);
     const items = Object.entries(by).map(([catId, value]) => ({
-      label: catName(catId),
+      label: dashboardCategoryName(catId),
       value: Number(value||0)
     })).filter(x=>x.value>0);
 
@@ -2468,6 +2632,17 @@
   $("#btnAddTx").addEventListener("click", () => openTxModal());
   $("#btnAddTx2").addEventListener("click", () => openTxModal());
   $("#btnGoBudgets").addEventListener("click", () => { setTab("budgets"); });
+  $("#btnDashboardAddTx").addEventListener("click", () => openTxModal());
+  $("#btnDashboardBudgets").addEventListener("click", () => setTab("budgets"));
+  $("#btnDashboardDebts").addEventListener("click", () => setTab("debts"));
+  $("#btnDashboardReports").addEventListener("click", () => setTab("reports"));
+  $("#btnDashboardComparisonReports").addEventListener("click", () => setTab("reports"));
+  $("#btnDashboardCategoryReports").addEventListener("click", () => setTab("reports"));
+  $("#btnDashboardDriverReports").addEventListener("click", () => setTab("reports"));
+  $("#dashboardAttentionList").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-dashboard-target]");
+    if(button) setTab(button.dataset.dashboardTarget);
+  });
 
   $("#btnCategories").addEventListener("click", () => openCategoriesModal());
   $("#btnCategories2").addEventListener("click", () => openCategoriesModal());
