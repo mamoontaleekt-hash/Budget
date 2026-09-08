@@ -167,7 +167,7 @@ try {
 
   await evaluate(`navigator.serviceWorker.ready`); await reload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async r=>({active:!!r.active,controlled:!!navigator.serviceWorker.controller,keys:await caches.keys(),budget:!!(await caches.match('./budget-model.js?v=20260908-phase6'))}))`);
-  assert.equal(pwa.active, true); assert.equal(pwa.controlled, true); assert.ok(pwa.keys.includes("pfm-pwa-v13")); assert.equal(pwa.budget, true); assert.equal(pwa.keys.includes("pfm-pwa-v10"), false);
+  assert.equal(pwa.active, true); assert.equal(pwa.controlled, true); assert.ok(pwa.keys.includes("pfm-pwa-v14")); assert.equal(pwa.budget, true); assert.equal(pwa.keys.includes("pfm-pwa-v10"), false);
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 }); await reload();
   assert.deepEqual(await evaluate(`({heading:document.querySelector('h1')?.innerText,budget:!!window.PFMBudgetModel})`), { heading: "إدارة المصاريف الشخصية", budget: true });
