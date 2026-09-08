@@ -14,7 +14,7 @@ const APP_SHELL = [
   "./shopping-model.js?v=20260908-phase4",
   "./tag-model.js?v=20260908-phase5",
   "./budget-model.js?v=20260908-phase6",
-  "./report-enhancements.js?v=20260907-phase3",
+  "./report-enhancements.js?v=20260908-phase6",
   "./mobile-enhancements.css",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
@@ -23,6 +23,7 @@ const STALE_SHELL_ASSETS = [
   "./debt-model.js?v=20260907-phase3",
   "./tag-model.js",
   "./budget-model.js",
+  "./report-enhancements.js?v=20260907-phase3",
 ];
 
 self.addEventListener("install", (event) => {
