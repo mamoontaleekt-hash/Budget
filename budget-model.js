@@ -49,12 +49,13 @@
       if (!isRecord(transaction)
         || transaction.type !== "expense"
         || transaction.deletedAt
-        || String(transaction.date || "").slice(0, 7) !== month
-        || typeof transaction.categoryId !== "string"
-        || transaction.categoryId.length === 0) return;
+        || String(transaction.date || "").slice(0, 7) !== month) return;
       const amount = positiveAmount(transaction.amount);
       if (amount <= 0) return;
-      actuals[transaction.categoryId] = (actuals[transaction.categoryId] || 0) + amount;
+      const categoryId = typeof transaction.categoryId === "string" && transaction.categoryId.length > 0
+        ? transaction.categoryId
+        : "uncat";
+      actuals[categoryId] = (actuals[categoryId] || 0) + amount;
     });
     return actuals;
   }

@@ -143,6 +143,14 @@ try {
   })()`);
   assert.deepEqual(lifecycle, { deleted: 0, restored: 500000, oldAfterCategory: 0, newAfterCategory: 800000, sepAfterMove: 0, octAfterMove: 500000 });
 
+  const noCategories = { version: 1, categories: [{ id: "in_salary", type: "income", name: "راتب" }], transactions: [{ id: "orphan", type: "expense", categoryId: "", amount: 300000, date: "2026-09-08" }], budgets: {} };
+  await evaluate(`window.dispatchEvent(new CustomEvent('pfm:apply',{detail:${JSON.stringify(noCategories)}})); document.querySelector('#tabs .tab[data-tab="budgets"]').click()`);
+  const emptyBudgetView = await evaluate(`({table:document.querySelector('#budgetTableBody').innerText,unbudgeted:document.querySelector('#budgetSummaryUnbudgeted').innerText,overall:document.querySelector('#budgetOverallStatus').innerText})`);
+  assert.match(emptyBudgetView.table, /لا توجد تصنيفات مصروف/);
+  assert.match(emptyBudgetView.unbudgeted, /300,000|٣٠٠٬٠٠٠/);
+  assert.match(emptyBudgetView.overall, /بدون ميزانية/);
+  await evaluate(`window.dispatchEvent(new CustomEvent('pfm:apply',{detail:${JSON.stringify(scenario)}})); document.querySelector('#tabs .tab[data-tab="budgets"]').click()`);
+
   const viewports = {};
   for (const width of [390, 768, 1200]) {
     await send("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: false });

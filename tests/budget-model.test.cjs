@@ -78,6 +78,12 @@ test("restored expense is counted", () => assert.equal(Budget.calculateCategoryA
 test("income is ignored", () => assert.deepEqual(Budget.calculateCategoryActuals(state([tx({ type: "income" })]), month), {}));
 test("other month is ignored", () => assert.deepEqual(Budget.calculateCategoryActuals(state([tx({ date: "2026-08-31" })]), month), {}));
 test("non-positive and malformed amounts are ignored", () => assert.deepEqual(Budget.calculateCategoryActuals(state([tx({ amount: 0 }), tx({ id: "t2", amount: -1 }), tx({ id: "t3", amount: "bad" })]), month), {}));
+test("missing category is retained as unbudgeted spending", () => {
+  const analytics = Budget.calculateBudgetAnalytics(state([tx({ categoryId: "", amount: 300 })]), month);
+  assert.equal(analytics.actualsByCategory.uncat, 300);
+  assert.equal(analytics.unbudgetedActualTotal, 300);
+  assert.equal(analytics.totalExpenseActual, 300);
+});
 test("category change moves usage to the new category", () => {
   assert.deepEqual(Budget.calculateCategoryActuals(state([tx({ categoryId: "ex_restaurant" })]), month), { ex_restaurant: 100 });
 });

@@ -2009,11 +2009,6 @@
     const actualByCat = savedAnalytics.actualsByCategory;
 
     const tbody = $("#budgetTableBody");
-    if(expenseCats.length===0){
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">لا توجد تصنيفات مصروف. أضف تصنيفاً أولاً.</td></tr>`;
-      return;
-    }
-
     const rows = expenseCats.map(c=>{
       const planned = Number(plan.items?.[c.id]?.amount || 0);
       const note = plan.items?.[c.id]?.note || "";
@@ -2031,7 +2026,9 @@
       </tr>`;
     });
 
-    tbody.innerHTML = rows.join("");
+    tbody.innerHTML = rows.length
+      ? rows.join("")
+      : `<tr><td colspan="7" class="muted">لا توجد تصنيفات مصروف. أضف تصنيفاً أولاً.</td></tr>`;
 
     // live compute totals
     function recalc(){
