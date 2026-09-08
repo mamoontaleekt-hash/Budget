@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const Category = require("../category-analytics-model.js");
 const Comparison = require("../comparison-model.js");
+const Financial = require("../financial-model.js");
 
 const ACTIVE = "2026-09";
 const tx = (id, month, amount, categoryId = "grocery", extra = {}) => ({ id, date: `${month}-10`, type: "expense", amount, categoryId, ...extra });
@@ -51,6 +52,7 @@ test("one-category monthly series amounts are correct", () => {
 test("transaction count per month is correct", () => assert.equal(analytics(makeState([tx("a", ACTIVE, 1), tx("b", ACTIVE, 2)])).series.at(-1).transactionCount, 2));
 test("monthly share is correct", () => assert.equal(analytics(makeState([tx("a", ACTIVE, 25), tx("b", ACTIVE, 75, "rent")])).series.at(-1).shareOfMonthExpenses, 0.25));
 test("monthly share is null with zero expenses", () => assert.equal(analytics(makeState()).series.at(-1).shareOfMonthExpenses, null));
+test("monthly share denominator ignores malformed negative expenses", () => assert.equal(analytics(makeState([tx("a", ACTIVE, 100), tx("bad", ACTIVE, -50, "rent")])).series.at(-1).shareOfMonthExpenses, 1));
 test("current month amount is correct", () => assert.equal(analytics(makeState([tx("a", ACTIVE, 40), tx("b", "2026-08", 60)])).currentMonthAmount, 40));
 test("previous month amount is correct", () => assert.equal(analytics(makeState([tx("a", ACTIVE, 40), tx("b", "2026-08", 60)])).previousMonthAmount, 60));
 test("current previous delta uses comparison semantics", () => assert.equal(analytics(makeState([tx("a", ACTIVE, 40), tx("b", "2026-08", 20)])).currentVsPreviousDelta, Comparison.compareMetric(40, 20).delta));
@@ -114,6 +116,16 @@ test("default category prefers current-month leader", () => assert.equal(Categor
 test("default category falls back to 12-month leader", () => assert.equal(Category.getDefaultCategoryId(makeState([tx("r", "2026-08", 100, "rent")]), ACTIVE), "rent"));
 test("default category falls back to first expense definition", () => assert.equal(Category.getDefaultCategoryId(makeState(), ACTIVE), "grocery"));
 test("legacy state is safe", () => assert.doesNotThrow(() => Category.calculateCategoryOverview({}, ACTIVE)));
+test("overview aggregates the 12-month window once regardless of category count", () => {
+  const original = Financial.calculateMonthFinancials;
+  let calls = 0;
+  Financial.calculateMonthFinancials = (...args) => { calls += 1; return original(...args); };
+  try {
+    const transactions = Array.from({ length: 20 }, (_, index) => tx(`t${index}`, ACTIVE, index + 1, `category-${index}`));
+    Category.calculateCategoryOverview(makeState(transactions), ACTIVE);
+    assert.equal(calls, 12);
+  } finally { Financial.calculateMonthFinancials = original; }
+});
 
 for (const key of ["transactions", "categories", "budgets", "financialSettings", "expenseSettings", "debtSettings", "shoppingSettings", "tagSettings"]) {
   test(`model does not mutate ${key}`, () => {

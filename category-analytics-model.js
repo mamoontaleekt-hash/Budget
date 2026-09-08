@@ -62,23 +62,57 @@
     return String(left.id || "").localeCompare(String(right.id || ""));
   }
 
-  function getCategoryMonthStats(state, categoryId, month) {
-    const transactions = validExpenseTransactions(state, new Set([month]), categoryId).slice().sort(compareTransactions);
-    const amount = transactions.reduce((sum, transaction) => sum + finiteNumber(transaction.amount), 0);
-    const monthExpenses = FinancialModel.calculateMonthFinancials(state, month).totalExpenses;
+  function createAnalyticsContext(state, activeMonth, count) {
+    const months = getAnalyticsMonths(activeMonth, count);
+    const transactions = validExpenseTransactions(state, new Set(months));
+    const monthly = new Map(months.map((month) => [month, { total: 0, categories: new Map() }]));
+    const categoryTransactions = new Map();
+    transactions.forEach((transaction) => {
+      const month = String(transaction.date || "").slice(0, 7);
+      const categoryId = normalizeCategoryId(transaction.categoryId);
+      const amount = finiteNumber(transaction.amount);
+      const monthRow = monthly.get(month);
+      monthRow.total += amount;
+      const categoryRow = monthRow.categories.get(categoryId) || { amount: 0, transactions: [] };
+      categoryRow.amount += amount;
+      categoryRow.transactions.push(transaction);
+      monthRow.categories.set(categoryId, categoryRow);
+      const allCategoryTransactions = categoryTransactions.get(categoryId) || [];
+      allCategoryTransactions.push(transaction);
+      categoryTransactions.set(categoryId, allCategoryTransactions);
+    });
+    monthly.forEach((row, month) => {
+      row.financialTotal = FinancialModel.calculateMonthFinancials(state, month).totalExpenses;
+      row.categories.forEach((category) => category.transactions.sort(compareTransactions));
+    });
+    categoryTransactions.forEach((rows) => rows.sort(compareTransactions));
+    return { activeMonth, months, monthly, categoryTransactions };
+  }
+
+  function statsFromContext(context, categoryId, month) {
+    const normalizedId = normalizeCategoryId(categoryId);
+    const monthRow = context.monthly.get(month) || { total: 0, financialTotal: 0, categories: new Map() };
+    const categoryRow = monthRow.categories.get(normalizedId) || { amount: 0, transactions: [] };
+    const financialTotalIsValid = Number.isFinite(monthRow.financialTotal) && Math.abs(monthRow.financialTotal - monthRow.total) < 1e-8;
+    const denominator = financialTotalIsValid ? monthRow.financialTotal : monthRow.total;
     return {
       month,
-      categoryId: normalizeCategoryId(categoryId),
-      amount,
-      transactionCount: transactions.length,
-      shareOfMonthExpenses: monthExpenses > 0 ? amount / monthExpenses : null,
-      transactions,
+      categoryId: normalizedId,
+      amount: categoryRow.amount,
+      transactionCount: categoryRow.transactions.length,
+      shareOfMonthExpenses: denominator > 0 ? categoryRow.amount / denominator : null,
+      transactions: categoryRow.transactions,
     };
   }
 
+  function getCategoryMonthStats(state, categoryId, month) {
+    return statsFromContext(createAnalyticsContext(state, month, 1), categoryId, month);
+  }
+
   function getCategorySeries(state, categoryId, activeMonth, count) {
-    return getAnalyticsMonths(activeMonth, count).map((month) => {
-      const stats = getCategoryMonthStats(state, categoryId, month);
+    const context = createAnalyticsContext(state, activeMonth, count);
+    return context.months.map((month) => {
+      const stats = statsFromContext(context, categoryId, month);
       return {
         month: stats.month,
         amount: stats.amount,
@@ -88,12 +122,7 @@
     });
   }
 
-  function calculateCategoryRankings(state, activeMonth, count) {
-    const months = getAnalyticsMonths(activeMonth, count);
-    const monthSet = new Set(months);
-    const currentTransactions = validExpenseTransactions(state, new Set([activeMonth]));
-    const windowTransactions = validExpenseTransactions(state, monthSet);
-
+  function rankingsFromContext(context) {
     function rank(transactions) {
       const totals = new Map();
       transactions.forEach((transaction) => {
@@ -114,13 +143,16 @@
         }));
     }
 
+    const currentMonth = context.monthly.get(context.activeMonth);
+    const currentTransactions = currentMonth ? [...currentMonth.categories.values()].flatMap((row) => row.transactions) : [];
+    const windowTransactions = [...context.categoryTransactions.values()].flat();
     const current = rank(currentTransactions);
     const twelveMonth = rank(windowTransactions);
     const currentTotalExpenses = current.reduce((sum, row) => sum + row.amount, 0);
     const twelveMonthTotalExpenses = twelveMonth.reduce((sum, row) => sum + row.amount, 0);
     const top3Amount = twelveMonth.slice(0, 3).reduce((sum, row) => sum + row.amount, 0);
     return {
-      months,
+      months: context.months,
       current,
       twelveMonth,
       currentTotalExpenses,
@@ -130,17 +162,27 @@
     };
   }
 
+  function calculateCategoryRankings(state, activeMonth, count) {
+    return rankingsFromContext(createAnalyticsContext(state, activeMonth, count));
+  }
+
   function calculateCategoryAnalytics(state, categoryId, activeMonth, options) {
     const count = Number.isInteger(options?.count) && options.count > 0 ? options.count : DEFAULT_MONTH_COUNT;
     const normalizedId = normalizeCategoryId(categoryId);
-    const months = getAnalyticsMonths(activeMonth, count);
-    const series = getCategorySeries(state, normalizedId, activeMonth, count);
+    const context = options?.context || createAnalyticsContext(state, activeMonth, count);
+    const months = context.months;
+    const series = months.map((month) => {
+      const stats = statsFromContext(context, normalizedId, month);
+      return { month, amount: stats.amount, transactionCount: stats.transactionCount, shareOfMonthExpenses: stats.shareOfMonthExpenses };
+    });
     const previousMonth = ComparisonModel.addMonths(activeMonth, -1);
-    const currentStats = getCategoryMonthStats(state, normalizedId, activeMonth);
-    const previousStats = getCategoryMonthStats(state, normalizedId, previousMonth);
+    const currentStats = statsFromContext(context, normalizedId, activeMonth);
+    const previousStats = context.monthly.has(previousMonth)
+      ? statsFromContext(context, normalizedId, previousMonth)
+      : getCategoryMonthStats(state, normalizedId, previousMonth);
     const currentVsPrevious = ComparisonModel.compareMetric(currentStats.amount, previousStats.amount);
-    const rankings = options?.rankings || calculateCategoryRankings(state, activeMonth, count);
-    const transactions = validExpenseTransactions(state, new Set(months), normalizedId).slice().sort(compareTransactions);
+    const rankings = options?.rankings || rankingsFromContext(context);
+    const transactions = context.categoryTransactions.get(normalizedId) || [];
     const twelveMonthTotal = series.reduce((sum, row) => sum + row.amount, 0);
     const activeRows = series.filter((row) => row.amount > 0);
     const activeMonthCount = activeRows.length;
@@ -189,13 +231,14 @@
   }
 
   function calculateCategoryOverview(state, activeMonth, count) {
-    const rankings = calculateCategoryRankings(state, activeMonth, count);
+    const context = createAnalyticsContext(state, activeMonth, count);
+    const rankings = rankingsFromContext(context);
     const categoryIds = new Set([
       ...rankings.current.map((row) => row.categoryId),
       ...rankings.twelveMonth.map((row) => row.categoryId),
     ]);
     const rows = [...categoryIds].map((categoryId) => {
-      const analytics = calculateCategoryAnalytics(state, categoryId, activeMonth, { count, rankings });
+      const analytics = calculateCategoryAnalytics(state, categoryId, activeMonth, { count, rankings, context });
       return {
         categoryId,
         currentMonthAmount: analytics.currentMonthAmount,
