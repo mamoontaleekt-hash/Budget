@@ -84,7 +84,7 @@ try {
 
   await evaluate(`navigator.serviceWorker.ready`); await reload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async r=>({active:!!r.active,controlled:!!navigator.serviceWorker.controller,keys:await caches.keys(),comparison:!!(await caches.match('./comparison-model.js?v=20260908-phase7')),category:!!(await caches.match('./category-analytics-model.js?v=20260908-phase8')),report:!!(await caches.match('./report-enhancements.js?v=20260908-phase8')),stale:!!(await caches.match('./report-enhancements.js?v=20260908-phase7'))}))`);
-  assert.equal(pwa.active, true); assert.equal(pwa.controlled, true); assert.ok(pwa.keys.includes("pfm-pwa-v14")); assert.equal(pwa.comparison, true); assert.equal(pwa.category, true); assert.equal(pwa.report, true); assert.equal(pwa.stale, false);
+  assert.equal(pwa.active, true); assert.equal(pwa.controlled, true); assert.ok(pwa.keys.includes("pfm-pwa-v15")); assert.equal(pwa.comparison, true); assert.equal(pwa.category, true); assert.equal(pwa.report, true); assert.equal(pwa.stale, false);
   const errorCount = errors.length; await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 }); await reload();
   assert.deepEqual(await evaluate(`({heading:document.querySelector('h1')?.innerText,comparison:!!window.PFMComparisonModel,category:!!window.PFMCategoryAnalyticsModel,report:!!document.querySelector('#monthlyComparisonHeading')})`), { heading: "إدارة المصاريف الشخصية", comparison: true, category: true, report: true });
   assert.deepEqual(errors.slice(errorCount).filter((error) => !expectedFirebaseError(error)), []);

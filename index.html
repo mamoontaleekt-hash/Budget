@@ -448,7 +448,7 @@
       .debt-list,.debt-form-grid{grid-template-columns:1fr}
     }
   </style>
-  <link rel="stylesheet" href="./mobile-enhancements.css">
+  <link rel="stylesheet" href="./mobile-enhancements.css?v=20260908-ux1">
 </head>
 
 <body>
@@ -476,14 +476,14 @@
 </div>
     </div>
 
-    <div class="tabs" id="tabs">
-      <div class="tab active" data-tab="dash">📊 لوحة التحكم</div>
-      <div class="tab" data-tab="tx">🧾 العمليات</div>
-      <div class="tab" data-tab="budgets">🧩 تقسيم الميزانية</div>
-      <div class="tab" data-tab="debts">📉 الديون والأقساط</div>
-      <div class="tab" data-tab="reports">📈 التقارير</div>
-      <div class="tab" data-tab="settings">⚙️ الإعدادات</div>
-    </div>
+    <nav class="tabs" id="tabs" aria-label="التنقل الرئيسي">
+      <button type="button" class="tab active" data-tab="dash" aria-current="page"><span class="tab-icon" aria-hidden="true">📊</span><span class="tab-label tab-label-desktop">لوحة التحكم</span><span class="tab-label tab-label-mobile">الرئيسية</span></button>
+      <button type="button" class="tab" data-tab="tx"><span class="tab-icon" aria-hidden="true">🧾</span><span class="tab-label tab-label-desktop">العمليات</span><span class="tab-label tab-label-mobile">العمليات</span></button>
+      <button type="button" class="tab" data-tab="budgets"><span class="tab-icon" aria-hidden="true">🧩</span><span class="tab-label tab-label-desktop">تقسيم الميزانية</span><span class="tab-label tab-label-mobile">الميزانية</span></button>
+      <button type="button" class="tab" data-tab="debts"><span class="tab-icon" aria-hidden="true">📉</span><span class="tab-label tab-label-desktop">الديون والأقساط</span><span class="tab-label tab-label-mobile">الديون</span></button>
+      <button type="button" class="tab" data-tab="reports"><span class="tab-icon" aria-hidden="true">📈</span><span class="tab-label tab-label-desktop">التقارير</span><span class="tab-label tab-label-mobile">التقارير</span></button>
+      <button type="button" class="tab" data-tab="settings"><span class="tab-icon" aria-hidden="true">⚙️</span><span class="tab-label tab-label-desktop">الإعدادات</span><span class="tab-label tab-label-mobile">الإعدادات</span></button>
+    </nav>
 
     <!-- DASHBOARD -->
     <section id="view-dash" class="grid">
@@ -1603,7 +1603,12 @@
   $$("#tabs .tab").forEach(t => t.addEventListener("click", () => setTab(t.dataset.tab)));
   function setTab(tab){
     activeTab = tab;
-    $$("#tabs .tab").forEach(t => t.classList.toggle("active", t.dataset.tab===tab));
+    $$("#tabs .tab").forEach(t => {
+      const isActive = t.dataset.tab===tab;
+      t.classList.toggle("active", isActive);
+      if(isActive) t.setAttribute("aria-current", "page");
+      else t.removeAttribute("aria-current");
+    });
     $$("#view-dash, #view-tx, #view-budgets, #view-debts, #view-reports, #view-settings").forEach(v => v.style.display="none");
     $(`#view-${tab}`).style.display = "block";
     render();
