@@ -191,7 +191,7 @@ try{
   await controlledReload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,keys:await caches.keys(),shopping:!!(await caches.match('./shopping-model.js?v=20260908-phase4'))}))`);
   console.log("PWA snapshot",pwa);
-  assert.equal(pwa.active,true); assert.equal(pwa.controlled,true); assert.ok(pwa.keys.includes("pfm-pwa-v12")); assert.equal(pwa.shopping,true);
+  assert.equal(pwa.active,true); assert.equal(pwa.controlled,true); assert.ok(pwa.keys.includes("pfm-pwa-v13")); assert.equal(pwa.shopping,true);
   assert.equal(pwa.keys.some(key=>key==="pfm-pwa-v8"),false);
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions",{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
