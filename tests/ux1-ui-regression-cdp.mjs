@@ -95,6 +95,10 @@ try {
   assert.ok(modalLayout.modalZ > modalLayout.navZ);
   assert.ok(modalLayout.footerBottom <= modalLayout.viewport + 1);
   assert.match(modalLayout.scrollable, /auto|scroll/);
+  await evaluate(`document.querySelector('#btnSaveTx').click()`);
+  const toastLayout = await evaluate(`(() => { const toast=document.querySelector('#toast'); const nav=document.querySelector('#tabs'); return {bottom:Math.round(toast.getBoundingClientRect().bottom),navTop:Math.round(nav.getBoundingClientRect().top),pointerEvents:getComputedStyle(toast).pointerEvents}; })()`);
+  assert.ok(toastLayout.bottom <= toastLayout.navTop);
+  assert.equal(toastLayout.pointerEvents, "none");
   await evaluate(`document.querySelector('#modalTx [data-close]').click()`);
 
   for (const [button, modal] of [["btnAddTx", "modalTx"], ["btnExport", "modalExport"], ["btnImport", "modalImport"], ["btnCloud", "modalCloud"]]) {
@@ -142,7 +146,7 @@ try {
   await send("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1, connectionType: "wifi" });
 
   assert.deepEqual(errors.filter((error) => !expectedFirebaseError(error)), []);
-  console.log(JSON.stringify({ result: "PASS", widths, activeVisual, modalLayout, controls, attentionTarget, pwa }, null, 2));
+  console.log(JSON.stringify({ result: "PASS", widths, activeVisual, modalLayout, toastLayout, controls, attentionTarget, pwa }, null, 2));
 } finally {
   try { socket.close(); } catch {}
   chrome.kill();

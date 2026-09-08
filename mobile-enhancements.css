@@ -50,6 +50,10 @@ textarea:focus-visible {
   display: none;
 }
 
+#toast {
+  pointer-events: none;
+}
+
 table {
   min-width: 620px;
 }
@@ -221,6 +225,10 @@ table {
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  #toast {
+    bottom: calc(81px + env(safe-area-inset-bottom)) !important;
   }
 
   .grid {

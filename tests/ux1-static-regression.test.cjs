@@ -20,6 +20,8 @@ assert.match(css, /env\(safe-area-inset-bottom\)/);
 assert.match(css, /padding:[^;]*88px[^;]*safe-area-inset-bottom/);
 assert.match(css, /\.tab\.active::before/);
 assert.match(css, /\.tab:focus-visible/);
+assert.match(css, /#toast\s*{\s*pointer-events:\s*none/);
+assert.match(css, /#toast\s*{\s*bottom:\s*calc\(81px \+ env\(safe-area-inset-bottom\)\) !important/);
 assert.doesNotMatch(css, /top:\s*154px|top:\s*246px/);
 assert.doesNotMatch(css, /@media \(max-width: 420px\)\s*{\s*\.controls\s*{\s*grid-template-columns:\s*1fr/);
 
