@@ -372,21 +372,22 @@ try{
   assert.equal(backupRoundTrip.restoredTransactionsUnchanged, true);
 
   await reload();
-  const sw = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,cacheKeys:await caches.keys(),financialAsset:!!(await caches.match('./financial-model.js?v=20260907-phase3')),expenseAsset:!!(await caches.match('./expense-model.js?v=20260907-phase3')),debtAsset:!!(await caches.match('./debt-model.js?v=20260908-phase3-corrective')),shoppingAsset:!!(await caches.match('./shopping-model.js?v=20260908-phase4')),staleDebtAsset:!!(await caches.match('./debt-model.js?v=20260907-phase3')),reportAsset:!!(await caches.match('./report-enhancements.js?v=20260908-phase6'))}))`);
+  const sw = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,cacheKeys:await caches.keys(),financialAsset:!!(await caches.match('./financial-model.js?v=20260907-phase3')),expenseAsset:!!(await caches.match('./expense-model.js?v=20260907-phase3')),debtAsset:!!(await caches.match('./debt-model.js?v=20260908-phase3-corrective')),shoppingAsset:!!(await caches.match('./shopping-model.js?v=20260908-phase4')),staleDebtAsset:!!(await caches.match('./debt-model.js?v=20260907-phase3')),comparisonAsset:!!(await caches.match('./comparison-model.js?v=20260908-phase7')),reportAsset:!!(await caches.match('./report-enhancements.js?v=20260908-phase7'))}))`);
   assert.equal(sw.active, true);
   assert.equal(sw.controlled, true);
-  assert.ok(sw.cacheKeys.includes("pfm-pwa-v11"));
+  assert.ok(sw.cacheKeys.includes("pfm-pwa-v12"));
   assert.equal(sw.financialAsset, true);
   assert.equal(sw.expenseAsset, true);
   assert.equal(sw.debtAsset, true);
   assert.equal(sw.shoppingAsset, true);
   assert.equal(sw.staleDebtAsset, false);
   assert.equal(sw.reportAsset, true);
+  assert.equal(sw.comparisonAsset, true);
 
   const errorCountBeforeOffline = errors.length;
   await send("Network.emulateNetworkConditions", {offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
   await reload();
-  const offline = await evaluate(`({heading:document.querySelector('h1')?.innerText,financialModel:!!window.PFMFinancialModel,expenseModel:!!window.PFMExpenseModel,debtModel:!!window.PFMDebtModel,shoppingModel:!!window.PFMShoppingModel,debtScript:[...document.scripts].filter(script=>script.src.includes('/debt-model.js?v=20260908-phase3-corrective')).length,shoppingScript:[...document.scripts].filter(script=>script.src.includes('/shopping-model.js?v=20260908-phase4')).length,reportScript:[...document.scripts].filter(script=>script.src.includes('/report-enhancements.js?v=20260908-phase6')).length,css:[...document.styleSheets].filter(sheet=>sheet.href?.endsWith('/mobile-enhancements.css')).length})`);
+  const offline = await evaluate(`({heading:document.querySelector('h1')?.innerText,financialModel:!!window.PFMFinancialModel,expenseModel:!!window.PFMExpenseModel,debtModel:!!window.PFMDebtModel,shoppingModel:!!window.PFMShoppingModel,comparisonModel:!!window.PFMComparisonModel,debtScript:[...document.scripts].filter(script=>script.src.includes('/debt-model.js?v=20260908-phase3-corrective')).length,shoppingScript:[...document.scripts].filter(script=>script.src.includes('/shopping-model.js?v=20260908-phase4')).length,reportScript:[...document.scripts].filter(script=>script.src.includes('/report-enhancements.js?v=20260908-phase7')).length,css:[...document.styleSheets].filter(sheet=>sheet.href?.endsWith('/mobile-enhancements.css')).length})`);
   assert.equal(offline.heading, "إدارة المصاريف الشخصية");
   assert.equal(offline.financialModel, true);
   assert.equal(offline.expenseModel, true);
@@ -395,6 +396,7 @@ try{
   assert.equal(offline.shoppingScript, 1);
   assert.equal(offline.debtScript, 1);
   assert.equal(offline.reportScript, 1);
+  assert.equal(offline.comparisonModel, true);
   assert.equal(offline.css, 1);
   const offlineErrors = errors.slice(errorCountBeforeOffline);
   const unexpectedOfflineErrors = offlineErrors.filter(error => !isExpectedFirebaseResourceError(error));
