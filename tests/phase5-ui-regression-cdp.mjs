@@ -111,6 +111,9 @@ try{
 
   await evaluate(`document.querySelector('[data-edit="${created.id}"]').click()`);
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('[data-transaction-tag]:checked')].map(input=>input.value)`),[travel,work]);
+  await evaluate(`document.querySelector('#txNote').value='تعديل غير محفوظ'; document.querySelector('#btnManageTagsFromTx').click(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
+  assert.deepEqual(await evaluate(`({tagsOpen:document.querySelector('#modalTags').classList.contains('open'),txOpen:document.querySelector('#modalTx').classList.contains('open'),note:document.querySelector('#txNote').value})`),{tagsOpen:false,txOpen:true,note:"تعديل غير محفوظ"});
+  await evaluate(`document.querySelector('#txNote').value='فاتورة مناسبة'`);
   await evaluate(`document.querySelector('#btnManageTagsFromTx').click(); document.querySelector('[data-archive-tag="${travel}"]').click(); document.querySelector('#modalTags [data-close]').click()`);
   assert.equal(await evaluate(`document.querySelector('[data-transaction-tag][value="${travel}"]').checked`),true);
   assert.ok((await evaluate(`document.querySelector('#txTagOptions').innerText`)).includes("مؤرشف"));

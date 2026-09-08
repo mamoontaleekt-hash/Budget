@@ -1515,7 +1515,7 @@
   $$("[data-close]").forEach(b => b.addEventListener("click", () => closeModal(b.getAttribute("data-close"))));
   document.addEventListener("keydown", (e) => {
     if(e.key==="Escape"){
-      $$(".modal.open").forEach(m => m.classList.remove("open"));
+      $$(".modal.open").at(-1)?.classList.remove("open");
     }
   });
 
