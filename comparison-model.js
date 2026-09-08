@@ -139,14 +139,13 @@
       const month = addMonths(currentMonth, -offset);
       if (month) expenses.push(FinancialModel.calculateMonthFinancials(state, month).totalExpenses);
     }
-    const active = expenses.filter((amount) => amount > 0);
-    const averageExpense = active.length
-      ? active.reduce((sum, amount) => sum + amount, 0) / active.length
+    const averageExpense = expenses.length
+      ? expenses.reduce((sum, amount) => sum + amount, 0) / expenses.length
       : 0;
     const difference = currentExpense - averageExpense;
     const percentFromAverage = averageExpense > 0 ? (difference / averageExpense) * 100 : null;
     return {
-      monthsConsidered: active.length,
+      monthsConsidered: expenses.length,
       averageExpense,
       difference,
       percentFromAverage,
@@ -189,7 +188,9 @@
       historicalContext: calculateHistoricalContext(state, currentMonth, currentFinancials.totalExpenses),
       hasAnyActivity:
         currentFinancials.trueIncome !== 0 || currentFinancials.totalExpenses !== 0 ||
-        comparisonFinancials.trueIncome !== 0 || comparisonFinancials.totalExpenses !== 0,
+        comparisonFinancials.trueIncome !== 0 || comparisonFinancials.totalExpenses !== 0 ||
+        currentFinancials.openingBalance !== 0 || currentFinancials.closingBalance !== 0 ||
+        comparisonFinancials.openingBalance !== 0 || comparisonFinancials.closingBalance !== 0,
       invariants: {
         currentCategoriesMatchExpenses: approximatelyEqual(spendingDrivers.currentCategoryTotal, currentFinancials.totalExpenses),
         comparisonCategoriesMatchExpenses: approximatelyEqual(spendingDrivers.comparisonCategoryTotal, comparisonFinancials.totalExpenses),
@@ -205,7 +206,7 @@
     if (Number.isNaN(date.getTime())) return false;
     const currentMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     if (month !== currentMonth) return false;
-    return date.getDate() < new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    return true;
   }
 
   function generateInsights(comparison, options) {

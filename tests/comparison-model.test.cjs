@@ -135,7 +135,21 @@ test("default comparison is previous calendar month", () => assert.equal(Compari
 test("month arithmetic crosses year boundary", () => assert.equal(Comparison.addMonths("2026-01", -1), "2025-12"));
 test("incomplete current month warning can use injected date", () => assert.equal(Comparison.isIncompleteCurrentMonth("2026-09", new Date(2026, 8, 8)), true));
 test("historical month has no incomplete warning", () => assert.equal(Comparison.isIncompleteCurrentMonth("2026-08", new Date(2026, 8, 8)), false));
-test("last day has no incomplete warning", () => assert.equal(Comparison.isIncompleteCurrentMonth("2026-09", new Date(2026, 8, 30)), false));
+test("last day retains incomplete warning", () => assert.equal(Comparison.isIncompleteCurrentMonth("2026-09", new Date(2026, 8, 30)), true));
+test("historical average includes empty months in the six-month denominator", () => {
+  const source = state([tx("past", "2026-08", "expense", 600, "grocery")]);
+  const result = Comparison.calculateMonthlyComparison(source, CURRENT, PREVIOUS).historicalContext;
+  assert.deepEqual([result.monthsConsidered, result.averageExpense], [6, 100]);
+});
+test("balance-only months count as comparison activity", () => {
+  const source = state([], { financialSettings: { months: {
+    [CURRENT]: { openingBalanceMode: "manual", openingBalanceAmount: 500 },
+    [PREVIOUS]: { openingBalanceMode: "manual", openingBalanceAmount: 300 },
+  } } });
+  const result = compare(source);
+  assert.equal(result.hasAnyActivity, true);
+  assert.equal(result.metrics.closingBalance.delta, 200);
+});
 test("zero net mix insight reports composition change", () => {
   const source = state([tx("pg", PREVIOUS, "expense", 500, "grocery"), tx("pr", PREVIOUS, "expense", 500, "restaurants"), tx("cg", CURRENT, "expense", 800, "grocery"), tx("cr", CURRENT, "expense", 200, "restaurants")]);
   assert.match(Comparison.generateInsights(compare(source))[0], /توزيع الإنفاق/);
