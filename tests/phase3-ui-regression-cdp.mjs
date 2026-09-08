@@ -106,6 +106,16 @@ const scenario = {
     paymentLinks:{"home-pay":"home","appliance-pay":"appliance"},
   },
 };
+const missingDebtCategoryScenario = JSON.parse(JSON.stringify(scenario));
+missingDebtCategoryScenario.categories = missingDebtCategoryScenario.categories.filter(category => category.id !== "ex_debt");
+missingDebtCategoryScenario.transactions = [];
+missingDebtCategoryScenario.expenseSettings = {};
+missingDebtCategoryScenario.debtSettings = {
+  obligations: { personal: missingDebtCategoryScenario.debtSettings.obligations.personal },
+  paymentLinks: {},
+};
+const noExpenseCategoryScenario = JSON.parse(JSON.stringify(missingDebtCategoryScenario));
+noExpenseCategoryScenario.categories = noExpenseCategoryScenario.categories.filter(category => category.type !== "expense");
 
 try{
   await Promise.all([send("Page.enable"),send("Runtime.enable"),send("Log.enable")]);
@@ -133,13 +143,51 @@ try{
   assert.ok(linkedEdit.text.includes("دفعات المنزل"));
   await evaluate(`document.querySelector('#modalTx [data-close]').click()`);
 
+  const categoriesBeforeExDebtPayment = await evaluate(`JSON.stringify(JSON.parse(localStorage.getItem('pfm_data_v1')).categories)`);
   await evaluate(`document.querySelector('#tabs .tab[data-tab="debts"]').click(); document.querySelector('[data-debt-open="personal"]').click(); document.querySelector('[data-record-debt-payment]').click()`);
   await evaluate(`(() => { document.querySelector('#debtPaymentDate').value='2026-08-18'; document.querySelector('#debtPaymentAmount').value='150000'; document.querySelector('#btnSaveDebtPayment').click(); })()`);
-  const recorded = await evaluate(`(() => { const s=JSON.parse(localStorage.getItem('pfm_data_v1')); const added=s.transactions.filter(t=>!['home-pay','appliance-pay','eligible-pay','living'].includes(t.id)); return {count:added.length,type:added[0]?.type,category:added[0]?.categoryId,link:s.debtSettings.paymentLinks[added[0]?.id],amount:added[0]?.amount}; })()`);
-  assert.deepEqual(recorded,{count:1,type:"expense",category:"ex_debt",link:"personal",amount:150000});
+  const recorded = await evaluate(`(() => { const s=JSON.parse(localStorage.getItem('pfm_data_v1')); const added=s.transactions.filter(t=>!['home-pay','appliance-pay','eligible-pay','living'].includes(t.id)); return {count:added.length,type:added[0]?.type,category:added[0]?.categoryId,link:s.debtSettings.paymentLinks[added[0]?.id],amount:added[0]?.amount,categoriesUnchanged:JSON.stringify(s.categories)===${JSON.stringify(categoriesBeforeExDebtPayment)}}; })()`);
+  assert.deepEqual(recorded,{count:1,type:"expense",category:"ex_debt",link:"personal",amount:150000,categoriesUnchanged:true});
 
+  const categoriesBeforeExistingLink = await evaluate(`JSON.stringify(JSON.parse(localStorage.getItem('pfm_data_v1')).categories)`);
   await evaluate(`document.querySelector('#modalDebtDetails [data-close]').click(); document.querySelector('[data-debt-open="personal"]').click(); document.querySelector('[data-link-existing]').click(); document.querySelector('[data-link-payment="eligible-pay"]').click()`);
-  assert.equal(await evaluate(`JSON.parse(localStorage.getItem('pfm_data_v1')).debtSettings.paymentLinks['eligible-pay']`),"personal");
+  const existingLinkSafety = await evaluate(`(() => { const s=JSON.parse(localStorage.getItem('pfm_data_v1')); return {link:s.debtSettings.paymentLinks['eligible-pay'],categoriesUnchanged:JSON.stringify(s.categories)===${JSON.stringify(categoriesBeforeExistingLink)}}; })()`);
+  assert.deepEqual(existingLinkSafety,{link:"personal",categoriesUnchanged:true});
+
+  const acceptedScenarioAfterPayments = await evaluate(`localStorage.getItem('pfm_data_v1')`);
+  await evaluate(`localStorage.setItem('pfm_data_v1', ${JSON.stringify(JSON.stringify(missingDebtCategoryScenario))})`);
+  await reload();
+  await evaluate(`(() => { const picker=document.querySelector('#monthPicker'); picker.value='2026-08'; picker.dispatchEvent(new Event('change',{bubbles:true})); document.querySelector('#tabs .tab[data-tab="debts"]').click(); document.querySelector('[data-debt-open="personal"]').click(); document.querySelector('[data-record-debt-payment]').click(); })()`);
+  const fallbackUi = await evaluate(`(() => { const select=document.querySelector('#debtPaymentCategory'); return {visible:document.querySelector('#debtPaymentCategoryWrap').style.display!=="none",disabled:select.disabled,value:select.value,options:[...select.options].map(option=>option.value),help:document.querySelector('#debtPaymentCategoryHelp').innerText}; })()`);
+  assert.equal(fallbackUi.visible,true);
+  assert.equal(fallbackUi.disabled,false);
+  assert.equal(fallbackUi.value,"");
+  assert.deepEqual(fallbackUi.options,["","ex_living","ex_misc"]);
+  assert.ok(fallbackUi.help.includes("فئة دين/سداد غير متاحة"));
+  const fallbackCategoriesBefore = JSON.stringify(missingDebtCategoryScenario.categories);
+  await evaluate(`(() => { document.querySelector('#debtPaymentDate').value='2026-08-18'; document.querySelector('#debtPaymentAmount').value='150000'; document.querySelector('#btnSaveDebtPayment').click(); })()`);
+  const missingChoiceBlocked = await evaluate(`(() => { const s=JSON.parse(localStorage.getItem('pfm_data_v1')); return {transactions:s.transactions.length,categoriesUnchanged:JSON.stringify(s.categories)===${JSON.stringify(fallbackCategoriesBefore)},modalOpen:document.querySelector('#modalDebtPayment').classList.contains('open')}; })()`);
+  assert.deepEqual(missingChoiceBlocked,{transactions:0,categoriesUnchanged:true,modalOpen:true});
+  await evaluate(`(() => { document.querySelector('#debtPaymentCategory').value='ex_misc'; document.querySelector('#btnSaveDebtPayment').click(); })()`);
+  const fallbackRecorded = await evaluate(`(() => { const s=JSON.parse(localStorage.getItem('pfm_data_v1')); const t=s.transactions[0]; const analytics=PFMExpenseModel.calculateExpenseAnalytics(s,'2026-08'); return {transactions:s.transactions.length,category:t?.categoryId,link:s.debtSettings.paymentLinks[t?.id],resolved:PFMExpenseModel.resolveExpenseClass(s,t),debtPayments:analytics.debtPayments,costOfLiving:analytics.costOfLiving,totalExpenses:analytics.totalExpenses,categoriesUnchanged:JSON.stringify(s.categories)===${JSON.stringify(fallbackCategoriesBefore)},hasDebtCategory:s.categories.some(category=>category.id==='ex_debt')}; })()`);
+  assert.deepEqual(fallbackRecorded,{transactions:1,category:"ex_misc",link:"personal",resolved:"debt_payment",debtPayments:150000,costOfLiving:0,totalExpenses:150000,categoriesUnchanged:true,hasDebtCategory:false});
+
+  await evaluate(`localStorage.setItem('pfm_data_v1', ${JSON.stringify(JSON.stringify(noExpenseCategoryScenario))})`);
+  await reload();
+  await evaluate(`document.querySelector('#tabs .tab[data-tab="debts"]').click(); document.querySelector('[data-debt-open="personal"]').click(); document.querySelector('[data-record-debt-payment]').click()`);
+  const noCategoryUi = await evaluate(`({disabled:document.querySelector('#debtPaymentCategory').disabled,help:document.querySelector('#debtPaymentCategoryHelp').innerText})`);
+  assert.equal(noCategoryUi.disabled,true);
+  assert.ok(noCategoryUi.help.includes("فئة مصروف موجودة مطلوبة"));
+  const noCategoryBefore = JSON.stringify(noExpenseCategoryScenario.categories);
+  await evaluate(`(() => { document.querySelector('#debtPaymentDate').value='2026-08-18'; document.querySelector('#debtPaymentAmount').value='150000'; document.querySelector('#btnSaveDebtPayment').click(); })()`);
+  const noCategoryBlocked = await evaluate(`(() => { const s=JSON.parse(localStorage.getItem('pfm_data_v1')); return {transactions:s.transactions.length,categoriesUnchanged:JSON.stringify(s.categories)===${JSON.stringify(noCategoryBefore)},message:document.querySelector('#toast')?.innerText||""}; })()`);
+  assert.equal(noCategoryBlocked.transactions,0);
+  assert.equal(noCategoryBlocked.categoriesUnchanged,true);
+  assert.ok(noCategoryBlocked.message.includes("فئة مصروف"));
+
+  await evaluate(`localStorage.setItem('pfm_data_v1', ${JSON.stringify(acceptedScenarioAfterPayments)})`);
+  await reload();
+  await evaluate(`(() => { const picker=document.querySelector('#monthPicker'); picker.value='2026-08'; picker.dispatchEvent(new Event('change',{bubbles:true})); document.querySelector('#tabs .tab[data-tab="debts"]').click(); })()`);
 
   await evaluate(`document.querySelector('#modalDebtDetails [data-close]').click(); document.querySelector('[data-debt-open="home"]').click(); document.querySelector('[data-unlink-payment="home-pay"]').click()`);
   const unlinked = await evaluate(`(() => { const s=JSON.parse(localStorage.getItem('pfm_data_v1')); const t=s.transactions.find(x=>x.id==='home-pay'); return {hasLink:Object.hasOwn(s.debtSettings.paymentLinks,'home-pay'),amount:t.amount,note:t.note,explicit:s.expenseSettings.transactionClasses['home-pay'],resolved:PFMExpenseModel.resolveExpenseClass(s,t)}; })()`);
@@ -183,7 +231,7 @@ try{
 
   const unexpected = errors.filter(error => !error.includes("www.gstatic.com/firebasejs/10.13.0/") && !error.includes("ERR_"));
   assert.deepEqual(unexpected,[]);
-  console.log(JSON.stringify({result:"PASS",calculated,pageState,recorded,unlinked,viewports,backupRoundTrip},null,2));
+  console.log(JSON.stringify({result:"PASS",calculated,pageState,recorded,existingLinkSafety,fallbackUi,missingChoiceBlocked,fallbackRecorded,noCategoryUi,noCategoryBlocked,unlinked,viewports,backupRoundTrip},null,2));
 } finally {
   try{ socket.close(); }catch{}
   chrome.kill();

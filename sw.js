@@ -10,16 +10,22 @@ const APP_SHELL = [
   "./sw.js",
   "./financial-model.js?v=20260907-phase3",
   "./expense-model.js?v=20260907-phase3",
-  "./debt-model.js?v=20260907-phase3",
+  "./debt-model.js?v=20260908-phase3-corrective",
   "./report-enhancements.js?v=20260907-phase3",
   "./mobile-enhancements.css",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
+const STALE_SHELL_ASSETS = ["./debt-model.js?v=20260907-phase3"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      .then(async (cache) => {
+        await cache.addAll(APP_SHELL);
+        await Promise.all(STALE_SHELL_ASSETS.map((asset) => cache.delete(asset)));
+      })
+      .then(() => self.skipWaiting())
   );
 });
 

@@ -1082,7 +1082,12 @@
     <div class="modal" id="modalDebtPayment">
       <div class="dialog">
         <div class="hd"><div><h3>تسجيل دفعة</h3><div class="mini" id="debtPaymentFor">—</div></div><button class="btn icon" data-close="#modalDebtPayment">✖</button></div>
-        <div class="bd"><div class="debt-form-grid"><div><label class="mini">التاريخ</label><input id="debtPaymentDate" type="date" /></div><div><label class="mini">المبلغ</label><input id="debtPaymentAmount" type="number" inputmode="numeric" /></div></div><div style="margin-top:10px"><label class="mini">ملاحظة</label><input id="debtPaymentNote" type="text" style="width:100%" /></div><div class="help" style="margin-top:12px">سيُنشئ هذا الإجراء عملية مصروف واحدة بتصنيف دين/سداد ثم يربطها بهذا الالتزام.</div></div>
+        <div class="bd">
+          <div class="debt-form-grid"><div><label class="mini">التاريخ</label><input id="debtPaymentDate" type="date" /></div><div><label class="mini">المبلغ</label><input id="debtPaymentAmount" type="number" inputmode="numeric" /></div></div>
+          <div id="debtPaymentCategoryWrap" style="margin-top:10px;display:none"><label class="mini">فئة المصروف الموجودة</label><select id="debtPaymentCategory" style="width:100%" required></select></div>
+          <div style="margin-top:10px"><label class="mini">ملاحظة</label><input id="debtPaymentNote" type="text" style="width:100%" /></div>
+          <div class="help" id="debtPaymentCategoryHelp" style="margin-top:12px">سيُنشئ هذا الإجراء عملية مصروف واحدة بتصنيف دين/سداد ثم يربطها بهذا الالتزام.</div>
+        </div>
         <div class="ft"><button class="btn primary" id="btnSaveDebtPayment">💾 تسجيل الدفعة</button><button class="btn" data-close="#modalDebtPayment">إلغاء</button></div>
       </div>
     </div>
@@ -1284,7 +1289,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
   <script src="./financial-model.js?v=20260907-phase3"></script>
   <script src="./expense-model.js?v=20260907-phase3"></script>
-  <script src="./debt-model.js?v=20260907-phase3"></script>
+  <script src="./debt-model.js?v=20260908-phase3-corrective"></script>
 
 <script>
 /** =========================
@@ -2614,6 +2619,25 @@
   function openDebtPaymentModal(){
     const item = DebtModel.calculateObligation(state, activeDebtId, todayISO());
     if(!item || item.effectiveStatus === "completed") return;
+    const categories = Array.isArray(state.categories) ? state.categories : [];
+    const debtCategory = categories.find(category => category?.id === "ex_debt" && category.type === "expense");
+    const expenseCategories = categories.filter(category => category && category.type === "expense" && typeof category.id === "string" && category.id.length > 0);
+    const categoryWrap = $("#debtPaymentCategoryWrap");
+    const categorySelect = $("#debtPaymentCategory");
+    const categoryHelp = $("#debtPaymentCategoryHelp");
+    if(debtCategory){
+      categoryWrap.style.display = "none";
+      categorySelect.disabled = true;
+      categorySelect.innerHTML = "";
+      categoryHelp.textContent = "سيُنشئ هذا الإجراء عملية مصروف واحدة بفئة دين/سداد ثم يربطها بهذا الالتزام.";
+    }else{
+      categoryWrap.style.display = "block";
+      categorySelect.disabled = expenseCategories.length === 0;
+      categorySelect.innerHTML = `<option value="">${expenseCategories.length ? "اختر فئة مصروف موجودة" : "لا توجد فئات مصروف متاحة"}</option>${expenseCategories.map(category => `<option value="${escapeAttr(category.id)}">${escapeHTML(category.name || category.id)}</option>`).join("")}`;
+      categoryHelp.textContent = expenseCategories.length
+        ? "فئة دين/سداد غير متاحة. اختر فئة مصروف موجودة للعملية المالية؛ سيبقى الرابط مصنّفاً كسداد دين في التحليلات."
+        : "لا يمكن تسجيل الدفعة لأن فئة مصروف موجودة مطلوبة. أضف فئة من إدارة التصنيفات أولاً.";
+    }
     $("#debtPaymentFor").textContent = item.obligation.name;
     $("#debtPaymentDate").value = "";
     $("#debtPaymentAmount").value = item.nextDue?.amount || "";
@@ -2629,10 +2653,16 @@
     const note = ($("#debtPaymentNote").value || "").trim();
     if(!obligation || !DebtModel.isDateOnly(date)){ toast("أدخل تاريخاً صحيحاً"); return; }
     if(!Number.isFinite(amount) || amount <= 0){ toast("أدخل مبلغاً صحيحاً"); return; }
-    let category = state.categories.find(item => item.id === "ex_debt" && item.type === "expense");
+    const categories = Array.isArray(state.categories) ? state.categories : [];
+    let category = categories.find(item => item?.id === "ex_debt" && item.type === "expense");
     if(!category){
-      category = { id:"ex_debt", type:"expense", name:"دين/سداد" };
-      state = { ...state, categories:[...state.categories, category] };
+      const selectedCategoryId = $("#debtPaymentCategory").value;
+      category = categories.find(item => item?.id === selectedCategoryId && item.type === "expense" && typeof item.id === "string" && item.id.length > 0);
+      if(!category){
+        const hasExpenseCategory = categories.some(item => item && item.type === "expense" && typeof item.id === "string" && item.id.length > 0);
+        toast(hasExpenseCategory ? "اختر فئة مصروف موجودة" : "لا يمكن تسجيل الدفعة: أضف فئة مصروف أولاً");
+        return;
+      }
     }
     const transactionId = uid();
     const transaction = { id:transactionId, type:"expense", categoryId:category.id, amount, date, note, createdAt:new Date().toISOString() };

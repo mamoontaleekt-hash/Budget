@@ -421,7 +421,8 @@
     if (!TYPES.has(input.type)) errors.push("type");
     if (!positiveAmount(input.totalAmount)) errors.push("totalAmount");
     if (finiteAmount(input.paidBeforeTracking) === null || finiteAmount(input.paidBeforeTracking) < 0) errors.push("paidBeforeTracking");
-    if (!isDateOnly(input.startDate)) errors.push("startDate");
+    const hasStartDate = input.startDate !== undefined && input.startDate !== "";
+    if (hasStartDate && !isDateOnly(input.startDate)) errors.push("startDate");
     if (!SCHEDULE_MODES.has(input.scheduleMode)) errors.push("scheduleMode");
     if (!STATUSES.has(input.status)) errors.push("status");
     if (input.scheduleMode === "fixed") {

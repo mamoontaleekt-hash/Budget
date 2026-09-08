@@ -325,6 +325,23 @@ test("link helper refuses income", () => {
   const source = stateWith([obligation()], [tx("p1", 100, "2026-02-10", { type: "income" })]);
   assert.equal(Debt.withPaymentLink(source, "p1", "home"), source);
 });
+test("alternate-category linked payment is counted once and excluded from cost of living", () => {
+  const payment = tx("alternate", 125, "2026-02-10", { categoryId: "ex_misc" });
+  const source = {
+    ...stateWith([obligation()], [payment]),
+    categories: [{ id: "ex_misc", type: "expense", name: "متفرقات" }],
+  };
+  const categoriesBefore = JSON.stringify(source.categories);
+  const linked = Debt.withPaymentLink(source, "alternate", "home");
+  const analytics = Expense.calculateExpenseAnalytics(linked, "2026-02");
+  assert.equal(JSON.stringify(linked.categories), categoriesBefore);
+  assert.equal(Expense.resolveExpenseClass(linked, payment), "debt_payment");
+  assert.equal(analytics.debtPayments, 125);
+  assert.equal(analytics.regularExpenses, 0);
+  assert.equal(analytics.costOfLiving, 0);
+  assert.equal(analytics.totalExpenses, 125);
+  assert.deepEqual(analytics.debtPaymentTransactions, [payment]);
+});
 test("unlink removes only mapping", () => {
   const source = stateWith([obligation()], [tx("p1", 100)], { p1: "home" });
   const next = Debt.withoutPaymentLink(source, "p1");
@@ -362,6 +379,30 @@ test("deleted linked transaction has no expense class", () => {
 });
 
 test("valid obligation passes validation", () => assert.deepEqual(Debt.validateObligation(obligation()), []));
+test("empty optional start date is valid and fixed schedule still works", () => {
+  const item = obligation({ startDate: "" });
+  assert.deepEqual(Debt.validateObligation(item), []);
+  assert.equal(Debt.generateFixedSchedule(item).length, 4);
+  assert.equal(Debt.generateFixedSchedule(item)[0].dueDate, "2026-02-28");
+});
+test("omitted optional start date is valid without normalization", () => {
+  const item = obligation();
+  delete item.startDate;
+  assert.deepEqual(Debt.validateObligation(item), []);
+  const stored = Debt.withObligation({ categories: [], budgets: {}, transactions: [] }, item);
+  assert.equal(Object.hasOwn(stored.debtSettings.obligations.home, "startDate"), false);
+  assert.equal(Debt.getObligation(stored, "home").id, "home");
+});
+test("non-empty malformed optional start date is rejected", () => {
+  assert.deepEqual(Debt.validateObligation(obligation({ startDate: "2026-02-30" })), ["startDate"]);
+});
+test("irregular obligation works with empty start date and no manual next payment", () => {
+  const item = obligation({ startDate: "", scheduleMode: "irregular" });
+  assert.deepEqual(Debt.validateObligation(item), []);
+  const result = Debt.calculateObligation(stateWith([item]), "home", "2026-02-28");
+  assert.equal(result.nextDue, null);
+  assert.equal(result.remaining, 1000);
+});
 test("invalid fixed fields are reported", () => assert.deepEqual(Debt.validateObligation(obligation({ installmentAmount: 0, frequency: "x", firstDueDate: "x" })), ["installmentAmount", "frequency", "firstDueDate"]));
 test("irregular next due fields must appear together", () => assert.deepEqual(Debt.validateObligation(obligation({ scheduleMode: "irregular", manualNextDueDate: "2026-02-01" })), ["manualNextDue"]));
 test("negative paid before is rejected", () => assert.deepEqual(Debt.validateObligation(obligation({ paidBeforeTracking: -1 })), ["paidBeforeTracking"]));
