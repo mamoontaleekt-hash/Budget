@@ -60,6 +60,12 @@ test("UX5 state is ephemeral and budget remaining uses the existing model result
   assert.doesNotMatch(panelFunction, /localStorage|save\s*\(|state\./);
 });
 
+test("cloud sync binds the display formatter across the application IIFE boundary", () => {
+  const cloudSync = html.slice(html.indexOf("* Cloud Sync (Firebase Firestore)"));
+  assert.match(cloudSync, /\(function\(\)\{\s*const DisplayFormat = window\.PFMDisplayFormat;/);
+  assert.match(cloudSync, /DisplayFormat\.westernizeDigits\(/);
+});
+
 test("frozen model files exactly match the verified baseline", () => {
   const expected = {
     "financial-model.js":"b1879b0202be66230cd0157bc2bf2e7f02addf17dc24c2d05dd279024937d120",

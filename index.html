@@ -3432,6 +3432,8 @@ window.addEventListener("pfm:apply", (ev)=>{
  * - Shows clear connection/saved status + basic conflict protection (backup + warning)
  * ========================= */
 (function(){
+  const DisplayFormat = window.PFMDisplayFormat;
+
   // 1) Paste from Firebase Console -> Project settings -> Your apps -> Web app config
   const firebaseConfig = {
     apiKey: "AIzaSyA2Aj8TJGVMeHS00SyI8pW04HWHTEOVU3o",
