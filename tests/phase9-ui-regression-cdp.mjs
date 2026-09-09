@@ -116,7 +116,7 @@ try {
   assert.match(empty.attention, /لا توجد حالات/); assert.equal(empty.comparison, true); assert.match(empty.top, /لا توجد بيانات/); assert.match(empty.budget, /لا توجد ميزانيات/); assert.match(empty.debt, /لا توجد التزامات/); assert.equal(empty.nan, false);
 
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),asset:!!(await caches.match('./dashboard-model.js?v=20260908-phase9'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v16")); assert.equal(pwa.asset, true);
+  assert.ok(pwa.keys.includes("pfm-pwa-v17")); assert.equal(pwa.asset, true);
   if (!pwa.controller) await reload(500);
   await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0, connectionType: "none" });
   await reload(600);

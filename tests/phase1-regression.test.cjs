@@ -128,7 +128,7 @@ assert.match(report, /parsed\.financialSettings/);
 assert.match(report, /parsed\.expenseSettings/);
 assert.match(report, /parsed\.debtSettings/);
 assert.match(report, /ExpenseModel\.calculateExpenseAnalytics\(state, month\)/);
-assert.match(sw, /const CACHE_NAME = "pfm-pwa-v16";/);
+assert.match(sw, /const CACHE_NAME = "pfm-pwa-v17";/);
 assert.ok(sw.includes('"./mobile-enhancements.css?v=20260908-ux1"'));
 assert.match(sw, /\.\/tag-model\.js\?v=20260908-phase5/);
 assert.match(sw, /\.\/budget-model\.js\?v=20260908-phase6/);

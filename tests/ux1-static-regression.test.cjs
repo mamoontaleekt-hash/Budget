@@ -25,7 +25,7 @@ assert.match(css, /#toast\s*{\s*bottom:\s*calc\(81px \+ env\(safe-area-inset-bot
 assert.doesNotMatch(css, /top:\s*154px|top:\s*246px/);
 assert.doesNotMatch(css, /@media \(max-width: 420px\)\s*{\s*\.controls\s*{\s*grid-template-columns:\s*1fr/);
 
-assert.match(sw, /const CACHE_NAME = "pfm-pwa-v16"/);
+assert.match(sw, /const CACHE_NAME = "pfm-pwa-v17"/);
 assert.match(sw, /"\.\/mobile-enhancements\.css\?v=20260908-ux1"/);
 assert.doesNotMatch(sw, /pfm-pwa-v14|"\.\/mobile-enhancements\.css"\s*,/);
 

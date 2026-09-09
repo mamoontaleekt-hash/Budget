@@ -450,6 +450,7 @@
   </style>
   <link rel="stylesheet" href="./visual-polish.css?v=20260909-ux2">
   <link rel="stylesheet" href="./mobile-enhancements.css?v=20260908-ux1">
+  <link rel="stylesheet" href="./interaction-polish.css?v=20260909-ux3">
 </head>
 
 <body>
@@ -715,60 +716,64 @@
             <button class="btn small" id="btnAddTx2">➕ إضافة عملية</button>
           </div>
         </div>
-        <div class="bd">
-          <div class="two">
-            <div class="row">
-              <select id="filterType">
+        <div class="bd tx-workspace">
+          <div class="tx-filter-bar" aria-label="فلاتر العمليات">
+            <div class="tx-primary-filters">
+              <div class="tx-filter-field tx-filter-search">
+                <label for="filterSearch">بحث في الملاحظات</label>
+                <input id="filterSearch" type="text" placeholder="اكتب كلمة للبحث..." />
+              </div>
+              <div class="tx-filter-field">
+                <label for="filterType">النوع</label>
+                <select id="filterType">
                 <option value="">الكل (إيراد + مصروف)</option>
                 <option value="income">إيرادات فقط</option>
                 <option value="expense">مصاريف فقط</option>
               </select>
-              <select id="filterCategory">
+              </div>
+              <div class="tx-filter-field">
+                <label for="filterCategory">التصنيف</label>
+                <select id="filterCategory">
                 <option value="">كل التصنيفات</option>
               </select>
+              </div>
+              <button class="btn tx-clear-filters" id="btnClearFilters" type="button">مسح الفلاتر</button>
             </div>
-            <div class="row">
-              <input id="filterSearch" type="text" placeholder="بحث في الملاحظات..." />
-              <button class="btn" id="btnClearFilters">مسح الفلاتر</button>
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:10px">
-            <div>
-              <label class="mini" for="filterExpenseClass" style="display:block;margin-bottom:4px">نوع المصروف</label>
-              <select id="filterExpenseClass">
-                <option value="">الكل</option>
-                <option value="regular">معيشي</option>
-                <option value="exceptional">استثنائي</option>
-                <option value="debt_payment">سداد دين</option>
-              </select>
-            </div>
-            <div>
-              <label class="mini" for="filterShoppingSubcategory" style="display:block;margin-bottom:4px">محتوى التسوق</label>
-              <select id="filterShoppingSubcategory"><option value="">الكل</option></select>
-            </div>
-            <div>
-              <label class="mini" for="filterTransactionTag" style="display:block;margin-bottom:4px">وسم العملية</label>
-              <select id="filterTransactionTag"><option value="">الكل</option></select>
-            </div>
-            <input id="filterFrom" type="date" placeholder="من" />
-            <input id="filterTo" type="date" placeholder="إلى" />
-            <input id="filterMin" type="number" inputmode="numeric" placeholder="أقل مبلغ" />
-            <input id="filterMax" type="number" inputmode="numeric" placeholder="أعلى مبلغ" />
+            <details class="tx-advanced-filters" id="txAdvancedFilters">
+              <summary>فلاتر متقدمة <span class="tx-active-filter-count" id="txAdvancedFilterCount" hidden></span></summary>
+              <div class="tx-advanced-filter-grid">
+                <div class="tx-filter-field">
+                  <label for="filterExpenseClass">نوع المصروف</label>
+                  <select id="filterExpenseClass">
+                    <option value="">الكل</option>
+                    <option value="regular">معيشي</option>
+                    <option value="exceptional">استثنائي</option>
+                    <option value="debt_payment">سداد دين</option>
+                  </select>
+                </div>
+                <div class="tx-filter-field"><label for="filterShoppingSubcategory">محتوى التسوق</label><select id="filterShoppingSubcategory"><option value="">الكل</option></select></div>
+                <div class="tx-filter-field"><label for="filterTransactionTag">وسم العملية</label><select id="filterTransactionTag"><option value="">الكل</option></select></div>
+                <div class="tx-filter-field"><label for="filterFrom">من تاريخ</label><input id="filterFrom" type="date" /></div>
+                <div class="tx-filter-field"><label for="filterTo">إلى تاريخ</label><input id="filterTo" type="date" /></div>
+                <div class="tx-filter-field"><label for="filterMin">أقل مبلغ</label><input id="filterMin" type="number" inputmode="numeric" placeholder="مثال: 10000" /></div>
+                <div class="tx-filter-field"><label for="filterMax">أعلى مبلغ</label><input id="filterMax" type="number" inputmode="numeric" placeholder="مثال: 500000" /></div>
+              </div>
+            </details>
           </div>
 
           <div class="hr"></div>
 
-          <div style="overflow:auto">
-            <table>
+          <div class="tx-results-head"><h3>سجل العمليات</h3><div class="mini" id="txCount" aria-live="polite">—</div></div>
+          <div class="tx-table-wrap">
+            <table class="tx-table">
               <thead>
                 <tr>
-                  <th style="min-width:120px">التاريخ</th>
-                  <th style="min-width:110px">النوع</th>
-                  <th style="min-width:140px">التصنيف</th>
-                  <th style="min-width:130px">المبلغ</th>
-                  <th>ملاحظة</th>
-                  <th style="min-width:160px">إجراءات</th>
+                  <th class="tx-date">التاريخ</th>
+                  <th class="tx-type">النوع</th>
+                  <th class="tx-category">التصنيف</th>
+                  <th class="tx-amount">المبلغ</th>
+                  <th class="tx-note">ملاحظة</th>
+                  <th class="tx-actions">إجراءات</th>
                 </tr>
               </thead>
               <tbody id="txTableBody">
@@ -776,9 +781,8 @@
               </tbody>
             </table>
           </div>
-
-          <div class="hr"></div>
-          <div class="mini" id="txCount">—</div>
+          <div class="tx-mobile-list" id="txMobileList" role="list"></div>
+          <div class="tx-empty-state" id="txEmptyState" hidden></div>
         </div>
       </div>
     </section>
@@ -1135,39 +1139,44 @@
           </div>
           <button class="btn icon" data-close="#modalTx">✖</button>
         </div>
-        <div class="bd">
-          <div class="two">
-            <div>
-              <label class="mini">النوع</label>
+        <div class="bd tx-form-body">
+          <section class="tx-form-section" aria-labelledby="txBasicHeading">
+            <div class="tx-form-section-head"><h4 id="txBasicHeading">المعلومات الأساسية</h4><p>التاريخ والمبلغ والتصنيف الأساسي للعملية.</p></div>
+          <div class="two tx-form-grid">
+            <div class="tx-form-field">
+              <label for="txType">النوع</label>
               <select id="txType">
                 <option value="expense">مصروف</option>
                 <option value="income">إيراد</option>
               </select>
             </div>
-            <div>
-              <label class="mini">التاريخ</label>
-              <input id="txDate" type="date" placeholder="YYYY-MM-DD" />
+            <div class="tx-form-field">
+              <label for="txDate">التاريخ</label>
+              <input id="txDate" type="date" aria-describedby="txDateHelp" />
+              <div class="mini" id="txDateHelp">أدخل التاريخ يدوياً.</div>
             </div>
           </div>
 
-          <div class="two" style="margin-top:10px">
-            <div>
-              <label class="mini">التصنيف</label>
+          <div class="two tx-form-grid">
+            <div class="tx-form-field">
+              <label for="txCategory">التصنيف</label>
               <select id="txCategory"></select>
             </div>
-            <div>
-              <label class="mini">المبلغ (IQD)</label>
+            <div class="tx-form-field tx-amount-field">
+              <label for="txAmount">المبلغ (IQD)</label>
               <input id="txAmount" type="number" inputmode="numeric" placeholder="مثال: 25000" />
             </div>
           </div>
 
-          <div style="margin-top:10px">
-            <label class="mini">ملاحظة (اختياري)</label>
+          <div class="tx-form-field">
+            <label for="txNote">ملاحظة (اختياري)</label>
             <input id="txNote" type="text" placeholder="مثال: إيجار / سلفة / مشتريات" />
           </div>
+          </section>
 
-          <div class="expense-class-field" id="txExpenseClassField">
-            <label class="mini" for="txExpenseClass" style="display:block;margin-bottom:6px">نوع المصروف</label>
+          <section class="tx-form-section expense-class-field" id="txExpenseClassField" aria-labelledby="txExpenseHeading">
+            <div class="tx-form-section-head"><h4 id="txExpenseHeading">تصنيف المصروف</h4><p>اختياري، ويظهر للمصروفات فقط.</p></div>
+            <label for="txExpenseClass">نوع المصروف</label>
             <select id="txExpenseClass" aria-describedby="txExpenseClassHelp" style="width:100%">
               <option value="">تلقائي</option>
               <option value="regular">معيشي منتظم</option>
@@ -1175,7 +1184,9 @@
               <option value="debt_payment">سداد دين / قسط</option>
             </select>
             <div class="mini" id="txExpenseClassHelp" style="margin-top:7px">التلقائي يجعل تصنيف دين/سداد سدادَ دين، وباقي المصروفات معيشية. سداد الدين أو القسط يؤثر على الرصيد النقدي، لكنه لا يُحتسب ضمن تكلفة المعيشة.</div>
-          </div>
+          </section>
+          <section class="tx-form-section tx-additional-section" aria-labelledby="txAdditionalHeading">
+          <div class="tx-form-section-head"><h4 id="txAdditionalHeading">تفاصيل إضافية</h4><p>محتويات التسوق والوسوم ومعلومات الارتباط، عند انطباقها.</p></div>
           <div class="shopping-subcategory-field" id="txShoppingSubcategoryField" hidden>
             <div style="font-weight:800">محتويات فاتورة التسوق</div>
             <div class="mini" id="txShoppingSubcategoryHelp">يمكنك اختيار أكثر من نوع. لا يتم تقسيم أو تكرار مبلغ الفاتورة.</div>
@@ -1189,9 +1200,7 @@
           </div>
           <div id="txDebtLinkInfo" class="linked-note" hidden></div>
 
-          <div class="help" style="margin-top:12px">
-            <div><b>اقتراح:</b> أنشئ تصنيفات ثابتة: (إيجار) و(دين) و(كهرباء) و(ماء) و(مشتريات) ثم قسّم المشتريات لاحقاً إذا احتجت.</div>
-          </div>
+          </section>
         </div>
         <div class="ft">
           <button class="btn primary" id="btnSaveTx">💾 حفظ</button>
@@ -1887,6 +1896,8 @@
 
   function renderTransactions(){
     const tbody = $("#txTableBody");
+    const mobileList = $("#txMobileList");
+    const emptyState = $("#txEmptyState");
 
     const typeFilter = $("#filterType").value;
     const catFilter = $("#filterCategory").value;
@@ -1899,10 +1910,17 @@
     const min = Number($("#filterMin").value||0);
     const maxRaw = $("#filterMax").value;
     const max = maxRaw === "" ? null : Number(maxRaw);
+    const advancedFilterCount = [expenseClassFilter, shoppingSubcategoryFilter, transactionTagFilter, from, to, $("#filterMin").value, maxRaw].filter(value => value !== "").length;
+    const advancedDetails = $("#txAdvancedFilters");
+    const advancedCount = $("#txAdvancedFilterCount");
+    if(advancedFilterCount > 0) advancedDetails.open = true;
+    advancedCount.hidden = advancedFilterCount === 0;
+    advancedCount.textContent = advancedFilterCount ? `${advancedFilterCount} فلاتر مفعلة` : "";
 
-    let txs = state.transactions.slice()
+    const monthTxs = state.transactions.slice()
       .filter(t => !t.deletedAt && monthFromDate(t.date)===activeMonth)
       .sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+    let txs = monthTxs;
 
     if(typeFilter) txs = txs.filter(t => t.type===typeFilter);
     if(catFilter) txs = txs.filter(t => t.categoryId===catFilter);
@@ -1918,13 +1936,8 @@
     if(min) txs = txs.filter(t => Number(t.amount||0) >= min);
     if(max!==null) txs = txs.filter(t => Number(t.amount||0) <= max);
 
-    if(txs.length===0){
-      tbody.innerHTML = `<tr><td colspan="6" class="muted">لا توجد عمليات ضمن هذا الشهر/الفلاتر.</td></tr>`;
-      $("#txCount").textContent = "0 عملية";
-      return;
-    }
-
-    tbody.innerHTML = txs.map(t=>{
+    const anyFilterActive = [typeFilter, catFilter, expenseClassFilter, shoppingSubcategoryFilter, transactionTagFilter, q, from, to, $("#filterMin").value, maxRaw].some(value => value !== "");
+    const renderTransactionParts = (t) => {
       const signClass = t.type==="income" ? "pos" : "neg";
       const isLegacyOpening = FinancialModel.isLegacyOpeningTransaction(state, activeMonth, t.id);
       const resolvedExpenseClass = ExpenseModel.resolveExpenseClass(state, t);
@@ -1938,25 +1951,53 @@
       const labelType = t.type==="income"
         ? `<span class="pill ok">إيراد</span>${isLegacyOpening ? ` <span class="pill warn">رصيد افتتاحي</span>` : ""}`
         : `<span class="pill danger">مصروف</span>${expenseBadge}${linkedBadge}`;
-      return `<tr>
-        <td>${escapeHTML(t.date||"")}</td>
-        <td>${labelType}</td>
-        <td><span class="tag">🏷️ ${escapeHTML(catName(t.categoryId))}</span>${shoppingTagsHTML(t)}</td>
-        <td class="money ${signClass}">${fmtCompact(t.amount)}</td>
-        <td>${escapeHTML(t.note||"")}${transactionTagsHTML(t)}</td>
-        <td>
+      return { signClass, labelType, shopping: shoppingTagsHTML(t), tags: transactionTagsHTML(t) };
+    };
+
+    if(txs.length===0){
+      const message = monthTxs.length === 0 ? "لا توجد عمليات في هذا الشهر." : "لا توجد نتائج تطابق الفلاتر الحالية.";
+      tbody.innerHTML = "";
+      mobileList.innerHTML = "";
+      emptyState.hidden = false;
+      emptyState.innerHTML = `<strong>${message}</strong>${monthTxs.length > 0 && anyFilterActive ? `<button class="btn" type="button" data-clear-tx-filters>مسح الفلاتر</button>` : ""}`;
+      $("#txCount").textContent = "0 عملية";
+      return;
+    }
+    emptyState.hidden = true;
+    emptyState.innerHTML = "";
+    const txViews = txs.map(t => ({ t, parts: renderTransactionParts(t) }));
+
+    tbody.innerHTML = txViews.map(({ t, parts })=>{
+      return `<tr data-tx-id="${escapeAttr(t.id)}">
+        <td class="tx-date">${escapeHTML(t.date||"")}</td>
+        <td class="tx-type">${parts.labelType}</td>
+        <td class="tx-category"><span class="tag">🏷️ ${escapeHTML(catName(t.categoryId))}</span>${parts.shopping}</td>
+        <td class="tx-amount money ${parts.signClass}">${fmtCompact(t.amount)}</td>
+        <td class="tx-note">${escapeHTML(t.note||"")}${parts.tags}</td>
+        <td class="tx-actions">
           <div class="actions">
-            <button class="btn small" data-edit="${t.id}">✏️ تعديل</button>
-            <button class="btn small danger" data-del="${t.id}">🗑️ حذف</button>
+            <button class="btn small" data-edit="${escapeAttr(t.id)}" aria-label="تعديل عملية بتاريخ ${escapeAttr(t.date||"")}">✏️ تعديل</button>
+            <button class="btn small danger" data-del="${escapeAttr(t.id)}" aria-label="حذف عملية بتاريخ ${escapeAttr(t.date||"")}">🗑️ حذف</button>
           </div>
         </td>
       </tr>`;
     }).join("");
 
+    mobileList.innerHTML = txViews.map(({ t, parts }) => {
+      return `<article class="tx-mobile-card" data-tx-id="${escapeAttr(t.id)}" role="listitem" aria-label="عملية ${t.type === "income" ? "إيراد" : "مصروف"} بتاريخ ${escapeAttr(t.date||"")}">
+        <header class="tx-card-head"><div class="tx-card-type">${parts.labelType}</div><time datetime="${escapeAttr(t.date||"")}">${escapeHTML(t.date||"")}</time></header>
+        <div class="tx-card-amount money ${parts.signClass}">${fmtCompact(t.amount)}</div>
+        <div class="tx-card-category"><span class="tag">🏷️ ${escapeHTML(catName(t.categoryId))}</span>${parts.shopping}</div>
+        ${t.note ? `<p class="tx-card-note">${escapeHTML(t.note)}</p>` : ""}
+        <div class="tx-card-metadata">${parts.tags}</div>
+        <footer class="tx-card-actions actions">
+          <button class="btn small" data-edit="${escapeAttr(t.id)}" aria-label="تعديل عملية بتاريخ ${escapeAttr(t.date||"")}">✏️ تعديل</button>
+          <button class="btn small danger" data-del="${escapeAttr(t.id)}" aria-label="حذف عملية بتاريخ ${escapeAttr(t.date||"")}">🗑️ حذف</button>
+        </footer>
+      </article>`;
+    }).join("");
+
     $("#txCount").textContent = `${txs.length} عملية`;
-    // bind action buttons
-    $$("[data-edit]", tbody).forEach(b => b.addEventListener("click", () => editTx(b.getAttribute("data-edit"))));
-    $$("[data-del]", tbody).forEach(b => b.addEventListener("click", () => deleteTx(b.getAttribute("data-del"))));
   }
 
   function debtTypeLabel(type){
@@ -2662,7 +2703,7 @@
     $("#"+id).addEventListener("input", () => renderTransactions());
     $("#"+id).addEventListener("change", () => renderTransactions());
   });
-  $("#btnClearFilters").addEventListener("click", () => {
+  function clearTransactionFilters(){
     $("#filterType").value = "";
     $("#filterCategory").value = "";
     $("#filterExpenseClass").value = "";
@@ -2673,8 +2714,21 @@
     $("#filterTo").value = "";
     $("#filterMin").value = "";
     $("#filterMax").value = "";
+    $("#txAdvancedFilters").open = false;
     renderTransactions();
+  }
+  $("#btnClearFilters").addEventListener("click", clearTransactionFilters);
+  $("#txEmptyState").addEventListener("click", event => {
+    if(event.target.closest("[data-clear-tx-filters]")) clearTransactionFilters();
   });
+  function handleTransactionAction(event){
+    const editButton = event.target.closest("[data-edit]");
+    const deleteButton = event.target.closest("[data-del]");
+    if(editButton) editTx(editButton.getAttribute("data-edit"));
+    else if(deleteButton) deleteTx(deleteButton.getAttribute("data-del"));
+  }
+  $("#txTableBody").addEventListener("click", handleTransactionAction);
+  $("#txMobileList").addEventListener("click", handleTransactionAction);
 
   // Export / Import
   $("#btnExport").addEventListener("click", () => openExportModal());
