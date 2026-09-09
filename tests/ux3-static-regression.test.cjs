@@ -16,7 +16,7 @@ test("UX3 stylesheet order and PWA shell are exact", () => {
   assert.equal(count(html, /interaction-polish\.css\?v=20260909-ux3/g), 1);
   assert.ok(html.indexOf(visual) < html.indexOf(mobile));
   assert.ok(html.indexOf(mobile) < html.indexOf(interaction));
-  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v18"/);
+  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v19"/);
   for (const asset of ["visual-polish.css?v=20260909-ux2", "mobile-enhancements.css?v=20260908-ux1", "interaction-polish.css?v=20260909-ux3"]) assert.ok(sw.includes(`"./${asset}"`));
   assert.doesNotMatch(sw, /pfm-pwa-v16/);
 });

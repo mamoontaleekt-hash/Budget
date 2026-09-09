@@ -1,0 +1,63 @@
+/* UX5: dashboard simplification and progressive disclosure. */
+.brand-subtitle{margin:4px 0 0}
+.month-picker-shell{position:relative;display:flex;align-items:center;gap:7px;min-height:38px;cursor:pointer}
+.month-picker-caption{font-size:12px;color:var(--muted)}
+#monthPickerDisplay{font-weight:800;white-space:nowrap}
+#monthPicker{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.month-picker-shell:focus-within{outline:3px solid rgba(46,108,255,.24);outline-offset:3px;border-radius:10px}
+.topbar-more{position:relative}
+.topbar-more>summary{list-style:none;cursor:pointer;user-select:none}
+.topbar-more>summary::-webkit-details-marker{display:none}
+.topbar-more[open]>summary{border-color:rgba(46,108,255,.48);background:rgba(46,108,255,.08)}
+.topbar-more-menu{position:absolute;z-index:25;inset-inline-end:0;top:calc(100% + 8px);display:grid;gap:6px;min-width:210px;padding:8px;border:1px solid var(--border);border-radius:14px;background:var(--panel);box-shadow:var(--shadow)}
+.topbar-more-menu .btn{width:100%;justify-content:flex-start}
+
+#view-dash>.card>.hd{padding-bottom:12px}
+#view-dash>.card>.bd{padding-top:14px}
+.dashboard-primary-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
+.dashboard-primary-summary>.kpi,.dashboard-secondary-kpis>.kpi{grid-column:auto}
+.dashboard-primary-summary .kpi{min-height:116px}
+.dashboard-primary-summary .value{font-size:clamp(20px,2.2vw,28px)}
+.dashboard-primary-summary .hint{line-height:1.55}
+.dashboard-utility-row{display:flex;justify-content:flex-start;margin-top:10px}
+.dashboard-opening-action{background:transparent}
+.dashboard-attention-section[hidden],.dashboard-detail-panel[hidden]{display:none!important}
+.dashboard-attention-section{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.dashboard-detail-launcher-section{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.dashboard-detail-launcher{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.dashboard-detail-button{display:flex;min-width:0;min-height:68px;align-items:center;justify-content:center;gap:6px;flex-direction:column;padding:9px 7px;text-align:center;line-height:1.35}
+.dashboard-detail-button .dashboard-detail-icon{font-size:20px;line-height:1}
+.dashboard-detail-button[aria-expanded="true"]{border-color:rgba(46,108,255,.55);background:rgba(46,108,255,.1);box-shadow:inset 0 0 0 1px rgba(46,108,255,.14)}
+.dashboard-detail-button[aria-expanded="true"]::after{content:"مفتوح";font-size:10px;color:var(--brand);font-weight:800}
+.dashboard-detail-panel{margin-top:12px;padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.4)}
+.dashboard-detail-panel>.dashboard-section{margin-top:0}
+.dashboard-panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.dashboard-panel-head h3{margin:0 0 4px;font-size:15px}
+.dashboard-secondary-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.dashboard-chart-grid{margin-top:8px}
+.dashboard-chart-grid canvas{min-height:260px}
+
+@media(max-width:900px){
+  .dashboard-primary-summary,.dashboard-secondary-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dashboard-detail-launcher{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:720px){
+  .brand-subtitle{display:none}
+  .topbar .controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}
+  .topbar .controls .chip{grid-column:auto;width:auto;padding:4px 8px}
+  .topbar .month-picker-shell{min-height:34px}
+  .topbar #monthPicker{min-height:0}
+  .topbar #cloudBadge{grid-column:auto;min-width:0}
+  .topbar-more-menu{position:absolute;inset-inline-end:0;inset-inline-start:auto;top:calc(100% + 8px);width:min(210px,calc(100vw - 24px))}
+  .dashboard-primary-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .dashboard-primary-summary .kpi{min-height:92px;padding:10px}
+  .dashboard-primary-summary .value{font-size:clamp(16px,5vw,21px);overflow-wrap:anywhere}
+  .dashboard-primary-summary .hint{font-size:10px}
+  .dashboard-detail-button{min-height:62px;font-size:12px}
+  .dashboard-detail-panel{padding:11px}
+}
+@media(max-width:420px){
+  .month-picker-caption{display:none}
+  #monthPickerDisplay{font-size:12px}
+  .dashboard-secondary-kpis{grid-template-columns:1fr}
+}

@@ -64,30 +64,30 @@ try {
     budget:document.querySelector('#budgetAlertsList').innerText,
     debt:document.querySelector('#dashboardDebtAttention').innerText,
     warning:!document.querySelector('#dashboardIncompleteNote').hidden,
-    quick:document.querySelectorAll('.dashboard-quick-actions button').length,
+    details:document.querySelectorAll('.dashboard-detail-launcher button').length,
     dashboardSettings:Object.hasOwn(JSON.parse(localStorage.getItem('pfm_data_v1')),'dashboardSettings')
   })`);
   assert.equal(dashboard.model, true);
-  assert.match(dashboard.available, /٣٬٥٠٠٬٠٠٠/); assert.match(dashboard.closing, /٢٬٢٠٠٬٠٠٠/); assert.match(dashboard.net, /١٬٧٠٠٬٠٠٠/);
-  assert.match(dashboard.comparison, /٣٠٠٬٠٠٠/); assert.match(dashboard.comparison, /30\.0%/); assert.match(dashboard.comparison, /الحالي/); assert.match(dashboard.living, /أعلى/);
-  assert.match(dashboard.top, /السوبرماركت/); assert.match(dashboard.top, /84\.6%/); assert.match(dashboard.driver, /السوبرماركت/); assert.match(dashboard.driver, /٣٠٠٬٠٠٠/);
+  assert.match(dashboard.available, /3,500,000/); assert.match(dashboard.closing, /2,200,000/); assert.match(dashboard.net, /1,700,000/);
+  assert.match(dashboard.comparison, /300,000/); assert.match(dashboard.comparison, /30\.0%/); assert.match(dashboard.comparison, /الحالي/); assert.match(dashboard.living, /أعلى/);
+  assert.match(dashboard.top, /السوبرماركت/); assert.match(dashboard.top, /84\.6%/); assert.match(dashboard.driver, /السوبرماركت/); assert.match(dashboard.driver, /300,000/);
   assert.ok(dashboard.attention.length <= 3); assert.match(dashboard.attention[0], /قسط متأخر/); assert.match(dashboard.attention[1], /تجاوز ميزانيته/); assert.match(dashboard.budget, /1 متجاوزة/); assert.match(dashboard.debt, /دفعات متأخرة/);
-  assert.equal(dashboard.warning, true); assert.equal(dashboard.quick, 4); assert.equal(dashboard.dashboardSettings, false);
+  assert.equal(dashboard.warning, true); assert.equal(dashboard.details, 6); assert.equal(dashboard.dashboardSettings, false);
 
   const storedBeforeNavigation = await evaluate(`localStorage.getItem('pfm_data_v1')`);
   await evaluate(`document.querySelector('#btnDashboardComparisonReports').click()`); await delay(150);
   assert.equal(await evaluate(`document.querySelector('#view-reports').style.display`), "block");
-  await evaluate(`document.querySelector('#tabs .tab[data-tab="dash"]').click(); document.querySelector('#btnDashboardBudgets').click()`); await delay(100);
+  await evaluate(`document.querySelector('#tabs .tab[data-tab="dash"]').click(); document.querySelector('[data-dashboard-panel="budget"]').click(); document.querySelector('#btnGoBudgets').click()`); await delay(100);
   assert.equal(await evaluate(`document.querySelector('#view-budgets').style.display`), "block");
-  await evaluate(`document.querySelector('#tabs .tab[data-tab="dash"]').click(); document.querySelector('#btnDashboardDebts').click()`); await delay(100);
+  await evaluate(`document.querySelector('#tabs .tab[data-tab="dash"]').click(); document.querySelector('[data-dashboard-panel="debts"]').click(); document.querySelector('#btnGoDebts').click()`); await delay(100);
   assert.equal(await evaluate(`document.querySelector('#view-debts').style.display`), "block");
-  await evaluate(`document.querySelector('#tabs .tab[data-tab="dash"]').click(); document.querySelector('#btnDashboardAddTx').click()`); await delay(100);
+  await evaluate(`document.querySelector('#tabs .tab[data-tab="dash"]').click(); document.querySelector('#btnAddTx').click()`); await delay(100);
   assert.equal(await evaluate(`document.querySelector('#modalTx').classList.contains('open')`), true);
   assert.equal(await evaluate(`localStorage.getItem('pfm_data_v1')`), storedBeforeNavigation);
 
   await evaluate(`document.querySelector('#modalTx').classList.remove('open'); document.querySelector('#tabs .tab[data-tab="dash"]').click(); (()=>{const p=document.querySelector('#monthPicker');p.value='2026-10';p.dispatchEvent(new Event('change',{bubbles:true}));})()`); await delay(150);
   const switched = await evaluate(`({top:document.querySelector('#dashboardTopCategory').innerText,expense:document.querySelector('#kpiExpense').innerText,month:document.querySelector('#dashboardComparisonMonths').innerText})`);
-  assert.match(switched.top, /لا توجد بيانات/); assert.match(switched.expense, /٠/); assert.match(switched.month, /تشرين الأول/);
+  assert.match(switched.top, /لا توجد بيانات/); assert.match(switched.expense, /0/); assert.match(switched.month, /تشرين الأول 2026/);
 
   for (const width of [390, 768, 1200]) {
     await send("Emulation.setDeviceMetricsOverride", { width, height: 1200, deviceScaleFactor: 1, mobile: false });
@@ -105,18 +105,18 @@ try {
   };
   await evaluate(`localStorage.setItem('pfm_data_v1',${JSON.stringify(JSON.stringify(mixed))})`); await reload();
   const mixedUi = await evaluate(`({closing:document.querySelector('#kpiClosing').innerText,net:document.querySelector('#kpiNet').innerText,attention:document.querySelector('#dashboardAttentionList').innerText,top:document.querySelector('#dashboardTopCategory').innerText})`);
-  assert.match(mixedUi.closing, /١٬٥٠٠٬٠٠٠/); assert.match(mixedUi.net, /٥٠٠٬٠٠٠/); assert.match(mixedUi.attention, /دخل الشهر الحقيقي/); assert.doesNotMatch(mixedUi.attention, /الرصيد الختامي المتوقع.*سالب/); assert.match(mixedUi.top, /غير مصنف/);
+  assert.match(mixedUi.closing, /1,500,000/); assert.match(mixedUi.net, /500,000/); assert.match(mixedUi.attention, /دخل الشهر الحقيقي/); assert.doesNotMatch(mixedUi.attention, /الرصيد الختامي المتوقع.*سالب/); assert.match(mixedUi.top, /غير مصنف/);
 
   const missingTop = { ...mixed, transactions: mixed.transactions.map((item) => item.id === "missing" ? { ...item, amount: 1200000 } : item) };
   await evaluate(`localStorage.setItem('pfm_data_v1',${JSON.stringify(JSON.stringify(missingTop))})`); await reload();
   assert.match(await evaluate(`document.querySelector('#dashboardTopCategory').innerText`), /تصنيف غير موجود \(removed\)/);
 
   await evaluate(`localStorage.setItem('pfm_data_v1',JSON.stringify({version:1,categories:${JSON.stringify(categories)},transactions:[],budgets:{}}))`); await reload(1000);
-  const empty = await evaluate(`({attention:document.querySelector('#dashboardAttentionList').innerText,comparison:!document.querySelector('#dashboardComparisonEmpty').hidden,top:document.querySelector('#dashboardTopCategory').innerText,budget:document.querySelector('#budgetAlertsList').innerText,debt:document.querySelector('#dashboardDebtAttention').innerText,nan:document.querySelector('#view-dash').innerText.includes('NaN')||document.querySelector('#view-dash').innerText.includes('Infinity')})`);
-  assert.match(empty.attention, /لا توجد حالات/); assert.equal(empty.comparison, true); assert.match(empty.top, /لا توجد بيانات/); assert.match(empty.budget, /لا توجد ميزانيات/); assert.match(empty.debt, /لا توجد التزامات/); assert.equal(empty.nan, false);
+  const empty = await evaluate(`({attentionHidden:document.querySelector('#dashboardAttentionSection').hidden,comparison:!document.querySelector('#dashboardComparisonEmpty').hidden,top:document.querySelector('#dashboardTopCategory').innerText,budget:document.querySelector('#budgetAlertsList').innerText,debt:document.querySelector('#dashboardDebtAttention').innerText,nan:document.querySelector('#view-dash').innerText.includes('NaN')||document.querySelector('#view-dash').innerText.includes('Infinity')})`);
+  assert.equal(empty.attentionHidden, true); assert.equal(empty.comparison, true); assert.match(empty.top, /لا توجد بيانات/); assert.match(empty.budget, /لا توجد ميزانيات/); assert.match(empty.debt, /لا توجد التزامات/); assert.equal(empty.nan, false);
 
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),asset:!!(await caches.match('./dashboard-model.js?v=20260908-phase9'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v18")); assert.equal(pwa.asset, true);
+  assert.ok(pwa.keys.includes("pfm-pwa-v19")); assert.equal(pwa.asset, true);
   if (!pwa.controller) await reload(500);
   await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0, connectionType: "none" });
   await reload(600);

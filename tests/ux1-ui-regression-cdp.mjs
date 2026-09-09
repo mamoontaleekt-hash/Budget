@@ -66,8 +66,8 @@ try {
   }
 
   await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
-  assert.equal(Math.round(widths[390].controls[1].rect.top), Math.round(widths[390].controls[2].rect.top));
-  assert.equal(Math.round(widths[390].controls[3].rect.top), Math.round(widths[390].controls[4].rect.top));
+  assert.equal(widths[390].controls.length, 4);
+  assert.ok(widths[390].controls.every((control) => control.rect.width > 0 && control.rect.height > 0));
   assert.ok(widths[390].controls.every((control) => control.rect.left >= 0 && control.rect.right <= 390));
   const activeVisual = await evaluate(`(() => { const active=document.querySelector('#tabs .active'); const inactive=document.querySelector('#tabs .tab:not(.active)'); return {activeWeight:getComputedStyle(active).fontWeight,inactiveWeight:getComputedStyle(inactive).fontWeight,activeMarker:getComputedStyle(active,'::before').backgroundColor,inactiveMarker:getComputedStyle(inactive,'::before').backgroundColor}; })()`);
   assert.notEqual(activeVisual.activeWeight, activeVisual.inactiveWeight);
@@ -85,11 +85,11 @@ try {
   assert.equal(await evaluate(`document.querySelector('#tabs .active').dataset.tab`), "reports");
   await evaluate(`document.querySelector('#tabs [data-tab="dash"]').click()`);
 
-  for (const [button, expected] of [["btnDashboardBudgets", "budgets"], ["btnDashboardDebts", "debts"], ["btnDashboardReports", "reports"]]) {
-    await evaluate(`document.querySelector('#tabs [data-tab="dash"]').click(); document.querySelector('#${button}').click()`);
+  for (const [panel, button, expected] of [["budget", "btnGoBudgets", "budgets"], ["debts", "btnGoDebts", "debts"], ["charts", "btnDashboardReports", "reports"]]) {
+    await evaluate(`(() => { document.querySelector('#tabs [data-tab="dash"]').click(); const panelTrigger=document.querySelector('[data-dashboard-panel="${panel}"]'); if(panelTrigger.getAttribute('aria-expanded')!=='true')panelTrigger.click(); document.querySelector('#${button}').click(); })()`);
     assert.equal(await evaluate(`document.querySelector('#tabs .active').dataset.tab`), expected);
   }
-  await evaluate(`document.querySelector('#tabs [data-tab="dash"]').click(); document.querySelector('#btnDashboardAddTx').click()`);
+  await evaluate(`document.querySelector('#tabs [data-tab="dash"]').click(); document.querySelector('#btnAddTx').click()`);
   assert.equal(await evaluate(`document.querySelector('#modalTx').classList.contains('open')`), true);
   const modalLayout = await evaluate(`(() => { const modal=document.querySelector('#modalTx'); const nav=document.querySelector('#tabs'); const footer=document.querySelector('#modalTx .ft'); return {modalZ:Number(getComputedStyle(modal).zIndex),navZ:Number(getComputedStyle(nav).zIndex),footerBottom:Math.round(footer.getBoundingClientRect().bottom),viewport:innerHeight,scrollable:getComputedStyle(document.querySelector('#modalTx .bd')).overflowY}; })()`);
   assert.ok(modalLayout.modalZ > modalLayout.navZ);
@@ -133,7 +133,7 @@ try {
   await reload();
   assert.equal(await evaluate(`document.querySelector('#tabs .active').dataset.tab`), "dash");
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),css:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v18"));
+  assert.ok(pwa.keys.includes("pfm-pwa-v19"));
   assert.ok(!pwa.keys.includes("pfm-pwa-v14"));
   assert.equal(pwa.css, true);
   if (!pwa.controller) await reload();

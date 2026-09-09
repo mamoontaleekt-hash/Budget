@@ -132,7 +132,7 @@ try{
   assert.equal(pageState.cards,4);
   assert.equal(pageState.forecastRows,3);
   assert.equal(pageState.heading,"الديون والأقساط");
-  assert.ok(pageState.total.includes("٤٬٥٠٠٬٠٠٠"));
+  assert.ok(pageState.total.includes("4,500,000"));
 
   await evaluate(`document.querySelector('#tabs .tab[data-tab="tx"]').click()`);
   assert.equal(await evaluate(`document.querySelector('#txTableBody').innerText.includes('دفعات المنزل')`),true);
