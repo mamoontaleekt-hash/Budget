@@ -135,10 +135,10 @@ try {
   assert.equal(await evaluate(`[...document.querySelectorAll('[data-dashboard-panel-target]')].filter(x=>!x.hidden).length`), 0);
 
   const storedBeforeOpening = await evaluate(`localStorage.getItem('pfm_data_v1')`);
-  await evaluate(`document.querySelector('#btnDashboardOpeningBalance').click()`);
+  await evaluate(`window.scrollTo(0,document.body.scrollHeight); document.querySelector('#btnDashboardOpeningBalance').click()`);
   await delay(250);
-  const opening = await evaluate(`({budgetVisible:document.querySelector('#view-budgets').style.display==='block',current:document.querySelector('[data-tab="budgets"]').getAttribute('aria-current'),focused:document.activeElement.id,modal:document.querySelector('#modalTx').classList.contains('open')})`);
-  assert.deepEqual(opening, { budgetVisible:true, current:"page", focused:"openingBalanceMode", modal:false });
+  const opening = await evaluate(`(() => { const rect=document.querySelector('.opening-settings').getBoundingClientRect(); return {budgetVisible:document.querySelector('#view-budgets').style.display==='block',current:document.querySelector('[data-tab="budgets"]').getAttribute('aria-current'),focused:document.activeElement.id,inView:rect.top>=0&&rect.top<innerHeight,modal:document.querySelector('#modalTx').classList.contains('open')}; })()`);
+  assert.deepEqual(opening, { budgetVisible:true, current:"page", focused:"openingBalanceMode", inView:true, modal:false });
   assert.equal(await evaluate(`localStorage.getItem('pfm_data_v1')`), storedBeforeOpening);
 
   const months = await evaluate(`(() => { const p=document.querySelector('#monthPicker'); p.value='2026-08'; p.dispatchEvent(new Event('change',{bubbles:true})); const aug=document.querySelector('#monthPickerDisplay').innerText; p.value='2026-09'; p.dispatchEvent(new Event('change',{bubbles:true})); return {aug,sep:document.querySelector('#monthPickerDisplay').innerText,value:p.value}; })()`);
@@ -192,8 +192,8 @@ try {
 
   await evaluate(`navigator.serviceWorker.ready`);
   await reload();
-  const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),ux5:!!(await caches.match('./dashboard-polish.css?v=20260909-ux5')),format:!!(await caches.match('./display-format.js?v=20260909-ux5')),ux4:!!(await caches.match('./budget-polish.css?v=20260909-ux4')),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v19")); for (const key of ["ux5", "format", "ux4", "ux3", "ux2", "ux1"]) assert.equal(pwa[key], true);
+  const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),ux5:!!(await caches.match('./dashboard-polish.css?v=20260909-ux5')),format:!!(await caches.match('./display-format.js?v=20260909-ux5')),report:!!(await caches.match('./report-enhancements.js?v=20260909-ux5')),staleReport:!!(await caches.match('./report-enhancements.js?v=20260908-phase8')),ux4:!!(await caches.match('./budget-polish.css?v=20260909-ux4')),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
+  assert.ok(pwa.keys.includes("pfm-pwa-v19")); for (const key of ["ux5", "format", "report", "ux4", "ux3", "ux2", "ux1"]) assert.equal(pwa[key], true); assert.equal(pwa.staleReport, false);
   if (!pwa.controller) await reload();
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions", { offline:true, latency:0, downloadThroughput:0, uploadThroughput:0, connectionType:"none" });

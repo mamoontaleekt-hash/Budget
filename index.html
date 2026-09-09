@@ -2677,7 +2677,7 @@
   $("#btnDashboardOpeningBalance").addEventListener("click", () => {
     setTab("budgets");
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      $("#openingBalanceHeading")?.closest(".budget-section")?.scrollIntoView({ behavior:"smooth", block:"start" });
+      $("#openingBalanceHeading")?.closest(".opening-settings")?.scrollIntoView({ block:"start" });
       $("#openingBalanceMode")?.focus({ preventScroll:true });
     }));
   });
@@ -3886,7 +3886,7 @@ window.addEventListener("pfm:apply", (ev)=>{
   }
 </script>
 
-<script src="./report-enhancements.js?v=20260908-phase8"></script>
+<script src="./report-enhancements.js?v=20260909-ux5"></script>
 
 </body>
 </html>
