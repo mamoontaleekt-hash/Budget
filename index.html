@@ -2059,7 +2059,7 @@
           <div class="row" style="justify-content:space-between"><div><h3>${escapeHTML(item.obligation.name)}</h3><div class="mini">${debtTypeLabel(item.obligation.type)}${item.obligation.creditor ? ` — ${escapeHTML(item.obligation.creditor)}` : ""}</div></div><span class="pill ${statusClass}">${debtStatusLabel(item.effectiveStatus)}</span></div>
           <div class="debt-progress"><span style="width:${percent.toFixed(2)}%"></span></div>
           <div class="row" style="justify-content:space-between"><span class="mini">مدفوع: <b>${fmtCompact(item.totalPaid)}</b></span><span class="mini">متبقي: <b>${fmtCompact(item.remaining)}</b></span></div>
-          ${item.overpayment > 0 ? `<div class="mini" style="color:var(--warn);margin-top:7px">زيادة مدفوعة: ${fmtCompact(item.overpayment)}</div>` : ""}
+          ${item.overpayment > 0 ? `<div class="mini" style="color:var(--theme-warning-foreground);margin-top:7px">زيادة مدفوعة: ${fmtCompact(item.overpayment)}</div>` : ""}
           ${item.nextDue ? `<div class="mini" style="margin-top:7px">القادم: ${escapeHTML(item.nextDue.date)} — ${fmtCompact(item.nextDue.amount)}</div>` : `<div class="mini muted" style="margin-top:7px">لا توجد دفعة قادمة معروفة</div>`}
           <button class="btn small" data-debt-open="${escapeAttr(item.obligation.id)}" style="margin-top:10px">عرض التفاصيل</button>
         </article>`;

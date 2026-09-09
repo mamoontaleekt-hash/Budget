@@ -38,7 +38,7 @@ test("semantic tokens and the quiet flat shell palette are frozen", () => {
     "theme-surface-raised": "#f3f6fa", "theme-text": "#172033", "theme-text-muted": "#667085",
     "theme-text-quiet": "#7b8495", "theme-border": "#e3e8ef", "theme-border-strong": "#d6dde7",
     "theme-primary": "#2f6bff", "theme-primary-hover": "#2459d3", "theme-primary-soft": "#eef4ff",
-    "theme-secondary": "#0f9f8c", "theme-secondary-soft": "#eaf8f5", "theme-success": "#178a60",
+    "theme-secondary": "#0f9f8c", "theme-secondary-soft": "#eaf8f5", "theme-secondary-foreground": "#0b6f63", "theme-success": "#178a60",
     "theme-success-foreground": "#116b4a", "theme-warning": "#b7791f", "theme-warning-foreground": "#89580f",
     "theme-danger": "#c94b52", "theme-danger-foreground": "#a6373f",
   };
@@ -88,6 +88,8 @@ test("final button, focus, motion, and status systems are explicit", () => {
   assert.match(css, /\.btn\.danger\s*\{[^}]*background:\s*var\(--theme-danger-soft\)/s);
   assert.match(css, /\.tab\.active,[\s\S]*?color:\s*var\(--theme-primary-hover\)/);
   assert.match(css, /\.dashboard-detail-button\[aria-expanded="true"\]::after\s*\{\s*color:\s*var\(--theme-primary-hover\)/);
+  assert.match(css, /\.transaction-tags\s*\{\s*color:\s*var\(--theme-secondary-foreground\)/);
+  assert.match(html, /item\.overpayment > 0[^\n]*color:var\(--theme-warning-foreground\)/);
   assert.match(css, /\.money:not\(\.pos\):not\(\.neg\)/);
   assert.doesNotMatch(css, /\.money:not\(\.neg\)/);
   assert.match(css, /:focus-visible\s*\{[^}]*outline:\s*3px solid rgba\(47, 107, 255, \.22\)/s);

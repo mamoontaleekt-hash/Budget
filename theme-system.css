@@ -14,6 +14,7 @@
   --theme-primary-soft: #eef4ff;
   --theme-secondary: #0f9f8c;
   --theme-secondary-soft: #eaf8f5;
+  --theme-secondary-foreground: #0b6f63;
   --theme-success: #178a60;
   --theme-success-soft: #ecf8f2;
   --theme-success-foreground: #116b4a;
@@ -394,6 +395,7 @@ tbody tr:hover td { background: #f9fbff; }
 .cloud-pill { display: inline-flex; align-items: center; gap: 6px; }
 .cloud-pill .ui-icon { width: 16px; height: 16px; }
 .tag .ui-icon { width: 14px; height: 14px; }
+.transaction-tags { color: var(--theme-secondary-foreground); }
 
 .empty-state-icon {
   display: inline-flex;
