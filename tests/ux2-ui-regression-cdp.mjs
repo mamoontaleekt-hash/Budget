@@ -91,8 +91,9 @@ try {
 
   await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 1000, deviceScaleFactor: 1, mobile: true });
   await evaluate(`document.querySelector('#tabs [data-tab="dash"]').click()`);
-  const semantics = await evaluate(`(() => { const primary=getComputedStyle(document.querySelector('#btnAddTx')); const normal=getComputedStyle(document.querySelector('#btnDashboardOpeningBalance')); const danger=getComputedStyle(document.querySelector('#btnClearAll')); const warn=getComputedStyle(document.querySelector('.pill.warn')); const exceeded=getComputedStyle(document.querySelector('.pill.danger')); const attentionDanger=getComputedStyle(document.querySelector('.attention-item.danger')); const muted=getComputedStyle(document.querySelector('.mini')); const nav=document.querySelector('#tabs'); return {primaryBackground:primary.backgroundImage,primaryShadow:primary.boxShadow,primaryWeight:Number(primary.fontWeight),normalBackground:normal.backgroundImage,normalShadow:normal.boxShadow,normalWeight:Number(normal.fontWeight),dangerColor:danger.color,dangerBorder:danger.borderColor,warnBackground:warn.backgroundColor,exceededBackground:exceeded.backgroundColor,attentionBackground:attentionDanger.backgroundColor,mutedSize:parseFloat(muted.fontSize),mutedColor:muted.color,navPosition:getComputedStyle(nav).position,navColumns:getComputedStyle(nav).gridTemplateColumns.split(' ').length}; })()`);
-  assert.notEqual(semantics.primaryBackground, semantics.normalBackground);
+  const semantics = await evaluate(`(() => { const primary=getComputedStyle(document.querySelector('#btnAddTx')); const normal=getComputedStyle(document.querySelector('#btnDashboardOpeningBalance')); const danger=getComputedStyle(document.querySelector('#btnClearAll')); const warn=getComputedStyle(document.querySelector('.pill.warn')); const exceeded=getComputedStyle(document.querySelector('.pill.danger')); const attentionDanger=getComputedStyle(document.querySelector('.attention-item.danger')); const muted=getComputedStyle(document.querySelector('.mini')); const nav=document.querySelector('#tabs'); return {primaryBackground:primary.backgroundImage,primaryColor:primary.backgroundColor,primaryShadow:primary.boxShadow,primaryWeight:Number(primary.fontWeight),normalBackground:normal.backgroundImage,normalColor:normal.backgroundColor,normalShadow:normal.boxShadow,normalWeight:Number(normal.fontWeight),dangerColor:danger.color,dangerBorder:danger.borderColor,warnBackground:warn.backgroundColor,exceededBackground:exceeded.backgroundColor,attentionBackground:attentionDanger.backgroundColor,mutedSize:parseFloat(muted.fontSize),mutedColor:muted.color,navPosition:getComputedStyle(nav).position,navColumns:getComputedStyle(nav).gridTemplateColumns.split(' ').length}; })()`);
+  assert.equal(semantics.primaryBackground, "none");
+  assert.notEqual(semantics.primaryColor, semantics.normalColor);
   assert.notEqual(semantics.primaryShadow, semantics.normalShadow);
   assert.ok(semantics.primaryWeight > semantics.normalWeight);
   assert.notEqual(semantics.dangerBorder, "rgba(0, 0, 0, 0)");
@@ -124,7 +125,7 @@ try {
   for (const key of ["themeSettings", "uiSettings", "typographySettings", "visualSettings", "layoutSettings"]) assert.equal(Object.hasOwn(stored, key), false);
 
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),visual:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),mobile:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v19"));
+  assert.ok(pwa.keys.includes("pfm-pwa-v20"));
   assert.ok(!pwa.keys.includes("pfm-pwa-v15"));
   assert.equal(pwa.visual, true);
   assert.equal(pwa.mobile, true);

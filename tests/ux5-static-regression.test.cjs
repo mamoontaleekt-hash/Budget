@@ -11,7 +11,7 @@ const css = read("dashboard-polish.css");
 const sw = read("sw.js");
 const count = (source, pattern) => (source.match(pattern) || []).length;
 
-test("UX5 assets load once, in order, and are cached in PWA v19", () => {
+test("UX5 assets load once, in order, and are cached in PWA v20", () => {
   const styles = [
     "visual-polish.css?v=20260909-ux2",
     "mobile-enhancements.css?v=20260908-ux1",
@@ -23,7 +23,7 @@ test("UX5 assets load once, in order, and are cached in PWA v19", () => {
   for (let index = 1; index < styles.length; index += 1) assert.ok(html.indexOf(styles[index - 1]) < html.indexOf(styles[index]));
   assert.equal(count(html, /display-format\.js\?v=20260909-ux5/g), 1);
   assert.equal(count(html, /report-enhancements\.js\?v=20260909-ux5/g), 1);
-  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v19"/);
+  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v20"/);
   for (const asset of [...styles, "display-format.js?v=20260909-ux5", "report-enhancements.js?v=20260909-ux5"]) assert.equal(count(sw, new RegExp(asset.replace(/[.?]/g, "\\$&"), "g")), 1);
 });
 
@@ -31,7 +31,7 @@ test("topbar preserves daily controls and moves secondary actions into one discl
   assert.doesNotMatch(html, /يعمل أونلاين \(GitHub Pages\).*Firebase/);
   assert.match(html, /نظرة واضحة على أموالك هذا الشهر\./);
   assert.match(html, /<details class="topbar-more" id="topbarMore">/);
-  assert.match(html, /<summary class="btn"[^>]*>⋯ المزيد<\/summary>/);
+  assert.match(html, /<summary class="btn"[^>]*>[\s\S]*?#icon-more[\s\S]*?المزيد<\/summary>/);
   for (const id of ["monthPicker", "monthPickerDisplay", "btnAddTx", "cloudBadge", "btnExport", "btnImport", "btnCloud"]) {
     assert.equal(count(html, new RegExp(`id="${id}"`, "g")), 1, `${id} must remain unique`);
   }

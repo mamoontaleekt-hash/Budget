@@ -12,7 +12,7 @@ const visualLink = '<link rel="stylesheet" href="./visual-polish.css?v=20260909-
 const mobileLink = '<link rel="stylesheet" href="./mobile-enhancements.css?v=20260908-ux1">';
 assert.equal((html.match(/visual-polish\.css\?v=20260909-ux2/g) || []).length, 1);
 assert.ok(html.indexOf(visualLink) < html.indexOf(mobileLink));
-assert.match(sw, /const CACHE_NAME = "pfm-pwa-v19"/);
+assert.match(sw, /const CACHE_NAME = "pfm-pwa-v20"/);
 assert.match(sw, /"\.\/visual-polish\.css\?v=20260909-ux2"/);
 assert.match(sw, /"\.\/mobile-enhancements\.css\?v=20260908-ux1"/);
 assert.doesNotMatch(sw, /pfm-pwa-v15/);
