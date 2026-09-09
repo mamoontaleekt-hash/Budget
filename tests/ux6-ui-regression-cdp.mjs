@@ -55,6 +55,18 @@ async function reload(wait = 650) {
   await delay(wait);
 }
 const expectedFirebaseError = (value) => String(value).includes("www.gstatic.com/firebasejs/10.13.0/") && /Failed to load resource|ERR_/i.test(String(value));
+const contrast = (foreground, background) => {
+  const luminance = (value) => {
+    const channels = value.match(/\d+/g).slice(0, 3).map(Number).map((channel) => {
+      const normalized = channel / 255;
+      return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  };
+  const first = luminance(foreground);
+  const second = luminance(background);
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+};
 
 const healthy = {
   version: 1,
@@ -91,6 +103,9 @@ try {
   assert.ok(theme.top.blur === "none" || theme.top.blur === "");
   assert.equal(theme.add.bg, "rgb(47, 107, 255)"); assert.equal(theme.add.image, "none"); assert.equal(theme.add.color, "rgb(255, 255, 255)");
   assert.equal(theme.card.bg, "rgb(255, 255, 255)");
+
+  const activeTab = await evaluate(`(() => { const style=getComputedStyle(document.querySelector('#tabs .tab.active')); return {color:style.color,bg:style.backgroundColor}; })()`);
+  assert.ok(contrast(activeTab.color, activeTab.bg) >= 4.5, JSON.stringify(activeTab));
 
   const shell = await evaluate(`(() => ({nav:document.querySelectorAll('#tabs .tab').length,navIcons:document.querySelectorAll('#tabs .tab svg use').length,kpis:document.querySelectorAll('.dashboard-primary-summary>.kpi').length,kpiIcons:document.querySelectorAll('.dashboard-primary-summary .kpi-icon svg use').length,launchers:document.querySelectorAll('[data-dashboard-panel]').length,launcherIcons:document.querySelectorAll('[data-dashboard-panel] svg use').length,title:document.querySelector('.brand h1').innerText,subtitle:document.querySelector('.brand-subtitle').innerText,month:document.querySelector('#monthPickerDisplay').innerText,values:[...document.querySelectorAll('.dashboard-primary-summary .value')].map(x=>x.innerText),arabicDigits:/[٠-٩۰-۹]/.test(document.querySelector('#view-dash').innerText),attention:document.querySelector('#dashboardAttentionSection').hidden,stored:Object.keys(JSON.parse(localStorage.getItem('pfm_data_v1'))).filter(k=>/theme|appearance|color|icon|ux6/i.test(k))}))()`);
   assert.equal(shell.nav, 6); assert.equal(shell.navIcons, 6); assert.equal(shell.kpis, 4); assert.equal(shell.kpiIcons, 4); assert.equal(shell.launchers, 6); assert.equal(shell.launcherIcons, 6);
@@ -130,6 +145,9 @@ try {
   assert.equal(buttonSystem.distinct, 3);
   const inputs = await evaluate(`(() => { document.querySelector('[data-tab="tx"]').click(); const el=document.querySelector('#filterSearch'),s=getComputedStyle(el); return {height:el.getBoundingClientRect().height,bg:s.backgroundColor,radius:s.borderRadius,border:s.borderColor}; })()`);
   assert.ok(inputs.height >= 40); assert.equal(inputs.bg, "rgb(255, 255, 255)"); assert.equal(inputs.radius, "12px");
+  const transactionColors = await evaluate(`(() => ({positive:getComputedStyle(document.querySelector('.money.pos')).color,negative:getComputedStyle(document.querySelector('.money.neg')).color,neutral:getComputedStyle(document.querySelector('.dashboard-primary-summary .value')).color}))()`);
+  assert.notEqual(transactionColors.positive, transactionColors.neutral, JSON.stringify(transactionColors));
+  assert.notEqual(transactionColors.negative, transactionColors.neutral, JSON.stringify(transactionColors));
 
   await evaluate(`document.activeElement?.blur()`);
   for(let index=0; index<3; index+=1){
@@ -151,6 +169,7 @@ try {
   await reload();
   const status = await evaluate(`(() => { const items=[...document.querySelectorAll('#dashboardAttentionList .attention-item')],styles=items.map(x=>({class:x.className,bg:getComputedStyle(x).backgroundColor,color:getComputedStyle(x).color,text:x.innerText})); return {hidden:document.querySelector('#dashboardAttentionSection').hidden,styles,distinct:new Set(styles.map(x=>x.bg)).size}; })()`);
   assert.equal(status.hidden, false); assert.ok(status.styles.some(x=>x.class.includes("danger"))); assert.ok(status.styles.some(x=>x.class.includes("warn"))); assert.ok(status.distinct >= 2);
+  assert.ok(status.styles.every((item) => contrast(item.color, item.bg) >= 4.5), JSON.stringify(status.styles));
 
   const iconRequests = requests.filter((request) => /fontawesome|font-awesome|lucide|heroicons|material-icons|fonts\.googleapis|cdnjs|unpkg|\.svg(?:\?|$)/i.test(request.url));
   assert.deepEqual(iconRequests, []);

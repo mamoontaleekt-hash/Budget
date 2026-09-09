@@ -16,10 +16,13 @@
   --theme-secondary-soft: #eaf8f5;
   --theme-success: #178a60;
   --theme-success-soft: #ecf8f2;
+  --theme-success-foreground: #116b4a;
   --theme-warning: #b7791f;
   --theme-warning-soft: #fff7e6;
+  --theme-warning-foreground: #89580f;
   --theme-danger: #c94b52;
   --theme-danger-soft: #fff0f1;
+  --theme-danger-foreground: #a6373f;
   --theme-shadow-sm: 0 1px 2px rgba(15, 23, 42, .04);
   --theme-shadow-md: 0 8px 24px rgba(15, 23, 42, .06);
   --theme-radius-lg: 16px;
@@ -131,7 +134,7 @@ body {
 
 .tab.active,
 .tab[aria-current="page"] {
-  color: var(--theme-primary);
+  color: var(--theme-primary-hover);
   background: var(--theme-primary-soft);
   border-color: #cfddff;
   box-shadow: inset 0 -2px 0 var(--theme-primary);
@@ -184,7 +187,7 @@ body {
 
 .kpi .value,
 .dashboard-summary-row .value,
-.money:not(.neg),
+.money:not(.pos):not(.neg),
 .dashboard-highlight strong {
   color: var(--theme-text);
   background: none;
@@ -232,7 +235,7 @@ body {
 .dashboard-detail-button .dashboard-detail-icon .ui-icon { width: 21px; height: 21px; }
 
 .dashboard-detail-button[aria-expanded="true"] {
-  color: var(--theme-primary);
+  color: var(--theme-primary-hover);
   background: var(--theme-primary-soft);
   border-color: #bdceff;
   box-shadow: inset 0 0 0 1px rgba(47, 107, 255, .08);
@@ -287,7 +290,7 @@ body {
 .btn.ghost:hover { color: var(--theme-text); background: var(--theme-surface-raised); }
 
 .btn.danger {
-  color: var(--theme-danger);
+  color: var(--theme-danger-foreground);
   background: var(--theme-danger-soft);
   border-color: #f2c9cd;
   box-shadow: none;
@@ -357,7 +360,7 @@ tbody tr:hover td { background: #f9fbff; }
 .pill.ok,
 .attention-item.ok,
 .dashboard-highlight.ok {
-  color: var(--theme-success);
+  color: var(--theme-success-foreground);
   background: var(--theme-success-soft);
   border-color: #bce3d2;
 }
@@ -367,7 +370,7 @@ tbody tr:hover td { background: #f9fbff; }
 .dashboard-highlight.warn,
 .dashboard-note,
 .debt-warning {
-  color: var(--theme-warning);
+  color: var(--theme-warning-foreground);
   background: var(--theme-warning-soft);
   border-color: #efd7a8;
 }
@@ -375,7 +378,7 @@ tbody tr:hover td { background: #f9fbff; }
 .pill.danger,
 .attention-item.danger,
 .dashboard-highlight.danger {
-  color: var(--theme-danger);
+  color: var(--theme-danger-foreground);
   background: var(--theme-danger-soft);
   border-color: #f0c3c7;
 }
