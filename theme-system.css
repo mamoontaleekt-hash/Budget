@@ -241,7 +241,7 @@ body {
   box-shadow: inset 0 0 0 1px rgba(47, 107, 255, .08);
 }
 
-.dashboard-detail-button[aria-expanded="true"]::after { color: var(--theme-primary); }
+.dashboard-detail-button[aria-expanded="true"]::after { color: var(--theme-primary-hover); }
 
 .dashboard-detail-panel {
   background: var(--theme-surface-soft);

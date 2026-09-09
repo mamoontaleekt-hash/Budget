@@ -87,6 +87,7 @@ test("final button, focus, motion, and status systems are explicit", () => {
   assert.doesNotMatch(css.match(/\.btn\.primary\s*\{[^}]*\}/s)?.[0] || "", /gradient/i);
   assert.match(css, /\.btn\.danger\s*\{[^}]*background:\s*var\(--theme-danger-soft\)/s);
   assert.match(css, /\.tab\.active,[\s\S]*?color:\s*var\(--theme-primary-hover\)/);
+  assert.match(css, /\.dashboard-detail-button\[aria-expanded="true"\]::after\s*\{\s*color:\s*var\(--theme-primary-hover\)/);
   assert.match(css, /\.money:not\(\.pos\):not\(\.neg\)/);
   assert.doesNotMatch(css, /\.money:not\(\.neg\)/);
   assert.match(css, /:focus-visible\s*\{[^}]*outline:\s*3px solid rgba\(47, 107, 255, \.22\)/s);

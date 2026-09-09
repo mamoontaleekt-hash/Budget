@@ -116,6 +116,8 @@ try {
     const panel = await evaluate(`(() => { const b=document.querySelector('[data-dashboard-panel="${name}"]'); b.click(); return {visible:[...document.querySelectorAll('[data-dashboard-panel-target]')].filter(x=>!x.hidden).map(x=>x.dataset.dashboardPanelTarget),expanded:b.getAttribute('aria-expanded')}; })()`);
     assert.deepEqual(panel.visible, [name]); assert.equal(panel.expanded, "true");
   }
+  const expandedDetail = await evaluate(`(() => { const button=document.querySelector('[data-dashboard-panel="charts"]'),pseudo=getComputedStyle(button,'::after'),buttonStyle=getComputedStyle(button); return {color:pseudo.color,bg:buttonStyle.backgroundColor}; })()`);
+  assert.ok(contrast(expandedDetail.color, expandedDetail.bg) >= 4.5, JSON.stringify(expandedDetail));
   await evaluate(`document.querySelector('[data-dashboard-panel="charts"]').click()`);
 
   const layouts = {};
