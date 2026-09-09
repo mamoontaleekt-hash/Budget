@@ -451,6 +451,7 @@
   <link rel="stylesheet" href="./visual-polish.css?v=20260909-ux2">
   <link rel="stylesheet" href="./mobile-enhancements.css?v=20260908-ux1">
   <link rel="stylesheet" href="./interaction-polish.css?v=20260909-ux3">
+  <link rel="stylesheet" href="./budget-polish.css?v=20260909-ux4">
 </head>
 
 <body>
@@ -805,18 +806,21 @@
             <div><b>كيف تستخدمها؟</b> ضع “دخل مخطط” على أساس راتبينك (مثلاً: 750,000 + 2,350,000) ثم ضع ميزانية لكل تصنيف. ستشاهد “غير موزّع” وتعرف هل تخطّيت الدخل.</div>
           </div>
 
-          <div class="budget-summary-grid" id="budgetSummary" style="margin-top:12px">
-            <div class="kpi"><div><div class="label">إجمالي الميزانية المخططة</div><div class="value" id="budgetSummaryPlanned">—</div></div><span class="tag">🧩</span></div>
-            <div class="kpi"><div><div class="label">المصروف ضمن تصنيفات لها ميزانية</div><div class="value" id="budgetSummaryActual">—</div></div><span class="tag">💳</span></div>
-            <div class="kpi"><div><div class="label">مصروف بدون ميزانية</div><div class="value" id="budgetSummaryUnbudgeted">—</div></div><span class="tag">ℹ️</span></div>
-            <div class="kpi"><div><div class="label">المتبقي من الميزانية</div><div class="value" id="budgetSummaryRemaining">—</div><div class="hint">ليس الرصيد الختامي</div></div><span class="tag">🎯</span></div>
-          </div>
-          <div class="row" style="margin-top:10px">
-            <span class="pill" id="budgetOverallStatus">حالة الشهر: —</span>
-            <span class="pill warn" id="budgetWarningCount">اقترب/بلغ الحد: 0</span>
-            <span class="pill danger" id="budgetExceededCount">متجاوز: 0</span>
-          </div>
-          <div class="help" id="budgetAllocationWarning" style="display:none;margin-top:10px">مجموع الميزانيات يتجاوز الدخل المخطط.</div>
+          <section class="budget-section budget-summary-section" aria-labelledby="budgetSummaryHeading">
+            <h3 id="budgetSummaryHeading">ملخص الميزانية</h3>
+            <div class="budget-summary-grid" id="budgetSummary">
+              <div class="kpi"><div><div class="label">إجمالي الميزانية المخططة</div><div class="value" id="budgetSummaryPlanned">—</div></div><span class="tag">🧩</span></div>
+              <div class="kpi"><div><div class="label">المصروف ضمن تصنيفات لها ميزانية</div><div class="value" id="budgetSummaryActual">—</div></div><span class="tag">💳</span></div>
+              <div class="kpi"><div><div class="label">مصروف بدون ميزانية</div><div class="value" id="budgetSummaryUnbudgeted">—</div></div><span class="tag">ℹ️</span></div>
+              <div class="kpi"><div><div class="label">المتبقي من الميزانية</div><div class="value" id="budgetSummaryRemaining">—</div><div class="hint">ليس الرصيد الختامي</div></div><span class="tag">🎯</span></div>
+            </div>
+            <div class="row budget-status-summary">
+              <span class="pill" id="budgetOverallStatus">حالة الشهر: —</span>
+              <span class="pill warn" id="budgetWarningCount">اقترب/بلغ الحد: 0</span>
+              <span class="pill danger" id="budgetExceededCount">متجاوز: 0</span>
+            </div>
+            <div class="help" id="budgetAllocationWarning" style="display:none">مجموع الميزانيات يتجاوز الدخل المخطط.</div>
+          </section>
 
           <div class="hr"></div>
 
@@ -869,15 +873,23 @@
 
           <div class="hr"></div>
 
-          <div class="two">
+          <section class="budget-section budget-plan-section" aria-labelledby="plannedIncomeHeading">
+            <h3 id="plannedIncomeHeading">الدخل المخطط</h3>
+            <div class="two">
             <div>
-              <div style="font-weight:800;margin-bottom:6px">الدخل المخطط للشهر</div>
-              <div class="row">
-                <input id="planIncome1" type="number" inputmode="numeric" placeholder="راتب ثابت (مثال 750000)" />
-                <input id="planIncome2" type="number" inputmode="numeric" placeholder="راتب متغير (مثال 2350000)" />
+              <div class="budget-plan-fields">
+                <div class="budget-field">
+                  <label for="planIncome1">الدخل المخطط الأول</label>
+                  <input id="planIncome1" type="number" inputmode="numeric" placeholder="مثال: 750000" />
+                </div>
+                <div class="budget-field">
+                  <label for="planIncome2">الدخل المخطط الثاني</label>
+                  <input id="planIncome2" type="number" inputmode="numeric" placeholder="مثال: 2350000" />
+                </div>
               </div>
-              <div class="row" style="margin-top:10px">
-                <input id="planNote" type="text" placeholder="ملاحظة (اختياري): مثال راتب SEPCO3 + دخل آخر" style="flex:1" />
+              <div class="budget-field budget-plan-note">
+                <label for="planNote">ملاحظة الخطة</label>
+                <input id="planNote" type="text" placeholder="اختياري: مثال راتب ثابت + دخل آخر" />
               </div>
 
               <div class="hr"></div>
@@ -910,20 +922,22 @@
                 <span class="tag">🎯</span>
               </div>
             </div>
-          </div>
+            </div>
+          </section>
 
           <div class="hr"></div>
 
-          <div class="row" style="justify-content:space-between">
-            <div>
-              <div style="font-weight:800;margin-bottom:4px">ميزانيات التصنيفات (مصروف)</div>
-              <div class="mini">عدّل أي مبلغ — النظام يعطيك مقارنة “مخطط vs فعلي”</div>
+          <section class="budget-section budget-categories-section" aria-labelledby="categoryBudgetsHeading">
+            <div class="row budget-categories-heading">
+              <div>
+                <h3 id="categoryBudgetsHeading">ميزانيات التصنيفات</h3>
+                <div class="mini">عدّل أي مبلغ — النظام يعطيك مقارنة “مخطط vs فعلي”</div>
+              </div>
+              <button class="btn small" id="btnCategories2">🏷️ إضافة/تعديل تصنيفات</button>
             </div>
-            <button class="btn small" id="btnCategories2">🏷️ إضافة/تعديل تصنيفات</button>
-          </div>
 
-          <div style="overflow:auto;margin-top:10px">
-            <table>
+            <div class="budget-table-wrap">
+              <table class="budget-table">
               <thead>
                 <tr>
                   <th style="min-width:170px">التصنيف</th>
@@ -938,8 +952,13 @@
               <tbody id="budgetTableBody">
                 <tr><td colspan="7" class="muted">—</td></tr>
               </tbody>
-            </table>
-          </div>
+              </table>
+            </div>
+
+            <div class="budget-mobile-save">
+              <button class="btn primary" id="btnSaveBudgetsMobile" type="button">💾 حفظ الميزانية</button>
+            </div>
+          </section>
 
           <div class="hr"></div>
           <div class="mini">ملاحظة: الميزانيات تُحفظ لكل شهر على حدة.</div>
@@ -2232,16 +2251,16 @@
       const planned = Number(plan.items?.[c.id]?.amount || 0);
       const note = plan.items?.[c.id]?.note || "";
       const actual = Number(actualByCat[c.id] || 0);
-      return `<tr data-cat="${c.id}" data-actual="${actual}">
-        <td><b>${escapeHTML(c.name)}</b></td>
-        <td>
-          <input class="budgetInput" type="number" inputmode="numeric" placeholder="0" value="${planned||""}" />
+      return `<tr data-cat="${escapeAttr(c.id)}" data-actual="${actual}">
+        <td class="budget-category" data-label="التصنيف"><b>${escapeHTML(c.name)}</b></td>
+        <td class="budget-planned" data-label="الميزانية المخططة">
+          <input class="budgetInput" type="number" inputmode="numeric" placeholder="0" value="${planned||""}" aria-label="الميزانية المخططة: ${escapeAttr(c.name)}" />
         </td>
-        <td>${fmtCompact(actual)}</td>
-        <td class="budgetRemaining">—</td>
-        <td class="budgetPercent">—</td>
-        <td class="budgetStatus">—</td>
-        <td><input class="budgetNote" type="text" placeholder="اختياري (مثال: موعد السداد 10 كل شهر)" value="${escapeAttr(note)}" /></td>
+        <td class="budget-actual" data-label="المصروف الفعلي">${fmtCompact(actual)}</td>
+        <td class="budget-remaining budgetRemaining" data-label="المتبقي">—</td>
+        <td class="budget-percent budgetPercent" data-label="المستخدم">—</td>
+        <td class="budget-status budgetStatus" data-label="الحالة">—</td>
+        <td class="budget-note-cell" data-label="ملاحظة"><input class="budgetNote" type="text" placeholder="اختياري (مثال: موعد السداد 10 كل شهر)" value="${escapeAttr(note)}" aria-label="ملاحظة الميزانية: ${escapeAttr(c.name)}" /></td>
       </tr>`;
     });
 
@@ -2307,7 +2326,7 @@
     $$(".budgetInput", tbody).forEach(inp => inp.addEventListener("input", recalc));
 
     // store temporary in DOM, save via button
-    $("#btnSaveBudgets").onclick = () => {
+    function saveBudgets(){
       const planIncome1 = Number($("#planIncome1").value||0);
       const planIncome2 = Number($("#planIncome2").value||0);
       const planNote = ($("#planNote").value||"").trim();
@@ -2326,7 +2345,9 @@
       save();
       toast("تم حفظ تقسيم الميزانية ✅");
       render(); // refresh overspend & reports
-    };
+    }
+    $("#btnSaveBudgets").onclick = saveBudgets;
+    $("#btnSaveBudgetsMobile").onclick = saveBudgets;
 
     $("#btnAutoSuggestions").onclick = () => {
       // Simple heuristic: allocate essential fixed categories first if exist, based on typical priorities.

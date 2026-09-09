@@ -1,0 +1,237 @@
+/* UX4 — Budget planning and mobile budget editor polish. */
+
+#view-budgets .budget-section {
+  margin-top: 12px;
+}
+
+#view-budgets .budget-section > h3,
+#view-budgets .budget-categories-heading h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+#view-budgets .budget-summary-grid {
+  margin-top: 0;
+}
+
+#view-budgets .budget-status-summary,
+#view-budgets #budgetAllocationWarning {
+  margin-top: 10px;
+}
+
+#view-budgets .budget-plan-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#view-budgets .budget-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 800;
+}
+
+#view-budgets .budget-field input {
+  width: 100%;
+}
+
+#view-budgets .budget-plan-note {
+  margin-top: 10px;
+}
+
+#view-budgets .budget-categories-heading {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+#view-budgets .budget-table-wrap {
+  overflow: auto;
+  margin-top: 10px;
+}
+
+#view-budgets .budget-category {
+  overflow-wrap: anywhere;
+}
+
+#view-budgets .budget-note-cell input {
+  min-width: 210px;
+  width: 100%;
+}
+
+#view-budgets .budget-mobile-save {
+  display: none;
+}
+
+@media (max-width:720px) {
+  #view-budgets .card > .hd {
+    align-items: flex-start;
+  }
+
+  #view-budgets .card > .hd .row {
+    width: 100%;
+  }
+
+  #view-budgets .card > .hd .btn {
+    flex: 1 1 145px;
+  }
+
+  #view-budgets .budget-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #view-budgets .budget-summary-grid .kpi {
+    min-width: 0;
+  }
+
+  #view-budgets .budget-summary-grid .label,
+  #view-budgets .budget-summary-grid .value {
+    overflow-wrap: anywhere;
+  }
+
+  #view-budgets .budget-status-summary {
+    align-items: stretch;
+  }
+
+  #view-budgets .budget-status-summary .pill {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  #view-budgets .opening-settings > .row:first-child {
+    gap: 10px;
+  }
+
+  #view-budgets .opening-settings #btnSaveFinancialSettings {
+    width: 100%;
+  }
+
+  #view-budgets .budget-plan-fields {
+    grid-template-columns: 1fr;
+  }
+
+  #view-budgets .budget-categories-heading #btnCategories2 {
+    width: 100%;
+  }
+
+  #view-budgets .budget-table-wrap {
+    overflow: visible;
+  }
+
+  #view-budgets .budget-table,
+  #view-budgets .budget-table tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  #view-budgets .budget-table thead {
+    display: none;
+  }
+
+  #view-budgets .budget-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  #view-budgets .budget-table tr[data-cat] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    background: var(--card);
+    box-shadow: var(--shadow2);
+  }
+
+  #view-budgets .budget-table tr[data-cat] > td {
+    display: flex;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow-wrap: anywhere;
+  }
+
+  #view-budgets .budget-table tr[data-cat] > td::before {
+    content: attr(data-label);
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  #view-budgets .budget-table .budget-category,
+  #view-budgets .budget-table .budget-planned,
+  #view-budgets .budget-table .budget-note-cell {
+    grid-column: 1 / -1;
+  }
+
+  #view-budgets .budget-table .budget-category {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 16px;
+  }
+
+  #view-budgets .budget-table .budget-category::before {
+    display: none;
+  }
+
+  #view-budgets .budget-table .budget-planned input {
+    width: 100%;
+    min-width: 0;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  #view-budgets .budget-table .budget-note-cell input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #view-budgets .budget-table .budget-percent,
+  #view-budgets .budget-table .budget-status {
+    order: 3;
+  }
+
+  #view-budgets .budget-table .budget-actual,
+  #view-budgets .budget-table .budget-remaining {
+    order: 4;
+  }
+
+  #view-budgets .budget-table .budget-note-cell {
+    order: 5;
+  }
+
+  #view-budgets .budget-progress {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #view-budgets .budget-table tbody > tr:not([data-cat]) td {
+    display: block;
+    width: 100%;
+    white-space: normal;
+  }
+
+  #view-budgets .budget-table tbody > tr:not([data-cat]) {
+    display: block;
+  }
+
+  #view-budgets .budget-mobile-save {
+    display: block;
+    margin-top: 14px;
+  }
+
+  #view-budgets .budget-mobile-save .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+@media (max-width:430px) {
+  #view-budgets .budget-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
