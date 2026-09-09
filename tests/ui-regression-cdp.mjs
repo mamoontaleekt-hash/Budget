@@ -176,9 +176,9 @@ try{
   assert.equal(await evaluate(`document.querySelector('#txTableBody').innerText.includes('رصيد افتتاحي')`), true);
   await evaluate(`document.querySelector('#tabs .tab[data-tab="dash"]').click()`);
   const dashboard = await evaluate(`(() => Object.fromEntries(['kpiOpening','kpiIncome','kpiAvailable','kpiExpense','kpiClosing','kpiNet','kpiSavingRate'].map(id => [id,document.querySelector('#'+id).innerText])))()`);
-  assert.ok(dashboard.kpiOpening.includes("٣٠٠٬٠٠٠"));
-  assert.ok(dashboard.kpiIncome.includes("٣٬٠٠٠٬٠٠٠"));
-  assert.ok(dashboard.kpiClosing.includes("٨٠٠٬٠٠٠"));
+  assert.ok(dashboard.kpiOpening.includes("300,000"));
+  assert.ok(dashboard.kpiIncome.includes("3,000,000"));
+  assert.ok(dashboard.kpiClosing.includes("800,000"));
 
   await evaluate(`document.querySelector('#tabs .tab[data-tab="tx"]').click()`);
   const incomeFieldHidden = await evaluate(`(() => {
@@ -272,11 +272,11 @@ try{
 
   await evaluate(`document.querySelector('#tabs .tab[data-tab="dash"]').click()`);
   const phase2Dashboard = await evaluate(`(() => Object.fromEntries(['kpiExpense','kpiCostOfLiving','kpiExceptionalExpenses','kpiDebtPayments','kpiClosing','kpiNet','kpiSavingRate'].map(id => [id,document.querySelector('#'+id).innerText])))()`);
-  assert.ok(phase2Dashboard.kpiExpense.includes("٣٬١٠٠٬٠٠٠"));
-  assert.ok(phase2Dashboard.kpiCostOfLiving.includes("٢٬٨٥٠٬٠٠٠"));
-  assert.ok(phase2Dashboard.kpiExceptionalExpenses.includes("١٢٠٬٠٠٠"));
-  assert.ok(phase2Dashboard.kpiDebtPayments.includes("١٣٠٬٠٠٠"));
-  assert.ok(phase2Dashboard.kpiClosing.includes("٢٠٠٬٠٠٠"));
+  assert.ok(phase2Dashboard.kpiExpense.includes("3,100,000"));
+  assert.ok(phase2Dashboard.kpiCostOfLiving.includes("2,850,000"));
+  assert.ok(phase2Dashboard.kpiExceptionalExpenses.includes("120,000"));
+  assert.ok(phase2Dashboard.kpiDebtPayments.includes("130,000"));
+  assert.ok(phase2Dashboard.kpiClosing.includes("200,000"));
   assert.ok(phase2Dashboard.kpiNet.length > 0);
 
   await evaluate(`(() => { const picker=document.querySelector('#monthPicker'); picker.value='2026-09'; picker.dispatchEvent(new Event('change',{bubbles:true})); document.querySelector('#tabs .tab[data-tab="budgets"]').click(); const select=document.querySelector('#openingBalanceMode'); select.value='carry'; select.dispatchEvent(new Event('change',{bubbles:true})); document.querySelector('#btnSaveFinancialSettings').click(); })()`);
@@ -292,8 +292,8 @@ try{
   assert.ok(reportText.includes('تكلفة المعيشة'));
   assert.ok(reportText.includes('استثنائي'));
   assert.ok(reportText.includes('سداد دين'));
-  assert.ok(reportText.includes('٣٬١٠٠٬٠٠٠'));
-  assert.ok(reportText.includes('٢٬٨٥٠٬٠٠٠'));
+  assert.ok(reportText.includes('3,100,000'));
+  assert.ok(reportText.includes('2,850,000'));
 
   await evaluate(`document.querySelector('#tabs .tab[data-tab="budgets"]').click()`);
   const viewports = {};
@@ -372,10 +372,10 @@ try{
   assert.equal(backupRoundTrip.restoredTransactionsUnchanged, true);
 
   await reload();
-  const sw = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,cacheKeys:await caches.keys(),financialAsset:!!(await caches.match('./financial-model.js?v=20260907-phase3')),expenseAsset:!!(await caches.match('./expense-model.js?v=20260907-phase3')),debtAsset:!!(await caches.match('./debt-model.js?v=20260908-phase3-corrective')),shoppingAsset:!!(await caches.match('./shopping-model.js?v=20260908-phase4')),staleDebtAsset:!!(await caches.match('./debt-model.js?v=20260907-phase3')),comparisonAsset:!!(await caches.match('./comparison-model.js?v=20260908-phase7')),categoryAsset:!!(await caches.match('./category-analytics-model.js?v=20260908-phase8')),reportAsset:!!(await caches.match('./report-enhancements.js?v=20260908-phase8'))}))`);
+  const sw = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,cacheKeys:await caches.keys(),financialAsset:!!(await caches.match('./financial-model.js?v=20260907-phase3')),expenseAsset:!!(await caches.match('./expense-model.js?v=20260907-phase3')),debtAsset:!!(await caches.match('./debt-model.js?v=20260908-phase3-corrective')),shoppingAsset:!!(await caches.match('./shopping-model.js?v=20260908-phase4')),staleDebtAsset:!!(await caches.match('./debt-model.js?v=20260907-phase3')),comparisonAsset:!!(await caches.match('./comparison-model.js?v=20260908-phase7')),categoryAsset:!!(await caches.match('./category-analytics-model.js?v=20260908-phase8')),reportAsset:!!(await caches.match('./report-enhancements.js?v=20260909-ux5'))}))`);
   assert.equal(sw.active, true);
   assert.equal(sw.controlled, true);
-  assert.ok(sw.cacheKeys.includes("pfm-pwa-v18"));
+  assert.ok(sw.cacheKeys.includes("pfm-pwa-v19"));
   assert.equal(sw.financialAsset, true);
   assert.equal(sw.expenseAsset, true);
   assert.equal(sw.debtAsset, true);
@@ -388,7 +388,7 @@ try{
   const errorCountBeforeOffline = errors.length;
   await send("Network.emulateNetworkConditions", {offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
   await reload();
-  const offline = await evaluate(`({heading:document.querySelector('h1')?.innerText,financialModel:!!window.PFMFinancialModel,expenseModel:!!window.PFMExpenseModel,debtModel:!!window.PFMDebtModel,shoppingModel:!!window.PFMShoppingModel,comparisonModel:!!window.PFMComparisonModel,categoryModel:!!window.PFMCategoryAnalyticsModel,debtScript:[...document.scripts].filter(script=>script.src.includes('/debt-model.js?v=20260908-phase3-corrective')).length,shoppingScript:[...document.scripts].filter(script=>script.src.includes('/shopping-model.js?v=20260908-phase4')).length,reportScript:[...document.scripts].filter(script=>script.src.includes('/report-enhancements.js?v=20260908-phase8')).length,css:[...document.styleSheets].filter(sheet=>sheet.href?.includes('/mobile-enhancements.css?v=20260908-ux1')).length})`);
+  const offline = await evaluate(`({heading:document.querySelector('h1')?.innerText,financialModel:!!window.PFMFinancialModel,expenseModel:!!window.PFMExpenseModel,debtModel:!!window.PFMDebtModel,shoppingModel:!!window.PFMShoppingModel,comparisonModel:!!window.PFMComparisonModel,categoryModel:!!window.PFMCategoryAnalyticsModel,debtScript:[...document.scripts].filter(script=>script.src.includes('/debt-model.js?v=20260908-phase3-corrective')).length,shoppingScript:[...document.scripts].filter(script=>script.src.includes('/shopping-model.js?v=20260908-phase4')).length,reportScript:[...document.scripts].filter(script=>script.src.includes('/report-enhancements.js?v=20260909-ux5')).length,css:[...document.styleSheets].filter(sheet=>sheet.href?.includes('/mobile-enhancements.css?v=20260908-ux1')).length})`);
   assert.equal(offline.heading, "إدارة المصاريف الشخصية");
   assert.equal(offline.financialModel, true);
   assert.equal(offline.expenseModel, true);

@@ -165,7 +165,7 @@ try{
   await evaluate(`document.querySelector('#btnClearFilters').click(); document.querySelector('#tabs .tab[data-tab="reports"]').click()`);
   await delay(200);
   const report = await evaluate(`document.querySelector('#shoppingReportSummary').innerText`);
-  assert.ok(report.includes("٤٠٠٬٠٠٠"));
+  assert.ok(report.includes("400,000"));
   assert.ok(report.includes("عدد الفواتير التي تضمنت الصنف"));
   assert.ok(report.includes("لحوم ودواجن وأسماك"));
   assert.equal(/إنفاق.*لحوم|مبلغ.*ألبان/.test(report),false);
@@ -191,7 +191,7 @@ try{
   await controlledReload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,keys:await caches.keys(),shopping:!!(await caches.match('./shopping-model.js?v=20260908-phase4'))}))`);
   console.log("PWA snapshot",pwa);
-  assert.equal(pwa.active,true); assert.equal(pwa.controlled,true); assert.ok(pwa.keys.includes("pfm-pwa-v18")); assert.equal(pwa.shopping,true);
+  assert.equal(pwa.active,true); assert.equal(pwa.controlled,true); assert.ok(pwa.keys.includes("pfm-pwa-v19")); assert.equal(pwa.shopping,true);
   assert.equal(pwa.keys.some(key=>key==="pfm-pwa-v8"),false);
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions",{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});

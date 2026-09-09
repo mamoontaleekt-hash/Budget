@@ -43,7 +43,7 @@ assert.equal(count(index, /<script src="\.\/tag-model\.js\?v=20260908-phase5"><\
 assert.equal(count(index, /<script src="\.\/budget-model\.js\?v=20260908-phase6"><\/script>/g), 1);
 assert.equal(count(index, /<script src="\.\/comparison-model\.js\?v=20260908-phase7"><\/script>/g), 1);
 assert.equal(count(index, /<script src="\.\/category-analytics-model\.js\?v=20260908-phase8"><\/script>/g), 1);
-assert.equal(count(index, /<script src="\.\/report-enhancements\.js\?v=20260908-phase8"><\/script>/g), 1);
+assert.equal(count(index, /<script src="\.\/report-enhancements\.js\?v=20260909-ux5"><\/script>/g), 1);
 assert.ok(index.indexOf('<script src="./financial-model.js?v=20260907-phase3"></script>') < index.indexOf('<script src="./expense-model.js?v=20260907-phase3"></script>'));
 assert.ok(index.indexOf('<script src="./expense-model.js?v=20260907-phase3"></script>') < index.indexOf('<script src="./debt-model.js?v=20260908-phase3-corrective"></script>'));
 assert.ok(index.indexOf('<script src="./debt-model.js?v=20260908-phase3-corrective"></script>') < index.indexOf("Personal Finance Manager"));
@@ -52,7 +52,7 @@ assert.ok(index.indexOf('<script src="./tag-model.js?v=20260908-phase5"></script
 assert.ok(index.indexOf('<script src="./budget-model.js?v=20260908-phase6"></script>') < index.indexOf("Personal Finance Manager"));
 assert.ok(index.indexOf('<script src="./comparison-model.js?v=20260908-phase7"></script>') < index.indexOf("Personal Finance Manager"));
 assert.ok(index.indexOf('<script src="./comparison-model.js?v=20260908-phase7"></script>') < index.indexOf('<script src="./category-analytics-model.js?v=20260908-phase8"></script>'));
-assert.ok(index.indexOf('<script src="./category-analytics-model.js?v=20260908-phase8"></script>') < index.indexOf('<script src="./report-enhancements.js?v=20260908-phase8"></script>'));
+assert.ok(index.indexOf('<script src="./category-analytics-model.js?v=20260908-phase8"></script>') < index.indexOf('<script src="./report-enhancements.js?v=20260909-ux5"></script>'));
 
 assert.equal(index.includes("function maybeSeed("), false);
 assert.equal(index.includes('note:"مثال: راتب ثابت"'), false);
@@ -117,7 +117,7 @@ for (const id of [
   "dashboardAttentionList",
   "dashboardTopCategory",
   "dashboardDriverHighlight",
-  "dashboardQuickActionsHeading",
+  "dashboardDetailsHeading",
 ]) {
   assert.ok(index.includes(`id="${id}"`), `missing UI control ${id}`);
 }
@@ -128,7 +128,7 @@ assert.match(report, /parsed\.financialSettings/);
 assert.match(report, /parsed\.expenseSettings/);
 assert.match(report, /parsed\.debtSettings/);
 assert.match(report, /ExpenseModel\.calculateExpenseAnalytics\(state, month\)/);
-assert.match(sw, /const CACHE_NAME = "pfm-pwa-v18";/);
+assert.match(sw, /const CACHE_NAME = "pfm-pwa-v19";/);
 assert.ok(sw.includes('"./mobile-enhancements.css?v=20260908-ux1"'));
 assert.match(sw, /\.\/tag-model\.js\?v=20260908-phase5/);
 assert.match(sw, /\.\/budget-model\.js\?v=20260908-phase6/);
@@ -142,7 +142,7 @@ assert.ok(sw.includes('"./comparison-model.js?v=20260908-phase7"'));
 assert.ok(sw.includes('"./category-analytics-model.js?v=20260908-phase8"'));
 assert.ok(sw.includes('"./dashboard-model.js?v=20260908-phase9"'));
 assert.ok(index.includes('<script src="./dashboard-model.js?v=20260908-phase9"></script>'));
-assert.ok(sw.includes('"./report-enhancements.js?v=20260908-phase8"'));
+assert.ok(sw.includes('"./report-enhancements.js?v=20260909-ux5"'));
 assert.ok(sw.includes('"./report-enhancements.js?v=20260908-phase7"'));
 assert.ok(sw.includes('"./report-enhancements.js?v=20260908-phase6"'));
 assert.equal(sw.includes("enhanceHtml"), false);

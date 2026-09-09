@@ -6,10 +6,10 @@
   const BudgetModel = window.PFMBudgetModel;
   const ComparisonModel = window.PFMComparisonModel;
   const CategoryAnalyticsModel = window.PFMCategoryAnalyticsModel;
-  if (!FinancialModel || !ExpenseModel || !BudgetModel || !ComparisonModel || !CategoryAnalyticsModel) throw new Error("A report model failed to load");
-  const fmt = new Intl.NumberFormat("ar-IQ", { style: "currency", currency: "IQD", maximumFractionDigits: 0 });
+  const DisplayFormat = window.PFMDisplayFormat;
+  if (!FinancialModel || !ExpenseModel || !BudgetModel || !ComparisonModel || !CategoryAnalyticsModel || !DisplayFormat) throw new Error("A report dependency failed to load");
   const $ = (selector, root = document) => root.querySelector(selector);
-  const money = (value) => fmt.format(Math.round(Number(value) || 0));
+  const money = DisplayFormat.formatMoney;
   const escapeHTML = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
   let selectorActiveMonth = null;
   let selectedComparisonMonth = null;
@@ -35,9 +35,7 @@
   }
 
   function monthLabel(month) {
-    const [year, rawMonth] = String(month || "").split("-").map(Number);
-    if (!year || !rawMonth) return month || "-";
-    return new Intl.DateTimeFormat("ar-IQ", { month: "long", year: "numeric" }).format(new Date(year, rawMonth - 1, 1));
+    return DisplayFormat.formatMonthKey(month);
   }
   function lastMonths(activeMonth, count) {
     const months = [];
@@ -149,9 +147,9 @@
   function signedMoney(value) { return value === 0 ? money(0) : `${value > 0 ? "+" : "−"}${money(Math.abs(value))}`; }
   function stateText(metric) {
     if (metric.state === "NEW") return "جديد";
-    if (metric.state === "STOPPED") return metric.percentChange === null ? "توقف" : `توقف (${metric.percentChange.toFixed(1)}%)`;
+    if (metric.state === "STOPPED") return metric.percentChange === null ? "توقف" : `توقف (${DisplayFormat.formatPercent(metric.percentChange, 1)})`;
     if (metric.percentChange === null) return metric.state === "UNCHANGED" ? "دون تغير" : "—";
-    return `${metric.percentChange > 0 ? "+" : ""}${metric.percentChange.toFixed(1)}%`;
+    return `${metric.percentChange > 0 ? "+" : ""}${DisplayFormat.formatPercent(metric.percentChange, 1)}`;
   }
   function renderMetricRows(comparison) {
     const definitions = [["الدخل الحقيقي", "trueIncome"], ["إجمالي المصروف", "totalExpenses"], ["تكلفة المعيشة (المصروف المنتظم)", "costOfLiving"], ["المصروف الاستثنائي", "exceptionalExpenses"], ["سداد الدين", "debtPayments"], ["التدفقات غير المعيشية", "nonLivingOutflows"], ["صافي الحركة النقدية", "netCashFlow"], ["الرصيد الختامي", "closingBalance"]];
@@ -166,7 +164,7 @@
   }
   function driverMarkup(state, driver, increase) {
     const share = increase ? driver.shareOfGrossIncrease : driver.shareOfGrossDecrease;
-    const shareText = share === null ? "" : ` · ${(share * 100).toFixed(1)}% من إجمالي ${increase ? "الزيادات" : "الانخفاضات"}`;
+    const shareText = share === null ? "" : ` · ${DisplayFormat.formatPercent(share * 100, 1)} من إجمالي ${increase ? "الزيادات" : "الانخفاضات"}`;
     return `<div class="driver-row"><b>${escapeHTML(categoryName(state, driver.categoryId))}</b><span class="${increase ? "delta-up" : "delta-down"}">${signedMoney(driver.delta)}</span><div class="driver-values">الحالي ${money(driver.current)} · المقارنة ${money(driver.previous)}${shareText}</div></div>`;
   }
   function renderDrivers(state, comparison) {
@@ -182,7 +180,7 @@
     insights.innerHTML = rows.map((row) => `<div>${escapeHTML(row)}</div>`).join("");
   }
 
-  function percent(value) { return value === null || !Number.isFinite(value) ? "—" : `${(value * 100).toFixed(1)}%`; }
+  function percent(value) { return value === null || !Number.isFinite(value) ? "—" : DisplayFormat.formatPercent(value * 100, 1); }
   function renderCategoryAnalytics(state, activeMonth) {
     const overview = CategoryAnalyticsModel.calculateCategoryOverview(state, activeMonth, 12);
     const selector = $("#categoryAnalyticsSelector");
@@ -207,7 +205,7 @@
     $("#categoryAnalyticsEmpty").hidden = overview.hasData;
     $("#categoryAnalyticsContent").hidden = !overview.hasData || !selectedCategoryId;
     $("#categoryOverviewBody").innerHTML = overview.rows.length ? overview.rows.map((row) => `<tr>
-      <td><b>${escapeHTML(categoryOptionLabel(state, row.categoryId))}</b></td><td>${money(row.currentMonthAmount)}</td><td>${money(row.previousMonthAmount)}</td><td>${signedMoney(row.currentVsPreviousDelta)}</td><td>${money(row.twelveMonthTotal)}</td><td>${percent(row.twelveMonthExpenseShare)}</td><td>${row.activeMonthCount} / 12</td><td>${row.transactionCount12m}</td><td>${row.twelveMonthRank ?? "—"}</td>
+      <td><b>${escapeHTML(categoryOptionLabel(state, row.categoryId))}</b></td><td>${money(row.currentMonthAmount)}</td><td>${money(row.previousMonthAmount)}</td><td>${signedMoney(row.currentVsPreviousDelta)}</td><td>${money(row.twelveMonthTotal)}</td><td>${percent(row.twelveMonthExpenseShare)}</td><td>${DisplayFormat.formatNumber(row.activeMonthCount)} / 12</td><td>${DisplayFormat.formatNumber(row.transactionCount12m)}</td><td>${row.twelveMonthRank == null ? "—" : DisplayFormat.formatNumber(row.twelveMonthRank)}</td>
     </tr>`).join("") : '<tr><td colspan="9" class="muted">لا توجد بيانات مصروف كافية لتحليل التصنيفات.</td></tr>';
     const leader = overview.twelveMonth[0];
     $("#categoryOverviewInsight").textContent = leader
@@ -222,8 +220,8 @@
     $("#categoryTwelveShare").textContent = `${percent(result.twelveMonthExpenseShare)} من مصروف 12 شهراً`;
     $("#categoryCalendarAverage").textContent = money(result.twelveMonthCalendarAverage);
     $("#categoryActiveAverage").textContent = result.activeMonthAverage === null ? "—" : money(result.activeMonthAverage);
-    $("#categoryActiveCount").textContent = `${result.activeMonthCount} من 12 شهراً نشطاً`;
-    $("#categoryTransactionCount").textContent = String(result.transactionCount12m);
+    $("#categoryActiveCount").textContent = `${DisplayFormat.formatNumber(result.activeMonthCount)} من 12 شهراً نشطاً`;
+    $("#categoryTransactionCount").textContent = DisplayFormat.formatNumber(result.transactionCount12m);
     $("#categoryTransactionAverage").textContent = result.averageTransactionAmount12m === null ? "—" : money(result.averageTransactionAmount12m);
     $("#categoryExpenseShare").textContent = percent(result.twelveMonthExpenseShare);
     $("#categoryRank").textContent = `${result.currentRank ?? "—"} / ${result.twelveMonthRank ?? "—"}`;
@@ -236,10 +234,10 @@
     $("#categoryTrend").innerHTML = result.series.map((row) => {
       const width = maximum > 0 ? (row.amount / maximum) * 100 : 0;
       const share = row.shareOfMonthExpenses === null ? "—" : percent(row.shareOfMonthExpenses);
-      return `<div class="category-trend-row" role="listitem"><b>${escapeHTML(monthLabel(row.month))}</b><div class="category-bar-track" aria-hidden="true"><div class="category-bar" style="width:${width.toFixed(2)}%"></div></div><div class="category-trend-value">${money(row.amount)} · ${row.transactionCount} عملية · ${share}</div></div>`;
+      return `<div class="category-trend-row" role="listitem"><b>${escapeHTML(monthLabel(row.month))}</b><div class="category-bar-track" aria-hidden="true"><div class="category-bar" style="width:${width.toFixed(2)}%"></div></div><div class="category-trend-value">${money(row.amount)} · ${DisplayFormat.formatNumber(row.transactionCount)} عملية · ${share}</div></div>`;
     }).join("");
     const insightRows = [
-      `${categoryName(state, selectedCategoryId)} ظهر في ${result.activeMonthCount} من آخر 12 شهراً.`,
+      `${categoryName(state, selectedCategoryId)} ظهر في ${DisplayFormat.formatNumber(result.activeMonthCount)} من آخر 12 شهراً.`,
       `إجمالي ${categoryName(state, selectedCategoryId)} خلال 12 شهراً هو ${money(result.twelveMonthTotal)}.`,
     ];
     if (result.highestMonth) insightRows.push(`أعلى شهر كان ${monthLabel(result.highestMonth.month)} بقيمة ${money(result.highestMonth.amount)}.`);
@@ -271,13 +269,13 @@
     $("#reportBestNetMonth").textContent = bestNet ? monthLabel(bestNet.month) : "-";
     $("#reportExpenseChange").textContent = stateText(comparison.metrics.totalExpenses);
     $("#reportExpenseChangeHint").textContent = `مقارنة مع ${monthLabel(comparison.comparisonMonth)}`;
-    $("#reportBudgetCommitment").textContent = commitment === null ? "-" : `${commitment.toFixed(0)}%`;
+    $("#reportBudgetCommitment").textContent = commitment === null ? "-" : DisplayFormat.formatPercent(commitment, 0);
     $("#comparisonMonthsLabel").textContent = `${monthLabel(activeMonth)} مقابل ${monthLabel(comparison.comparisonMonth)}`;
     $("#comparisonCurrentHeading").textContent = monthLabel(activeMonth); $("#comparisonPreviousHeading").textContent = monthLabel(comparison.comparisonMonth);
     $("#incompleteMonthWarning").hidden = !ComparisonModel.isIncompleteCurrentMonth(activeMonth, new Date());
     $("#comparisonEmptyState").hidden = comparison.hasAnyActivity;
     renderMetricRows(comparison); renderDrivers(state, comparison); renderInsights(state, comparison); renderCategoryAnalytics(state, activeMonth);
-    $("#monthlySummaryBody").innerHTML = series.slice().reverse().map((row) => `<tr><td><b>${escapeHTML(monthLabel(row.month))}</b></td><td>${money(row.income)}</td><td>${money(row.expense)}</td><td>${money(row.costOfLiving)}</td><td>${money(row.exceptionalExpenses)}</td><td>${money(row.debtPayments)}</td><td>${money(row.net)}</td><td>${money(row.closingBalance)}</td><td>${row.count}</td></tr>`).join("");
+    $("#monthlySummaryBody").innerHTML = series.slice().reverse().map((row) => `<tr><td><b>${escapeHTML(monthLabel(row.month))}</b></td><td>${money(row.income)}</td><td>${money(row.expense)}</td><td>${money(row.costOfLiving)}</td><td>${money(row.exceptionalExpenses)}</td><td>${money(row.debtPayments)}</td><td>${money(row.net)}</td><td>${money(row.closingBalance)}</td><td>${DisplayFormat.formatNumber(row.count)}</td></tr>`).join("");
   }
   function scheduleRender() {
     const run = () => { try { renderEnhancedReports(); } catch (error) { console.error("Report enhancements failed", error); } };

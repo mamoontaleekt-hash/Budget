@@ -79,7 +79,7 @@ try {
       responsive[width][view] = layout;
     }
     await evaluate(`document.querySelector('#tabs [data-tab="dash"]').click()`);
-    const hierarchy = await evaluate(`(() => { const primary=document.querySelector('.phase1-primary .kpi .value'); const secondary=document.querySelector('#kpiOpening'); const card=document.querySelector('#view-dash > .card'); const nested=document.querySelector('#view-settings .card .card'); const h2=document.querySelector('#view-dash .card .hd h2'); const h3=document.querySelector('.dashboard-section-head h3'); return {primarySize:parseFloat(getComputedStyle(primary).fontSize),primaryWeight:Number(getComputedStyle(primary).fontWeight),secondarySize:parseFloat(getComputedStyle(secondary).fontSize),secondaryWeight:Number(getComputedStyle(secondary).fontWeight),cardRadius:parseFloat(getComputedStyle(card).borderRadius),cardBorder:getComputedStyle(card).borderTopWidth,nestedShadow:getComputedStyle(nested).boxShadow,h2Size:parseFloat(getComputedStyle(h2).fontSize),h3Size:parseFloat(getComputedStyle(h3).fontSize)}; })()`);
+    const hierarchy = await evaluate(`(() => { const primary=document.querySelector('.dashboard-primary-summary .kpi .value'); const secondary=document.querySelector('#kpiOpening'); const card=document.querySelector('#view-dash > .card'); const nested=document.querySelector('#view-settings .card .card'); const h2=document.querySelector('#view-dash .card .hd h2'); const h3=document.querySelector('.dashboard-section-head h3'); return {primarySize:parseFloat(getComputedStyle(primary).fontSize),primaryWeight:Number(getComputedStyle(primary).fontWeight),secondarySize:parseFloat(getComputedStyle(secondary).fontSize),secondaryWeight:Number(getComputedStyle(secondary).fontWeight),cardRadius:parseFloat(getComputedStyle(card).borderRadius),cardBorder:getComputedStyle(card).borderTopWidth,nestedShadow:getComputedStyle(nested).boxShadow,h2Size:parseFloat(getComputedStyle(h2).fontSize),h3Size:parseFloat(getComputedStyle(h3).fontSize)}; })()`);
     assert.ok(hierarchy.primarySize > hierarchy.secondarySize, JSON.stringify({ width, hierarchy }));
     assert.ok(hierarchy.primaryWeight >= hierarchy.secondaryWeight);
     assert.ok(hierarchy.cardRadius >= 14);
@@ -91,7 +91,7 @@ try {
 
   await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 1000, deviceScaleFactor: 1, mobile: true });
   await evaluate(`document.querySelector('#tabs [data-tab="dash"]').click()`);
-  const semantics = await evaluate(`(() => { const primary=getComputedStyle(document.querySelector('#btnDashboardAddTx')); const normal=getComputedStyle(document.querySelector('#btnDashboardBudgets')); const danger=getComputedStyle(document.querySelector('#btnClearAll')); const warn=getComputedStyle(document.querySelector('.pill.warn')); const exceeded=getComputedStyle(document.querySelector('.pill.danger')); const attentionDanger=getComputedStyle(document.querySelector('.attention-item.danger')); const muted=getComputedStyle(document.querySelector('.mini')); const nav=document.querySelector('#tabs'); return {primaryBackground:primary.backgroundImage,primaryShadow:primary.boxShadow,primaryWeight:Number(primary.fontWeight),normalBackground:normal.backgroundImage,normalShadow:normal.boxShadow,normalWeight:Number(normal.fontWeight),dangerColor:danger.color,dangerBorder:danger.borderColor,warnBackground:warn.backgroundColor,exceededBackground:exceeded.backgroundColor,attentionBackground:attentionDanger.backgroundColor,mutedSize:parseFloat(muted.fontSize),mutedColor:muted.color,navPosition:getComputedStyle(nav).position,navColumns:getComputedStyle(nav).gridTemplateColumns.split(' ').length}; })()`);
+  const semantics = await evaluate(`(() => { const primary=getComputedStyle(document.querySelector('#btnAddTx')); const normal=getComputedStyle(document.querySelector('#btnDashboardOpeningBalance')); const danger=getComputedStyle(document.querySelector('#btnClearAll')); const warn=getComputedStyle(document.querySelector('.pill.warn')); const exceeded=getComputedStyle(document.querySelector('.pill.danger')); const attentionDanger=getComputedStyle(document.querySelector('.attention-item.danger')); const muted=getComputedStyle(document.querySelector('.mini')); const nav=document.querySelector('#tabs'); return {primaryBackground:primary.backgroundImage,primaryShadow:primary.boxShadow,primaryWeight:Number(primary.fontWeight),normalBackground:normal.backgroundImage,normalShadow:normal.boxShadow,normalWeight:Number(normal.fontWeight),dangerColor:danger.color,dangerBorder:danger.borderColor,warnBackground:warn.backgroundColor,exceededBackground:exceeded.backgroundColor,attentionBackground:attentionDanger.backgroundColor,mutedSize:parseFloat(muted.fontSize),mutedColor:muted.color,navPosition:getComputedStyle(nav).position,navColumns:getComputedStyle(nav).gridTemplateColumns.split(' ').length}; })()`);
   assert.notEqual(semantics.primaryBackground, semantics.normalBackground);
   assert.notEqual(semantics.primaryShadow, semantics.normalShadow);
   assert.ok(semantics.primaryWeight > semantics.normalWeight);
@@ -102,12 +102,12 @@ try {
   assert.equal(semantics.navPosition, "fixed");
   assert.equal(semantics.navColumns, 6);
 
-  await evaluate(`document.querySelector('#btnDashboardAddTx').focus()`);
-  const focus = await evaluate(`(() => { const style=getComputedStyle(document.querySelector('#btnDashboardAddTx')); const rule=[...document.styleSheets].some(sheet=>{try{return [...sheet.cssRules].some(item=>item.cssText.includes('.btn:focus-visible'))}catch{return false}}); return {width:style.outlineWidth,style:style.outlineStyle,rule}; })()`);
+  await evaluate(`document.querySelector('#btnAddTx').focus()`);
+  const focus = await evaluate(`(() => { const style=getComputedStyle(document.querySelector('#btnAddTx')); const rule=[...document.styleSheets].some(sheet=>{try{return [...sheet.cssRules].some(item=>item.cssText.includes('.btn:focus-visible'))}catch{return false}}); return {width:style.outlineWidth,style:style.outlineStyle,rule}; })()`);
   assert.notEqual(focus.width, "0px");
   assert.equal(focus.rule, true);
 
-  await evaluate(`document.querySelector('#btnDashboardAddTx').click()`);
+  await evaluate(`document.querySelector('#btnAddTx').click()`);
   const layering = await evaluate(`(() => { const modal=document.querySelector('#modalTx'); const nav=document.querySelector('#tabs'); return {modalZ:Number(getComputedStyle(modal).zIndex),navZ:Number(getComputedStyle(nav).zIndex)}; })()`);
   assert.ok(layering.modalZ > layering.navZ);
   await evaluate(`document.querySelector('#btnSaveTx').click()`);
@@ -124,7 +124,7 @@ try {
   for (const key of ["themeSettings", "uiSettings", "typographySettings", "visualSettings", "layoutSettings"]) assert.equal(Object.hasOwn(stored, key), false);
 
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),visual:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),mobile:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v18"));
+  assert.ok(pwa.keys.includes("pfm-pwa-v19"));
   assert.ok(!pwa.keys.includes("pfm-pwa-v15"));
   assert.equal(pwa.visual, true);
   assert.equal(pwa.mobile, true);

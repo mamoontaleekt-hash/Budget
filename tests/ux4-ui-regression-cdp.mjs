@@ -162,7 +162,7 @@ try {
 
   await evaluate(`navigator.serviceWorker.ready`); await reload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),ux4:!!(await caches.match('./budget-polish.css?v=20260909-ux4')),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v18")); assert.equal(pwa.ux4, true); assert.equal(pwa.ux3, true); assert.equal(pwa.ux2, true); assert.equal(pwa.ux1, true);
+  assert.ok(pwa.keys.includes("pfm-pwa-v19")); assert.equal(pwa.ux4, true); assert.equal(pwa.ux3, true); assert.equal(pwa.ux2, true); assert.equal(pwa.ux1, true);
   if (!pwa.controller) await reload();
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0, connectionType: "none" }); await reload();
