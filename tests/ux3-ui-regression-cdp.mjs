@@ -129,7 +129,7 @@ try {
   assert.equal(performance.rows,200); assert.equal(performance.cards,200); assert.equal(performance.count,"200 عملية"); assert.ok(performance.duration<2000,JSON.stringify(performance));
 
   const pwa=await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v17")); assert.equal(pwa.ux3,true); assert.equal(pwa.ux2,true); assert.equal(pwa.ux1,true);
+  assert.ok(pwa.keys.includes("pfm-pwa-v18")); assert.equal(pwa.ux3,true); assert.equal(pwa.ux2,true); assert.equal(pwa.ux1,true);
   if(!pwa.controller) await reload();
   await send("Network.emulateNetworkConditions",{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0,connectionType:"none"}); await reload();
   await evaluate(`document.querySelector('#tabs [data-tab="tx"]').click()`);

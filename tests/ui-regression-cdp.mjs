@@ -375,7 +375,7 @@ try{
   const sw = await evaluate(`navigator.serviceWorker.ready.then(async registration => ({active:!!registration.active,controlled:!!navigator.serviceWorker.controller,cacheKeys:await caches.keys(),financialAsset:!!(await caches.match('./financial-model.js?v=20260907-phase3')),expenseAsset:!!(await caches.match('./expense-model.js?v=20260907-phase3')),debtAsset:!!(await caches.match('./debt-model.js?v=20260908-phase3-corrective')),shoppingAsset:!!(await caches.match('./shopping-model.js?v=20260908-phase4')),staleDebtAsset:!!(await caches.match('./debt-model.js?v=20260907-phase3')),comparisonAsset:!!(await caches.match('./comparison-model.js?v=20260908-phase7')),categoryAsset:!!(await caches.match('./category-analytics-model.js?v=20260908-phase8')),reportAsset:!!(await caches.match('./report-enhancements.js?v=20260908-phase8'))}))`);
   assert.equal(sw.active, true);
   assert.equal(sw.controlled, true);
-  assert.ok(sw.cacheKeys.includes("pfm-pwa-v17"));
+  assert.ok(sw.cacheKeys.includes("pfm-pwa-v18"));
   assert.equal(sw.financialAsset, true);
   assert.equal(sw.expenseAsset, true);
   assert.equal(sw.debtAsset, true);
