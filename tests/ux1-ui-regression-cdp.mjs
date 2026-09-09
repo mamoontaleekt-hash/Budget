@@ -133,7 +133,7 @@ try {
   await reload();
   assert.equal(await evaluate(`document.querySelector('#tabs .active').dataset.tab`), "dash");
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),css:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v20"));
+  assert.ok(pwa.keys.includes("pfm-pwa-v21"));
   assert.ok(!pwa.keys.includes("pfm-pwa-v14"));
   assert.equal(pwa.css, true);
   if (!pwa.controller) await reload();

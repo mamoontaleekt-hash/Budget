@@ -125,7 +125,7 @@ try {
   for (const key of ["themeSettings", "uiSettings", "typographySettings", "visualSettings", "layoutSettings"]) assert.equal(Object.hasOwn(stored, key), false);
 
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),visual:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),mobile:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v20"));
+  assert.ok(pwa.keys.includes("pfm-pwa-v21"));
   assert.ok(!pwa.keys.includes("pfm-pwa-v15"));
   assert.equal(pwa.visual, true);
   assert.equal(pwa.mobile, true);

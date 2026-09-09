@@ -11,7 +11,7 @@ const css = read("budget-polish.css");
 const sw = read("sw.js");
 const count = (source, pattern) => (source.match(pattern) || []).length;
 
-test("UX4 stylesheet order remains preserved in the PWA v20 shell", () => {
+test("UX4 stylesheet order remains preserved in the PWA v21 shell", () => {
   const styles = [
     "visual-polish.css?v=20260909-ux2",
     "mobile-enhancements.css?v=20260908-ux1",
@@ -20,7 +20,7 @@ test("UX4 stylesheet order remains preserved in the PWA v20 shell", () => {
   ];
   assert.equal(count(html, /budget-polish\.css\?v=20260909-ux4/g), 1);
   for (let i = 1; i < styles.length; i += 1) assert.ok(html.indexOf(styles[i - 1]) < html.indexOf(styles[i]));
-  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v20"/);
+  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v21"/);
   for (const asset of styles) assert.equal(count(sw, new RegExp(asset.replace(/[.?]/g, "\\$&"), "g")), 1);
   assert.doesNotMatch(sw, /pfm-pwa-v17/);
 });

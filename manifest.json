@@ -1,7 +1,7 @@
 {
   "name": "نظام إدارة المصاريف",
   "short_name": "مصاريفي",
-  "description": "تتبع مصاريفك الشهرية واليومية مع حفظ سحابي تلقائي (Firebase) ودعم العمل بدون إنترنت.",
+  "description": "نظرة واضحة على أموالك ومصاريفك وميزانيتك.",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "./?pwa=1",
@@ -11,13 +11,13 @@
   "theme_color": "#f5f7fb",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "icons/app-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "icons/app-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
