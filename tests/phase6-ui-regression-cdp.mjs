@@ -41,7 +41,7 @@ socket.addEventListener("message", (event) => {
   }
   const queue = waiters.get(message.method); if (queue?.length) queue.shift()(message.params || {});
   if (message.method === "Runtime.exceptionThrown") errors.push(message.params?.exceptionDetails?.exception?.description || message.params?.exceptionDetails?.text || "Runtime exception");
-  if (message.method === "Log.entryAdded" && message.params?.entry?.level === "error") errors.push(message.params.entry.text);
+  if (message.method === "Log.entryAdded" && message.params?.entry?.level === "error") errors.push(`${message.params.entry.text}${message.params.entry.url ? ` (${message.params.entry.url})` : ""}`);
 });
 function send(method, params = {}) {
   const id = ++nextId;
@@ -167,7 +167,7 @@ try {
 
   await evaluate(`navigator.serviceWorker.ready`); await reload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async r=>({active:!!r.active,controlled:!!navigator.serviceWorker.controller,keys:await caches.keys(),budget:!!(await caches.match('./budget-model.js?v=20260908-phase6'))}))`);
-  assert.equal(pwa.active, true); assert.equal(pwa.controlled, true); assert.ok(pwa.keys.includes("pfm-pwa-v15")); assert.equal(pwa.budget, true); assert.equal(pwa.keys.includes("pfm-pwa-v10"), false);
+  assert.equal(pwa.active, true); assert.equal(pwa.controlled, true); assert.ok(pwa.keys.includes("pfm-pwa-v16")); assert.equal(pwa.budget, true); assert.equal(pwa.keys.includes("pfm-pwa-v10"), false);
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 }); await reload();
   assert.deepEqual(await evaluate(`({heading:document.querySelector('h1')?.innerText,budget:!!window.PFMBudgetModel})`), { heading: "إدارة المصاريف الشخصية", budget: true });

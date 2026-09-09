@@ -12,7 +12,7 @@ const page = await target();
 const socket = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((done, fail) => { socket.addEventListener("open", done, { once: true }); socket.addEventListener("error", fail, { once: true }); });
 let id = 0; const pending = new Map(); const waiters = new Map(); const errors = [];
-socket.addEventListener("message", (event) => { const message = JSON.parse(event.data); if (message.id) { const job = pending.get(message.id); pending.delete(message.id); return message.error ? job.reject(new Error(message.error.message)) : job.resolve(message.result || {}); } const queue = waiters.get(message.method); if (queue?.length) queue.shift()(message.params || {}); if (message.method === "Runtime.exceptionThrown") errors.push(message.params?.exceptionDetails?.exception?.description || message.params?.exceptionDetails?.text); if (message.method === "Log.entryAdded" && message.params?.entry?.level === "error") errors.push(message.params.entry.text); });
+socket.addEventListener("message", (event) => { const message = JSON.parse(event.data); if (message.id) { const job = pending.get(message.id); pending.delete(message.id); return message.error ? job.reject(new Error(message.error.message)) : job.resolve(message.result || {}); } const queue = waiters.get(message.method); if (queue?.length) queue.shift()(message.params || {}); if (message.method === "Runtime.exceptionThrown") errors.push(message.params?.exceptionDetails?.exception?.description || message.params?.exceptionDetails?.text); if (message.method === "Log.entryAdded" && message.params?.entry?.level === "error") errors.push(`${message.params.entry.text}${message.params.entry.url ? ` (${message.params.entry.url})` : ""}`); });
 const send = (method, params = {}) => new Promise((done, fail) => { const next = ++id; pending.set(next, { resolve: done, reject: fail }); socket.send(JSON.stringify({ id: next, method, params })); });
 const waitEvent = (method, timeout = 20000) => new Promise((done, fail) => { const timer = setTimeout(() => fail(new Error(`Timeout: ${method}`)), timeout); const queue = waiters.get(method) || []; queue.push((params) => { clearTimeout(timer); done(params); }); waiters.set(method, queue); });
 async function evaluate(expression) { const result = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true, userGesture: true }); if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text); return result.result?.value; }
@@ -116,7 +116,7 @@ try {
   assert.match(empty.attention, /لا توجد حالات/); assert.equal(empty.comparison, true); assert.match(empty.top, /لا توجد بيانات/); assert.match(empty.budget, /لا توجد ميزانيات/); assert.match(empty.debt, /لا توجد التزامات/); assert.equal(empty.nan, false);
 
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),asset:!!(await caches.match('./dashboard-model.js?v=20260908-phase9'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v15")); assert.equal(pwa.asset, true);
+  assert.ok(pwa.keys.includes("pfm-pwa-v16")); assert.equal(pwa.asset, true);
   if (!pwa.controller) await reload(500);
   await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0, connectionType: "none" });
   await reload(600);

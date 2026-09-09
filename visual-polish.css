@@ -1,0 +1,418 @@
+/* UX2 visual hierarchy and typography layer.
+   Presentation only: loaded after base styles and before mobile-enhancements.css. */
+
+:root {
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 24px;
+
+  --ui-text-xs: 12px;
+  --ui-text-sm: 13px;
+  --ui-text-md: 15px;
+  --ui-text-lg: 17px;
+  --ui-text-xl: 20px;
+
+  --ui-surface: #fff;
+  --ui-surface-subtle: #f8faff;
+  --ui-border: rgba(16, 24, 40, .105);
+  --ui-border-strong: rgba(16, 24, 40, .17);
+  --ui-shadow-sm: 0 2px 8px rgba(16, 24, 40, .045);
+  --ui-shadow-md: 0 10px 28px rgba(16, 24, 40, .09);
+}
+
+body {
+  line-height: 1.65;
+  background:
+    radial-gradient(1000px 560px at 8% 0%, rgba(46, 108, 255, .075), transparent 58%),
+    radial-gradient(900px 620px at 96% 8%, rgba(0, 191, 166, .055), transparent 54%),
+    var(--bg);
+}
+
+.app {
+  padding-block: var(--ui-space-5) 32px;
+}
+
+.topbar {
+  border-color: var(--ui-border);
+  background: rgba(255, 255, 255, .94);
+  box-shadow: var(--ui-shadow-md);
+}
+
+.brand h1 {
+  font-size: clamp(17px, 1.5vw, 20px);
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.brand p,
+.card .hd p,
+.mini,
+.help,
+.hint,
+.muted {
+  line-height: 1.7;
+}
+
+.brand p,
+.card .hd p {
+  font-size: var(--ui-text-sm);
+  color: #5d6b82;
+}
+
+.tabs {
+  border-color: var(--ui-border);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.tab {
+  font-weight: 600;
+}
+
+.tab.active {
+  color: #1746b0;
+  font-weight: 800;
+  border-color: rgba(46, 108, 255, .24);
+  background: rgba(46, 108, 255, .09);
+}
+
+.grid {
+  gap: var(--ui-space-4);
+  margin-top: var(--ui-space-4);
+}
+
+.card {
+  border-color: var(--ui-border);
+  background: rgba(255, 255, 255, .94);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.card .card,
+.card .debt-card,
+.card .driver-card,
+.card .category-fact {
+  box-shadow: none;
+}
+
+.card .hd {
+  padding: var(--ui-space-4) var(--ui-space-4) var(--ui-space-3);
+  border-bottom-color: var(--ui-border);
+}
+
+body .card .hd h2 {
+  margin: 0;
+  font-size: clamp(18px, 1.7vw, 20px);
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.card .hd p {
+  margin-top: var(--ui-space-1);
+}
+
+.card .bd {
+  padding: var(--ui-space-4);
+}
+
+.dashboard-section {
+  margin-top: var(--ui-space-5);
+}
+
+.dashboard-section + .dashboard-section,
+#reportEnhancementsPanel > section,
+#reportEnhancementsPanel > .drivers-grid {
+  scroll-margin-top: 120px;
+}
+
+.dashboard-section-head {
+  margin-bottom: var(--ui-space-3);
+}
+
+.dashboard-section-head h3,
+#reportEnhancementsPanel h3 {
+  font-size: var(--ui-text-lg) !important;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+#reportEnhancementsPanel h4 {
+  font-size: var(--ui-text-md);
+  line-height: 1.55;
+}
+
+.kpis {
+  gap: var(--ui-space-3);
+}
+
+.kpi {
+  min-width: 0;
+  padding: var(--ui-space-3);
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.kpi > div {
+  min-width: 0;
+}
+
+.kpi .label {
+  color: #5d6b82;
+  font-size: var(--ui-text-xs);
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.kpi .value,
+.dashboard-summary-row .value,
+.dashboard-highlight strong,
+.money {
+  max-width: 100%;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.kpi .value {
+  margin-top: var(--ui-space-1);
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi .hint {
+  margin-top: var(--ui-space-1);
+  color: #66758c;
+  font-size: var(--ui-text-xs);
+}
+
+.phase1-primary {
+  gap: var(--ui-space-4);
+}
+
+.phase1-primary .kpi {
+  padding: var(--ui-space-4);
+  border-color: rgba(46, 108, 255, .24);
+  background: linear-gradient(145deg, rgba(46, 108, 255, .085), rgba(255, 255, 255, .98) 68%);
+  box-shadow: 0 4px 14px rgba(46, 108, 255, .075);
+}
+
+.phase1-primary .kpi .label {
+  color: #405677;
+  font-size: var(--ui-text-sm);
+}
+
+.phase1-primary .kpi .value {
+  font-size: clamp(21px, 2.35vw, 25px);
+  font-weight: 900;
+}
+
+.phase2-kpis .kpi {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-subtle);
+}
+
+.phase2-kpis .kpi .value,
+.dashboard-summary-row .value {
+  font-size: var(--ui-text-lg);
+}
+
+.dashboard-summary-row,
+.dashboard-highlight,
+.attention-item,
+.debt-card,
+#reportEnhancementsPanel .driver-card,
+#reportEnhancementsPanel .category-fact {
+  border-color: var(--ui-border);
+  border-radius: var(--radius2);
+  background: var(--ui-surface);
+}
+
+.dashboard-summary-row,
+.dashboard-highlight,
+.attention-item {
+  padding: var(--ui-space-3);
+}
+
+.dashboard-highlight strong {
+  margin-top: var(--ui-space-1);
+  font-size: var(--ui-text-md);
+}
+
+.attention-list {
+  gap: var(--ui-space-2);
+}
+
+.attention-item:not(.danger):not(.warn):not(.ok) {
+  background: var(--ui-surface-subtle);
+}
+
+.dashboard-note,
+.help {
+  font-size: var(--ui-text-sm);
+}
+
+.mini,
+.muted {
+  color: #5f6f86;
+  font-size: var(--ui-text-sm);
+}
+
+.btn {
+  min-height: 42px;
+  border-color: var(--ui-border-strong);
+  border-radius: 12px;
+  background: var(--ui-surface);
+  font-size: var(--ui-text-sm);
+  font-weight: 650;
+  box-shadow: none;
+}
+
+.btn:hover {
+  border-color: rgba(46, 108, 255, .3);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.btn.primary {
+  border-color: transparent;
+  font-weight: 850;
+  box-shadow: 0 6px 16px rgba(46, 108, 255, .16);
+}
+
+#btnAddTx,
+#btnDashboardAddTx {
+  box-shadow: 0 8px 20px rgba(46, 108, 255, .2);
+}
+
+.btn.danger {
+  color: #a51d24;
+  border-color: rgba(229, 72, 77, .3);
+  background: rgba(229, 72, 77, .085);
+  box-shadow: none;
+}
+
+.btn.ghost {
+  color: #475467;
+}
+
+.btn.small {
+  min-height: 36px;
+  font-size: var(--ui-text-xs);
+}
+
+.pill,
+.tag,
+.chip {
+  font-size: var(--ui-text-xs);
+  line-height: 1.4;
+  border-color: var(--ui-border-strong);
+}
+
+.pill {
+  padding: 6px 10px;
+  font-weight: 700;
+}
+
+.tag {
+  padding: 5px 8px;
+}
+
+input[type="month"],
+input[type="date"],
+input[type="number"],
+input[type="text"],
+textarea,
+select {
+  border-color: var(--ui-border-strong);
+  line-height: 1.55;
+}
+
+.opening-settings,
+.debt-card,
+.tag-management-row,
+.shopping-option,
+.linked-note {
+  border-color: var(--ui-border);
+}
+
+.debt-card h3 {
+  font-size: var(--ui-text-lg);
+  line-height: 1.5;
+}
+
+.hr {
+  margin-block: var(--ui-space-5);
+  background: var(--ui-border);
+}
+
+table {
+  border-color: var(--ui-border);
+  box-shadow: none;
+}
+
+th,
+td {
+  line-height: 1.55;
+}
+
+th {
+  color: #526178;
+}
+
+#reportEnhancementsPanel > .hr {
+  margin-block: 28px 20px;
+}
+
+#reportEnhancementsPanel .driver-card,
+#reportEnhancementsPanel .category-fact {
+  padding: var(--ui-space-3);
+}
+
+#reportEnhancementsPanel .driver-values,
+#reportEnhancementsPanel .category-trend-value {
+  color: #5f6f86;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .phase1-primary .kpi {
+    min-height: 100px;
+    padding: 12px;
+  }
+
+  .phase1-primary .kpi .label {
+    font-size: 12px;
+  }
+
+  .phase1-primary .kpi .value {
+    font-size: clamp(18px, 5vw, 20px);
+    line-height: 1.35;
+  }
+
+  .phase2-kpis .kpi .value,
+  .budget-summary-grid .kpi .value,
+  .debt-summary-grid .kpi .value,
+  #reportEnhancementsPanel .kpi .value {
+    font-size: 16px;
+  }
+
+  .dashboard-section {
+    margin-top: 20px;
+  }
+
+  .dashboard-section-head h3,
+  #reportEnhancementsPanel h3 {
+    font-size: 15px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .phase1-primary .kpi {
+    min-height: auto;
+  }
+
+  .dashboard-quick-actions {
+    gap: var(--ui-space-2);
+  }
+}
