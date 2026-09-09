@@ -176,14 +176,28 @@ try {
   assert.equal(status.hidden, false); assert.ok(status.styles.some(x=>x.class.includes("danger"))); assert.ok(status.styles.some(x=>x.class.includes("warn"))); assert.ok(status.distinct >= 2);
   assert.ok(status.styles.every((item) => contrast(item.color, item.bg) >= 4.5), JSON.stringify(status.styles));
 
-  const iconRequests = requests.filter((request) => /fontawesome|font-awesome|lucide|heroicons|material-icons|fonts\.googleapis|cdnjs|unpkg|\.svg(?:\?|$)/i.test(request.url));
+  const identity = await evaluate(`(async()=>{ const manifestLink=document.querySelector('link[rel="manifest"]'); const manifestResponse=await fetch(manifestLink.href); const manifest=await manifestResponse.json(); const favicon=[...document.querySelectorAll('link[rel="icon"]')].map(x=>({type:x.type,sizes:x.sizes.value,href:x.getAttribute('href')})); const touch=document.querySelector('link[rel="apple-touch-icon"]').getAttribute('href'); const assets=['icons/app-icon.svg',...manifest.icons.map(x=>x.src)]; const responses=await Promise.all(assets.map(async asset=>{ const response=await fetch(new URL(asset,manifestResponse.url)); return {asset,status:response.status,ok:response.ok}; })); return {title:document.title,manifestStatus:manifestResponse.status,manifest, favicon,touch,responses}; })()`);
+  assert.equal(identity.title, "إدارة المصاريف الشخصية");
+  assert.equal(identity.manifestStatus, 200);
+  assert.deepEqual(identity.manifest.icons.map(({src,sizes,purpose})=>({src,sizes,purpose})), [{src:"icons/app-icon-192.png",sizes:"192x192",purpose:"any maskable"},{src:"icons/app-icon-512.png",sizes:"512x512",purpose:"any maskable"}]);
+  assert.deepEqual(identity.favicon, [{type:"image/svg+xml",sizes:"",href:"icons/app-icon.svg"},{type:"image/png",sizes:"192x192",href:"icons/app-icon-192.png"}]);
+  assert.equal(identity.touch, "icons/app-icon-192.png");
+  assert.ok(identity.responses.every(({status,ok})=>status===200 && ok), JSON.stringify(identity.responses));
+  const appManifest = await send("Page.getAppManifest");
+  assert.deepEqual(appManifest.errors, []);
+  assert.match(appManifest.data, /app-icon-192\.png/);
+  assert.match(appManifest.data, /app-icon-512\.png/);
+  const installability = await send("Page.getInstallabilityErrors");
+  assert.deepEqual(installability.installabilityErrors, []);
+
+  const iconRequests = requests.filter((request) => /fontawesome|font-awesome|lucide|heroicons|material-icons|fonts\.googleapis|cdnjs|unpkg/i.test(request.url));
   assert.deepEqual(iconRequests, []);
   assert.equal(requests.some((request) => /firestore\.googleapis\.com|identitytoolkit\.googleapis\.com/i.test(request.url) && request.method !== "GET"), false);
 
   await evaluate(`navigator.serviceWorker.ready`);
   await reload();
-  const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),theme:!!(await caches.match('./theme-system.css?v=20260909-ux6')),ux5:!!(await caches.match('./dashboard-polish.css?v=20260909-ux5')),ux4:!!(await caches.match('./budget-polish.css?v=20260909-ux4')),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v20")); for (const key of ["theme","ux5","ux4","ux3","ux2","ux1"]) assert.equal(pwa[key], true);
+  const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),theme:!!(await caches.match('./theme-system.css?v=20260909-ux6')),ux5:!!(await caches.match('./dashboard-polish.css?v=20260909-ux5')),ux4:!!(await caches.match('./budget-polish.css?v=20260909-ux4')),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1')),iconSvg:!!(await caches.match('./icons/app-icon.svg')),icon192:!!(await caches.match('./icons/app-icon-192.png')),icon512:!!(await caches.match('./icons/app-icon-512.png')),old192:!!(await caches.match('./icons/icon-192.png')),old512:!!(await caches.match('./icons/icon-512.png'))}))`);
+  assert.ok(pwa.keys.includes("pfm-pwa-v21")); for (const key of ["theme","ux5","ux4","ux3","ux2","ux1","iconSvg","icon192","icon512"]) assert.equal(pwa[key], true); assert.equal(pwa.old192,false); assert.equal(pwa.old512,false);
   if(!pwa.controller) await reload();
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions", { offline:true, latency:0, downloadThroughput:0, uploadThroughput:0, connectionType:"none" });
@@ -193,7 +207,7 @@ try {
   await send("Network.emulateNetworkConditions", { offline:false, latency:0, downloadThroughput:-1, uploadThroughput:-1, connectionType:"wifi" });
 
   assert.deepEqual(errors.filter((error) => !expectedFirebaseError(error)), []);
-  console.log(JSON.stringify({ result:"PASS", theme, shell, layouts, buttonSystem, inputs, focus, reduced, status, pwa }, null, 2));
+  console.log(JSON.stringify({ result:"PASS", theme, shell, layouts, buttonSystem, inputs, focus, reduced, status, identity, installability, pwa }, null, 2));
 } finally {
   try { socket.close(); } catch {}
   chrome.kill();
