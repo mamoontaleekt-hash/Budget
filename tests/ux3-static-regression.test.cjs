@@ -71,6 +71,8 @@ test("UX3 CSS is scoped and switches only the transaction list at 720px", () => 
   assert.match(css, /#view-tx \.tx-table-wrap \{ display:none; \}/);
   assert.match(css, /#view-tx \.tx-mobile-list \{ display:grid/);
   assert.match(css, /#modalTx \.ft \{ position:sticky/);
+  assert.match(css, /#modalTx \.dialog \{ max-height:calc\(100vh - 36px\); display:flex/);
+  assert.match(css, /#modalTx \.tx-form-body \{[^}]*overflow:auto;[^}]*min-height:0/);
   assert.doesNotMatch(css, /(^|\n)\s*\.tabs\b/);
   assert.doesNotMatch(css, /(^|\n)\s*\.topbar\b/);
   assert.doesNotMatch(css, /transactionViewMode|filterPanelState|advancedFiltersOpen|mobileCardPreference|interactionSettings|ux3Settings/);

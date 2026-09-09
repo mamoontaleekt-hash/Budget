@@ -25,7 +25,9 @@
 #view-tx .tx-mobile-list { display:none; }
 #view-tx .tx-empty-state { padding:34px 16px; border:1px dashed rgba(46,108,255,.3); border-radius:16px; text-align:center; }
 #view-tx .tx-empty-state strong { display:block; margin-bottom:12px; }
-#modalTx .tx-form-body { display:grid; gap:14px; }
+#modalTx .dialog { max-height:calc(100vh - 36px); display:flex; flex-direction:column; }
+#modalTx .tx-form-body { display:grid; gap:14px; overflow:auto; flex:1 1 auto; min-height:0; }
+#modalTx .dialog>.hd,#modalTx .dialog>.ft { flex:0 0 auto; }
 #modalTx .tx-form-section { margin:0; padding:15px; border:1px solid var(--border); border-radius:16px; background:rgba(246,248,255,.55); }
 #modalTx .tx-form-section-head { margin-bottom:12px; }
 #modalTx .tx-form-section-head h4 { margin:0; font-size:15px; }
@@ -64,6 +66,7 @@
   #view-tx .tx-card-actions { margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
   #view-tx .tx-card-actions .btn { min-height:42px; flex:1; }
   #modalTx .tx-form-grid { grid-template-columns:1fr; }
+  #modalTx .dialog { max-height:min(88vh,760px); }
   #modalTx .ft { position:sticky; bottom:0; z-index:1; padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
   #modalTx .ft .btn { min-height:44px; }
 }

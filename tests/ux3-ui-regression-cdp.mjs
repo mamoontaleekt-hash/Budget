@@ -109,6 +109,13 @@ try {
   assert.ok(modalLayout.modalZ>modalLayout.navZ); assert.ok(modalLayout.saveBottom<=modalLayout.height);
   await evaluate(`document.querySelector('#modalTx [data-close]').click()`);
 
+  await send("Emulation.setDeviceMetricsOverride",{width:1366,height:768,deviceScaleFactor:1,mobile:false});
+  await evaluate(`document.querySelector('#btnAddTx2').click()`);
+  const shortDesktopModal=await evaluate(`(() => { const dialog=document.querySelector('#modalTx .dialog'),body=document.querySelector('#modalTx .bd'),footer=document.querySelector('#modalTx .ft'),rect=dialog.getBoundingClientRect(),footerRect=footer.getBoundingClientRect(); return {top:rect.top,bottom:rect.bottom,height:innerHeight,bodyOverflow:getComputedStyle(body).overflowY,footerTop:footerRect.top,footerBottom:footerRect.bottom}; })()`);
+  assert.ok(shortDesktopModal.top>=0); assert.ok(shortDesktopModal.bottom<=shortDesktopModal.height); assert.equal(shortDesktopModal.bodyOverflow,"auto"); assert.ok(shortDesktopModal.footerTop>=shortDesktopModal.top); assert.ok(shortDesktopModal.footerBottom<=shortDesktopModal.height);
+  await evaluate(`document.querySelector('#modalTx [data-close]').click()`);
+  await send("Emulation.setDeviceMetricsOverride",{width:390,height:780,deviceScaleFactor:1,mobile:true});
+
   const confirmCalls=await evaluate(`(() => { window.__ux3ConfirmCalls=0; window.confirm=()=>{window.__ux3ConfirmCalls+=1;return true}; document.querySelector('#txMobileList [data-tx-id="rent-1"] [data-del]').click(); return window.__ux3ConfirmCalls; })()`);
   assert.equal(confirmCalls,1);
   const deleted=await evaluate(`JSON.parse(localStorage.getItem('pfm_data_v1')).transactions.find(x=>x.id==='rent-1')`);
@@ -133,7 +140,7 @@ try {
   await send("Network.emulateNetworkConditions",{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1,connectionType:"wifi"});
 
   assert.deepEqual(errors.filter(error=>!expectedFirebaseError(error)),[]);
-  console.log(JSON.stringify({result:"PASS",layout,advanced,mobileContent,edited,debtLink,modalLayout,performance,pwa},null,2));
+  console.log(JSON.stringify({result:"PASS",layout,advanced,mobileContent,edited,debtLink,modalLayout,shortDesktopModal,performance,pwa},null,2));
 } finally {
   try{socket.close();}catch{}
   chrome.kill();
