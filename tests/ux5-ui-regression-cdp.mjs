@@ -193,7 +193,7 @@ try {
   await evaluate(`navigator.serviceWorker.ready`);
   await reload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),ux5:!!(await caches.match('./dashboard-polish.css?v=20260909-ux5')),format:!!(await caches.match('./display-format.js?v=20260909-ux5')),report:!!(await caches.match('./report-enhancements.js?v=20260909-ux5')),staleReport:!!(await caches.match('./report-enhancements.js?v=20260908-phase8')),ux4:!!(await caches.match('./budget-polish.css?v=20260909-ux4')),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v19")); for (const key of ["ux5", "format", "report", "ux4", "ux3", "ux2", "ux1"]) assert.equal(pwa[key], true); assert.equal(pwa.staleReport, false);
+  assert.ok(pwa.keys.includes("pfm-pwa-v20")); for (const key of ["ux5", "format", "report", "ux4", "ux3", "ux2", "ux1"]) assert.equal(pwa[key], true); assert.equal(pwa.staleReport, false);
   if (!pwa.controller) await reload();
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions", { offline:true, latency:0, downloadThroughput:0, uploadThroughput:0, connectionType:"none" });

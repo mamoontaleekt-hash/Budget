@@ -3,7 +3,7 @@
 <head>
   <!-- PWA -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2e6cff">
+<meta name="theme-color" content="#F5F7FB">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -453,13 +453,43 @@
   <link rel="stylesheet" href="./interaction-polish.css?v=20260909-ux3">
   <link rel="stylesheet" href="./budget-polish.css?v=20260909-ux4">
   <link rel="stylesheet" href="./dashboard-polish.css?v=20260909-ux5">
+  <link rel="stylesheet" href="./theme-system.css?v=20260909-ux6">
 </head>
 
 <body>
+  <svg class="ui-icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="icon-dashboard" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm10 7h6v-9h-6v9ZM4 20h6v-3H4v3Zm10-13h6V4h-6v3Z"/></symbol>
+    <symbol id="icon-transactions" viewBox="0 0 24 24"><path d="M6 3h12a2 2 0 0 1 2 2v16l-3-2-2 2-3-2-3 2-3-2-2 2V5a2 2 0 0 1 2-2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+    <symbol id="icon-budget" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5M17 13v3"/></symbol>
+    <symbol id="icon-debt" viewBox="0 0 24 24"><path d="M4 6h16M6 10h12M8 14h8M10 18h4"/><path d="m16 16 2 2 3-4"/></symbol>
+    <symbol id="icon-reports" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.96 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3.08 14H3v-4h.08A1.7 1.7 0 0 0 4.6 8.96a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3.08V3h4v.08A1.7 1.7 0 0 0 15.04 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.13.61.67 1.03 1.52 1.03H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></symbol>
+    <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+    <symbol id="icon-cloud" viewBox="0 0 24 24"><path d="M17.5 19H7a5 5 0 1 1 1.2-9.85A6 6 0 0 1 19.7 11 4 4 0 0 1 17.5 19Z"/></symbol>
+    <symbol id="icon-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></symbol>
+    <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0 4 4m-4-4L8 8M5 21h14"/></symbol>
+    <symbol id="icon-wallet" viewBox="0 0 24 24"><path d="M4 7V5a2 2 0 0 1 2-2h12v4"/><rect x="3" y="7" width="18" height="14" rx="3"/><path d="M16 12h5v5h-5a2.5 2.5 0 0 1 0-5Z"/></symbol>
+    <symbol id="icon-income" viewBox="0 0 24 24"><path d="M12 20V5m0 0-5 5m5-5 5 5"/><path d="M4 20h16"/></symbol>
+    <symbol id="icon-expense" viewBox="0 0 24 24"><path d="M12 4v15m0 0 5-5m-5 5-5-5"/><path d="M4 4h16"/></symbol>
+    <symbol id="icon-balance" viewBox="0 0 24 24"><path d="M4 19h16M6 15l4-4 3 3 5-7"/><path d="M15 7h3v3"/></symbol>
+    <symbol id="icon-details" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+    <symbol id="icon-comparison" viewBox="0 0 24 24"><path d="M7 20V9M12 20V4M17 20v-7"/><path d="m4 7 3-3 3 3M14 15l3 3 3-3"/></symbol>
+    <symbol id="icon-analysis" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5M8 11h6M11 8v6"/></symbol>
+    <symbol id="icon-charts" viewBox="0 0 24 24"><path d="M4 20V8M10 20V4M16 20v-9M22 20H2"/></symbol>
+    <symbol id="icon-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></symbol>
+    <symbol id="icon-delete" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v5M14 11v5"/></symbol>
+    <symbol id="icon-save" viewBox="0 0 24 24"><path d="M5 3h12l2 2v16H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></symbol>
+    <symbol id="icon-warning" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19Z"/><path d="M12 9v5M12 17h.01"/></symbol>
+    <symbol id="icon-success" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="icon-tag" viewBox="0 0 24 24"><path d="m20 13-7 7L4 11V4h7Z"/><circle cx="8.5" cy="8.5" r="1"/></symbol>
+  </svg>
   <div class="app">
     <div class="topbar">
       <div class="brand">
-        <div class="logo">₠</div>
+        <div class="logo" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-wallet"></use></svg></div>
         <div>
           <h1>إدارة المصاريف الشخصية</h1>
           <p class="brand-subtitle">نظرة واضحة على أموالك هذا الشهر.</p>
@@ -475,26 +505,26 @@
           </label>
         </div>
 
-        <button class="btn primary" id="btnAddTx">➕ إضافة عملية</button>
-        <span class="pill" id="cloudBadge">☁️ غير متصل</span>
+        <button class="btn primary" id="btnAddTx"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-plus"></use></svg>إضافة عملية</button>
+        <span class="pill cloud-pill" id="cloudBadge"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-cloud"></use></svg><span>غير متصل</span></span>
         <details class="topbar-more" id="topbarMore">
-          <summary class="btn" aria-label="المزيد من الإجراءات">⋯ المزيد</summary>
+          <summary class="btn" aria-label="المزيد من الإجراءات"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-more"></use></svg>المزيد</summary>
           <div class="topbar-more-menu">
-            <button class="btn" id="btnExport">⬇️ تصدير</button>
-            <button class="btn" id="btnImport">⬆️ استيراد</button>
-            <button class="btn" id="btnCloud">☁️ المزامنة السحابية</button>
+            <button class="btn ghost" id="btnExport"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-download"></use></svg>تصدير</button>
+            <button class="btn ghost" id="btnImport"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-upload"></use></svg>استيراد</button>
+            <button class="btn ghost" id="btnCloud"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-cloud"></use></svg>المزامنة السحابية</button>
           </div>
         </details>
       </div>
     </div>
 
     <nav class="tabs" id="tabs" aria-label="التنقل الرئيسي">
-      <button type="button" class="tab active" data-tab="dash" aria-current="page"><span class="tab-icon" aria-hidden="true">📊</span><span class="tab-label tab-label-desktop">لوحة التحكم</span><span class="tab-label tab-label-mobile">الرئيسية</span></button>
-      <button type="button" class="tab" data-tab="tx"><span class="tab-icon" aria-hidden="true">🧾</span><span class="tab-label tab-label-desktop">العمليات</span><span class="tab-label tab-label-mobile">العمليات</span></button>
-      <button type="button" class="tab" data-tab="budgets"><span class="tab-icon" aria-hidden="true">🧩</span><span class="tab-label tab-label-desktop">تقسيم الميزانية</span><span class="tab-label tab-label-mobile">الميزانية</span></button>
-      <button type="button" class="tab" data-tab="debts"><span class="tab-icon" aria-hidden="true">📉</span><span class="tab-label tab-label-desktop">الديون والأقساط</span><span class="tab-label tab-label-mobile">الديون</span></button>
-      <button type="button" class="tab" data-tab="reports"><span class="tab-icon" aria-hidden="true">📈</span><span class="tab-label tab-label-desktop">التقارير</span><span class="tab-label tab-label-mobile">التقارير</span></button>
-      <button type="button" class="tab" data-tab="settings"><span class="tab-icon" aria-hidden="true">⚙️</span><span class="tab-label tab-label-desktop">الإعدادات</span><span class="tab-label tab-label-mobile">الإعدادات</span></button>
+      <button type="button" class="tab active" data-tab="dash" aria-current="page"><span class="tab-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-dashboard"></use></svg></span><span class="tab-label tab-label-desktop">لوحة التحكم</span><span class="tab-label tab-label-mobile">الرئيسية</span></button>
+      <button type="button" class="tab" data-tab="tx"><span class="tab-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-transactions"></use></svg></span><span class="tab-label tab-label-desktop">العمليات</span><span class="tab-label tab-label-mobile">العمليات</span></button>
+      <button type="button" class="tab" data-tab="budgets"><span class="tab-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-budget"></use></svg></span><span class="tab-label tab-label-desktop">تقسيم الميزانية</span><span class="tab-label tab-label-mobile">الميزانية</span></button>
+      <button type="button" class="tab" data-tab="debts"><span class="tab-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-debt"></use></svg></span><span class="tab-label tab-label-desktop">الديون والأقساط</span><span class="tab-label tab-label-mobile">الديون</span></button>
+      <button type="button" class="tab" data-tab="reports"><span class="tab-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-reports"></use></svg></span><span class="tab-label tab-label-desktop">التقارير</span><span class="tab-label tab-label-mobile">التقارير</span></button>
+      <button type="button" class="tab" data-tab="settings"><span class="tab-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-settings"></use></svg></span><span class="tab-label tab-label-desktop">الإعدادات</span><span class="tab-label tab-label-mobile">الإعدادات</span></button>
     </nav>
 
     <!-- DASHBOARD -->
@@ -514,7 +544,7 @@
                 <div class="value" id="kpiClosing">—</div>
                 <div class="hint">الرصيد المتاح − مصروفات الشهر</div>
               </div>
-              <span class="tag">🏁</span>
+              <span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-balance"></use></svg></span>
             </div>
             <div class="kpi">
               <div>
@@ -522,7 +552,7 @@
                 <div class="value" id="kpiExpense">—</div>
                 <div class="hint">مجموع عمليات المصروف الفعلية</div>
               </div>
-              <span class="tag">🧾</span>
+              <span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-expense"></use></svg></span>
             </div>
             <div class="kpi">
               <div>
@@ -530,7 +560,7 @@
                 <div class="value" id="kpiIncome">—</div>
                 <div class="hint">الإيرادات الجديدة فقط</div>
               </div>
-              <span class="tag">💰</span>
+              <span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-income"></use></svg></span>
             </div>
             <div class="kpi">
               <div>
@@ -538,12 +568,12 @@
                 <div class="value" id="dashboardBudgetRemaining">—</div>
                 <div class="hint" id="dashboardBudgetRemainingHint">لم تحدد ميزانية لهذا الشهر</div>
               </div>
-              <span class="tag">🧩</span>
+              <span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-budget"></use></svg></span>
             </div>
           </div>
 
           <div class="dashboard-utility-row">
-            <button class="btn small dashboard-opening-action" id="btnDashboardOpeningBalance" type="button">✏️ تحديد / تعديل الرصيد الافتتاحي</button>
+            <button class="btn small ghost dashboard-opening-action" id="btnDashboardOpeningBalance" type="button"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-edit"></use></svg>تحديد / تعديل الرصيد الافتتاحي</button>
           </div>
 
           <section class="dashboard-attention-section" id="dashboardAttentionSection" aria-labelledby="dashboardAttentionHeading" hidden>
@@ -558,12 +588,12 @@
               <div><h3 id="dashboardDetailsHeading">تفاصيل إضافية</h3><div class="mini">افتح ما تحتاجه فقط.</div></div>
             </div>
             <div class="dashboard-detail-launcher">
-              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="financial" aria-expanded="false" aria-controls="dashboardPanelFinancial"><span class="dashboard-detail-icon" aria-hidden="true">💰</span><span>التفاصيل المالية</span></button>
-              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="comparison" aria-expanded="false" aria-controls="dashboardPanelComparison"><span class="dashboard-detail-icon" aria-hidden="true">📊</span><span>مقارنة الشهر</span></button>
-              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="expenses" aria-expanded="false" aria-controls="dashboardPanelExpenses"><span class="dashboard-detail-icon" aria-hidden="true">🧾</span><span>المصروفات</span></button>
-              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="debts" aria-expanded="false" aria-controls="dashboardPanelDebts"><span class="dashboard-detail-icon" aria-hidden="true">💳</span><span>الديون</span></button>
-              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="budget" aria-expanded="false" aria-controls="dashboardPanelBudget"><span class="dashboard-detail-icon" aria-hidden="true">🧩</span><span>الميزانية</span></button>
-              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="charts" aria-expanded="false" aria-controls="dashboardPanelCharts"><span class="dashboard-detail-icon" aria-hidden="true">📈</span><span>الرسوم والتحليل</span></button>
+              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="financial" aria-expanded="false" aria-controls="dashboardPanelFinancial"><span class="dashboard-detail-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-details"></use></svg></span><span>التفاصيل المالية</span></button>
+              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="comparison" aria-expanded="false" aria-controls="dashboardPanelComparison"><span class="dashboard-detail-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-comparison"></use></svg></span><span>مقارنة الشهر</span></button>
+              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="expenses" aria-expanded="false" aria-controls="dashboardPanelExpenses"><span class="dashboard-detail-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-expense"></use></svg></span><span>المصروفات</span></button>
+              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="debts" aria-expanded="false" aria-controls="dashboardPanelDebts"><span class="dashboard-detail-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-debt"></use></svg></span><span>الديون</span></button>
+              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="budget" aria-expanded="false" aria-controls="dashboardPanelBudget"><span class="dashboard-detail-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-budget"></use></svg></span><span>الميزانية</span></button>
+              <button class="btn dashboard-detail-button" type="button" data-dashboard-panel="charts" aria-expanded="false" aria-controls="dashboardPanelCharts"><span class="dashboard-detail-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-charts"></use></svg></span><span>الرسوم والتحليل</span></button>
             </div>
           </section>
 
@@ -573,10 +603,10 @@
               <div class="row"><span class="pill" id="pillStatus">—</span><span class="pill" id="pillSavingsStatus">—</span></div>
             </div>
             <div class="kpis dashboard-secondary-kpis">
-              <div class="kpi"><div><div class="label">الرصيد المتاح</div><div class="value" id="kpiAvailable">—</div><div class="hint">الرصيد الافتتاحي + دخل الشهر الحقيقي</div></div><span class="tag">💳</span></div>
-              <div class="kpi"><div><div class="label">الرصيد الافتتاحي</div><div class="value" id="kpiOpening">—</div><div class="hint">مال موجود عند بداية الشهر، وليس دخلاً جديداً</div></div><span class="tag">🔓</span></div>
-              <div class="kpi"><div><div class="label">صافي حركة الشهر</div><div class="value" id="kpiNet">—</div><div class="hint">دخل الشهر الحقيقي − المصروفات</div></div><span class="tag">🧮</span></div>
-              <div class="kpi"><div><div class="label">معدل الادخار</div><div class="value" id="kpiSavingRate">—</div><div class="hint">صافي حركة الشهر ÷ دخل الشهر الحقيقي</div></div><span class="tag">🏦</span></div>
+              <div class="kpi"><div><div class="label">الرصيد المتاح</div><div class="value" id="kpiAvailable">—</div><div class="hint">الرصيد الافتتاحي + دخل الشهر الحقيقي</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-wallet"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">الرصيد الافتتاحي</div><div class="value" id="kpiOpening">—</div><div class="hint">مال موجود عند بداية الشهر، وليس دخلاً جديداً</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-balance"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">صافي حركة الشهر</div><div class="value" id="kpiNet">—</div><div class="hint">دخل الشهر الحقيقي − المصروفات</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-comparison"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">معدل الادخار</div><div class="value" id="kpiSavingRate">—</div><div class="hint">صافي حركة الشهر ÷ دخل الشهر الحقيقي</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-charts"></use></svg></span></div>
             </div>
           </div>
 
@@ -584,7 +614,7 @@
             <section class="dashboard-section" aria-labelledby="dashboardComparisonHeading">
               <div class="dashboard-section-head">
                 <div><h3 id="dashboardComparisonHeading">مقارنة بالشهر السابق</h3><div class="mini" id="dashboardComparisonMonths">—</div></div>
-                <button class="btn small" id="btnDashboardComparisonReports" type="button">📈 عرض المقارنة بالتفصيل</button>
+                <button class="btn small" id="btnDashboardComparisonReports" type="button"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-comparison"></use></svg>عرض المقارنة بالتفصيل</button>
               </div>
               <div class="dashboard-note" id="dashboardIncompleteNote" hidden>الشهر الحالي غير مكتمل؛ المقارنة مع شهر كامل قد لا تكون مباشرة.</div>
               <div class="dashboard-note" id="dashboardComparisonEmpty" hidden>لا توجد بيانات كافية للمقارنة بين الشهرين.</div>
@@ -600,31 +630,31 @@
           <div class="dashboard-detail-panel" id="dashboardPanelExpenses" data-dashboard-panel-target="expenses" hidden>
             <div class="dashboard-panel-head"><div><h3>تحليل المصروفات</h3><div class="mini">تفصيل المبالغ الخارجة خلال الشهر.</div></div><button class="btn small" id="btnDashboardCategoryReports" type="button">فتح التقارير</button></div>
             <div class="kpis phase2-kpis">
-              <div class="kpi"><div><div class="label">تكلفة المعيشة</div><div class="value" id="kpiCostOfLiving">—</div><div class="hint" id="kpiCostOfLivingHint">المصاريف المنتظمة فقط</div></div><span class="tag">🏠</span></div>
-              <div class="kpi"><div><div class="label">مصروفات استثنائية</div><div class="value" id="kpiExceptionalExpenses">—</div><div class="hint">مصاريف غير متكررة حددتها يدوياً</div></div><span class="tag">✨</span></div>
-              <div class="kpi"><div><div class="label">سداد الديون والأقساط</div><div class="value" id="kpiDebtPayments">—</div><div class="hint">يؤثر نقدياً ولا يدخل في تكلفة المعيشة</div></div><span class="tag">📉</span></div>
+              <div class="kpi"><div><div class="label">تكلفة المعيشة</div><div class="value" id="kpiCostOfLiving">—</div><div class="hint" id="kpiCostOfLivingHint">المصاريف المنتظمة فقط</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-expense"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">مصروفات استثنائية</div><div class="value" id="kpiExceptionalExpenses">—</div><div class="hint">مصاريف غير متكررة حددتها يدوياً</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-warning"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">سداد الديون والأقساط</div><div class="value" id="kpiDebtPayments">—</div><div class="hint">يؤثر نقدياً ولا يدخل في تكلفة المعيشة</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-debt"></use></svg></span></div>
             </div>
             <div class="dashboard-highlight" style="margin-top:10px"><div class="mini">أكبر تصنيف هذا الشهر</div><strong id="dashboardTopCategory">لا توجد بيانات مصروف لهذا الشهر.</strong></div>
           </div>
 
           <div class="dashboard-detail-panel" id="dashboardPanelDebts" data-dashboard-panel-target="debts" hidden>
-            <div class="dashboard-panel-head"><div><h3>ملخص الديون والأقساط</h3><div class="mini">محسوب من عمليات السداد المرتبطة.</div></div><button class="btn small" id="btnGoDebts" type="button">📉 فتح الإدارة</button></div>
+            <div class="dashboard-panel-head"><div><h3>ملخص الديون والأقساط</h3><div class="mini">محسوب من عمليات السداد المرتبطة.</div></div><button class="btn small" id="btnGoDebts" type="button"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-debt"></use></svg>فتح الإدارة</button></div>
             <div class="dashboard-highlight" id="dashboardDebtAttention">—</div>
             <div class="debt-summary-grid" style="margin-top:10px">
-              <div class="kpi"><div><div class="label">إجمالي المتبقي</div><div class="value" id="dashDebtRemaining">—</div></div><span class="tag">📉</span></div>
-              <div class="kpi"><div><div class="label">التزامات نشطة</div><div class="value" id="dashDebtActive">—</div></div><span class="tag">📋</span></div>
-              <div class="kpi"><div><div class="label">أقرب دفعة</div><div class="value" id="dashDebtNext">—</div><div class="hint" id="dashDebtNextHint">—</div></div><span class="tag">📅</span></div>
-              <div class="kpi"><div><div class="label">متأخر حتى اليوم</div><div class="value" id="dashDebtOverdue">—</div></div><span class="tag">⚠️</span></div>
+              <div class="kpi"><div><div class="label">إجمالي المتبقي</div><div class="value" id="dashDebtRemaining">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-debt"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">التزامات نشطة</div><div class="value" id="dashDebtActive">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-details"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">أقرب دفعة</div><div class="value" id="dashDebtNext">—</div><div class="hint" id="dashDebtNextHint">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-calendar"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">متأخر حتى اليوم</div><div class="value" id="dashDebtOverdue">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-warning"></use></svg></span></div>
             </div>
           </div>
 
           <div class="dashboard-detail-panel" id="dashboardPanelBudget" data-dashboard-panel-target="budget" hidden>
-            <div class="dashboard-panel-head"><div><h3>تنبيهات الميزانية</h3><div class="mini">الحالات المشتقة من حدود الميزانية الحالية.</div></div><button class="btn small" id="btnGoBudgets" type="button">🧩 فتح تقسيم الميزانية</button></div>
+            <div class="dashboard-panel-head"><div><h3>تنبيهات الميزانية</h3><div class="mini">الحالات المشتقة من حدود الميزانية الحالية.</div></div><button class="btn small" id="btnGoBudgets" type="button"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-budget"></use></svg>فتح تقسيم الميزانية</button></div>
             <div id="budgetAlertsList" class="mini">—</div>
           </div>
 
           <div class="dashboard-detail-panel" id="dashboardPanelCharts" data-dashboard-panel-target="charts" hidden>
-            <div class="dashboard-panel-head"><div><h3>الرسوم والتحليل</h3><div class="mini">توزيع المصروف ومقارنته بالدخل الحقيقي.</div></div><button class="btn small" id="btnDashboardReports" type="button">📈 فتح التقارير</button></div>
+            <div class="dashboard-panel-head"><div><h3>الرسوم والتحليل</h3><div class="mini">توزيع المصروف ومقارنته بالدخل الحقيقي.</div></div><button class="btn small" id="btnDashboardReports" type="button"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-reports"></use></svg>فتح التقارير</button></div>
             <div class="split dashboard-chart-grid">
               <div>
                 <div style="font-weight:800;margin-bottom:4px">توزيع المصاريف حسب التصنيف</div>
@@ -651,9 +681,9 @@
             <p>أضف أي مصروف أو إيراد مع تاريخ يدوي وملاحظة وتصنيف مرن.</p>
           </div>
           <div class="row">
-            <button class="btn small" id="btnCategories">🏷️ إدارة التصنيفات</button>
-            <button class="btn small" id="btnTags">#️⃣ إدارة الوسوم</button>
-            <button class="btn small" id="btnAddTx2">➕ إضافة عملية</button>
+            <button class="btn small" id="btnCategories"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-tag"></use></svg>إدارة التصنيفات</button>
+            <button class="btn small" id="btnTags"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-tag"></use></svg>إدارة الوسوم</button>
+            <button class="btn small primary" id="btnAddTx2"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-plus"></use></svg>إضافة عملية</button>
           </div>
         </div>
         <div class="bd tx-workspace">
@@ -736,8 +766,8 @@
             <p>حدد الدخل المخطط، ثم وزّعه على التصنيفات (إيجار، دين، كهرباء، ماء، مشتريات...)</p>
           </div>
           <div class="row">
-            <button class="btn small" id="btnAutoSuggestions">✨ اقتراح توزيع سريع</button>
-            <button class="btn small" id="btnSaveBudgets">💾 حفظ</button>
+            <button class="btn small" id="btnAutoSuggestions"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-analysis"></use></svg>اقتراح توزيع سريع</button>
+            <button class="btn small primary" id="btnSaveBudgets"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-save"></use></svg>حفظ</button>
           </div>
         </div>
         <div class="bd">
@@ -748,10 +778,10 @@
           <section class="budget-section budget-summary-section" aria-labelledby="budgetSummaryHeading">
             <h3 id="budgetSummaryHeading">ملخص الميزانية</h3>
             <div class="budget-summary-grid" id="budgetSummary">
-              <div class="kpi"><div><div class="label">إجمالي الميزانية المخططة</div><div class="value" id="budgetSummaryPlanned">—</div></div><span class="tag">🧩</span></div>
-              <div class="kpi"><div><div class="label">المصروف ضمن تصنيفات لها ميزانية</div><div class="value" id="budgetSummaryActual">—</div></div><span class="tag">💳</span></div>
-              <div class="kpi"><div><div class="label">مصروف بدون ميزانية</div><div class="value" id="budgetSummaryUnbudgeted">—</div></div><span class="tag">ℹ️</span></div>
-              <div class="kpi"><div><div class="label">المتبقي من الميزانية</div><div class="value" id="budgetSummaryRemaining">—</div><div class="hint">ليس الرصيد الختامي</div></div><span class="tag">🎯</span></div>
+              <div class="kpi"><div><div class="label">إجمالي الميزانية المخططة</div><div class="value" id="budgetSummaryPlanned">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-budget"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">المصروف ضمن تصنيفات لها ميزانية</div><div class="value" id="budgetSummaryActual">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-expense"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">مصروف بدون ميزانية</div><div class="value" id="budgetSummaryUnbudgeted">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-info"></use></svg></span></div>
+              <div class="kpi"><div><div class="label">المتبقي من الميزانية</div><div class="value" id="budgetSummaryRemaining">—</div><div class="hint">ليس الرصيد الختامي</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-balance"></use></svg></span></div>
             </div>
             <div class="row budget-status-summary">
               <span class="pill" id="budgetOverallStatus">حالة الشهر: —</span>
@@ -769,7 +799,7 @@
                 <h3 id="openingBalanceHeading">الرصيد الافتتاحي للشهر</h3>
                 <div class="mini" id="openingBalanceDescription">الرصيد الافتتاحي مال موجود عند بداية الشهر، وليس دخلاً جديداً.</div>
               </div>
-              <button class="btn small primary" id="btnSaveFinancialSettings" type="button">💾 حفظ إعداد الرصيد</button>
+              <button class="btn small primary" id="btnSaveFinancialSettings" type="button"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-save"></use></svg>حفظ إعداد الرصيد</button>
             </div>
             <div class="two" style="margin-top:12px">
               <div>
@@ -872,7 +902,7 @@
                 <h3 id="categoryBudgetsHeading">ميزانيات التصنيفات</h3>
                 <div class="mini">عدّل أي مبلغ — النظام يعطيك مقارنة “مخطط vs فعلي”</div>
               </div>
-              <button class="btn small" id="btnCategories2">🏷️ إضافة/تعديل تصنيفات</button>
+              <button class="btn small" id="btnCategories2"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-tag"></use></svg>إضافة/تعديل تصنيفات</button>
             </div>
 
             <div class="budget-table-wrap">
@@ -895,7 +925,7 @@
             </div>
 
             <div class="budget-mobile-save">
-              <button class="btn primary" id="btnSaveBudgetsMobile" type="button">💾 حفظ الميزانية</button>
+              <button class="btn primary" id="btnSaveBudgetsMobile" type="button"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-save"></use></svg>حفظ الميزانية</button>
             </div>
           </section>
 
@@ -913,14 +943,14 @@
             <h2>الديون والأقساط</h2>
             <p>تابع أصل الالتزام والمدفوع والمتبقي. كل دفعة فعلية تبقى عملية مصروف واحدة في السجل.</p>
           </div>
-          <button class="btn primary" id="btnAddDebt">➕ إضافة التزام</button>
+          <button class="btn primary" id="btnAddDebt"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-plus"></use></svg>إضافة التزام</button>
         </div>
         <div class="bd">
           <div class="debt-summary-grid">
-            <div class="kpi"><div><div class="label">القيمة الأصلية</div><div class="value" id="debtTotalOriginal">—</div></div><span class="tag">🧾</span></div>
-            <div class="kpi"><div><div class="label">إجمالي المدفوع</div><div class="value" id="debtTotalPaid">—</div></div><span class="tag">✅</span></div>
-            <div class="kpi"><div><div class="label">إجمالي المتبقي</div><div class="value" id="debtTotalRemaining">—</div></div><span class="tag">📉</span></div>
-            <div class="kpi"><div><div class="label">المتأخر حتى اليوم</div><div class="value" id="debtTotalOverdue">—</div></div><span class="tag">⚠️</span></div>
+            <div class="kpi"><div><div class="label">القيمة الأصلية</div><div class="value" id="debtTotalOriginal">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-details"></use></svg></span></div>
+            <div class="kpi"><div><div class="label">إجمالي المدفوع</div><div class="value" id="debtTotalPaid">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-success"></use></svg></span></div>
+            <div class="kpi"><div><div class="label">إجمالي المتبقي</div><div class="value" id="debtTotalRemaining">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-debt"></use></svg></span></div>
+            <div class="kpi"><div><div class="label">المتأخر حتى اليوم</div><div class="value" id="debtTotalOverdue">—</div></div><span class="kpi-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-warning"></use></svg></span></div>
           </div>
           <div id="debtWarnings" style="margin-top:12px"></div>
           <div class="hr"></div>
@@ -1039,7 +1069,7 @@
                   <p>أضف/عدّل/احذف تصنيفات الإيراد والمصروف بحرية.</p>
                 </div>
                 <div class="row">
-                  <button class="btn small" id="btnCategories3">🏷️ إدارة</button>
+                  <button class="btn small" id="btnCategories3"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-tag"></use></svg>إدارة</button>
                 </div>
               </div>
               <div class="bd">
@@ -1050,7 +1080,7 @@
             <div class="card" style="box-shadow:none">
               <div class="hd">
                 <div><h2>وسوم العمليات</h2><p>وسوم مرنة لأي إيراد أو مصروف، من دون تغيير الحسابات.</p></div>
-                <button class="btn small" id="btnTagsSettings">#️⃣ إدارة</button>
+                <button class="btn small" id="btnTagsSettings"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-tag"></use></svg>إدارة</button>
               </div>
               <div class="bd">
                 <div id="tagAnalyticsSummary" class="mini">لا توجد وسوم بعد.</div>
@@ -1066,8 +1096,8 @@
               </div>
               <div class="bd">
                 <div class="row">
-                  <button class="btn" id="btnExport2">⬇️ تصدير JSON</button>
-                  <button class="btn" id="btnImport2">⬆️ استيراد JSON</button>
+                  <button class="btn" id="btnExport2"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-download"></use></svg>تصدير JSON</button>
+                  <button class="btn" id="btnImport2"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-upload"></use></svg>استيراد JSON</button>
                   <button class="btn" id="btnTrash">🗑️ سلة المحذوفات</button>
                   <button class="btn" id="btnRestoreSafety">🛟 استعادة آخر نسخة أمان</button>
                   <button class="btn" id="btnUpdateApp">🔄 تحديث التطبيق</button>
@@ -1154,14 +1184,14 @@
             <div style="font-weight:800">وسوم العملية</div>
             <div class="mini" id="txTagHelp">يمكنك اختيار أكثر من وسم. الوسوم للتنظيم والبحث ولا تغيّر المبلغ أو التصنيف المالي.</div>
             <div class="tag-options" id="txTagOptions" role="group" aria-describedby="txTagHelp"></div>
-            <button class="btn small" id="btnManageTagsFromTx" type="button" style="margin-top:10px">#️⃣ إدارة الوسوم</button>
+            <button class="btn small" id="btnManageTagsFromTx" type="button" style="margin-top:10px"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-tag"></use></svg>إدارة الوسوم</button>
           </div>
           <div id="txDebtLinkInfo" class="linked-note" hidden></div>
 
           </section>
         </div>
         <div class="ft">
-          <button class="btn primary" id="btnSaveTx">💾 حفظ</button>
+          <button class="btn primary" id="btnSaveTx"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-save"></use></svg>حفظ</button>
           <button class="btn" data-close="#modalTx">إلغاء</button>
           <span class="mini muted" id="txEditingHint" style="margin-right:auto;display:none">وضع التعديل</span>
         </div>
@@ -1194,7 +1224,7 @@
             <div><label class="mini">ملاحظة (اختياري)</label><input id="debtNote" type="text" /></div>
           </div>
         </div>
-        <div class="ft"><button class="btn primary" id="btnSaveDebt">💾 حفظ</button><button class="btn" data-close="#modalDebt">إلغاء</button></div>
+        <div class="ft"><button class="btn primary" id="btnSaveDebt"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-save"></use></svg>حفظ</button><button class="btn" data-close="#modalDebt">إلغاء</button></div>
       </div>
     </div>
 
@@ -1215,7 +1245,7 @@
           <div style="margin-top:10px"><label class="mini">ملاحظة</label><input id="debtPaymentNote" type="text" style="width:100%" /></div>
           <div class="help" id="debtPaymentCategoryHelp" style="margin-top:12px">سيُنشئ هذا الإجراء عملية مصروف واحدة بتصنيف دين/سداد ثم يربطها بهذا الالتزام.</div>
         </div>
-        <div class="ft"><button class="btn primary" id="btnSaveDebtPayment">💾 تسجيل الدفعة</button><button class="btn" data-close="#modalDebtPayment">إلغاء</button></div>
+        <div class="ft"><button class="btn primary" id="btnSaveDebtPayment"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-save"></use></svg>تسجيل الدفعة</button><button class="btn" data-close="#modalDebtPayment">إلغاء</button></div>
       </div>
     </div>
 
@@ -1242,7 +1272,7 @@
               <div style="font-weight:800;margin-bottom:6px">تصنيفات المصروف</div>
               <div class="row">
                 <input id="newExpenseCat" type="text" placeholder="اسم التصنيف (مثال: إيجار)" style="flex:1" />
-                <button class="btn small" id="btnAddExpenseCat">➕ إضافة</button>
+                <button class="btn small" id="btnAddExpenseCat"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-plus"></use></svg>إضافة</button>
               </div>
               <div id="expenseCatsList" style="margin-top:10px"></div>
             </div>
@@ -1250,7 +1280,7 @@
               <div style="font-weight:800;margin-bottom:6px">تصنيفات الإيراد</div>
               <div class="row">
                 <input id="newIncomeCat" type="text" placeholder="اسم التصنيف (مثال: راتب ثابت)" style="flex:1" />
-                <button class="btn small" id="btnAddIncomeCat">➕ إضافة</button>
+                <button class="btn small" id="btnAddIncomeCat"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-plus"></use></svg>إضافة</button>
               </div>
               <div id="incomeCatsList" style="margin-top:10px"></div>
             </div>
@@ -1275,7 +1305,7 @@
         <div class="bd">
           <div class="row">
             <input id="newTagName" type="text" placeholder="اسم الوسم" style="flex:1" />
-            <button class="btn small primary" id="btnCreateTag" type="button">➕ إنشاء</button>
+            <button class="btn small primary" id="btnCreateTag" type="button"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-plus"></use></svg>إنشاء</button>
           </div>
           <div style="font-weight:800;margin-top:16px">الوسوم النشطة</div>
           <div class="tag-management-list" id="activeTagsList"></div>
@@ -1304,7 +1334,7 @@
           <textarea id="importText" placeholder="{ ... JSON ... }"></textarea>
         </div>
         <div class="ft">
-          <button class="btn primary" id="btnDoImport">⬆️ استيراد</button>
+          <button class="btn primary" id="btnDoImport"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-upload"></use></svg>استيراد</button>
           <button class="btn" data-close="#modalImport">إلغاء</button>
         </div>
       </div>
@@ -1323,8 +1353,8 @@
           <textarea id="exportText" readonly></textarea>
           <div class="hr"></div>
           <div class="row">
-            <button class="btn" id="btnCopyExport">📋 نسخ</button>
-            <button class="btn primary" id="btnDownloadExport">⬇️ تنزيل ملف</button>
+            <button class="btn" id="btnCopyExport"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-save"></use></svg>نسخ</button>
+            <button class="btn primary" id="btnDownloadExport"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-download"></use></svg>تنزيل ملف</button>
           </div>
         </div>
         <div class="ft">
@@ -1377,7 +1407,7 @@
   <div class="dialog">
     <div class="hd">
       <div>
-        <h3>☁️ المزامنة السحابية (Firebase)</h3>
+        <h3><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-cloud"></use></svg>المزامنة السحابية (Firebase)</h3>
         <p class="mini">بعد تسجيل الدخول، سيتم حفظ بياناتك تلقائياً على السحابة. يمكنكم (أنت وزوجتك) استخدام نفس الحساب.</p>
       </div>
       <button class="btn icon" data-close="#modalCloud" aria-label="Close">✕</button>
@@ -1405,7 +1435,7 @@
       <div class="hr"></div>
 
       <div class="row" style="justify-content:space-between; gap:10px">
-        <span class="pill" id="cloudConnPill">☁️ غير متصل</span>
+        <span class="pill cloud-pill" id="cloudConnPill"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-cloud"></use></svg><span>غير متصل</span></span>
         <span class="mini" id="cloudLast">آخر حفظ: —</span>
       </div>
 
@@ -1414,9 +1444,9 @@
       <details style="margin-top:10px">
         <summary class="mini" style="cursor:pointer">خيارات إضافية</summary>
         <div class="row" style="margin-top:10px">
-          <button class="btn" id="btnCloudPull">⬇️ جلب من السحابة</button>
-          <button class="btn" id="btnCloudPush">⬆️ حفظ للسحابة</button>
-          <button class="btn" id="btnCloudRestoreBackup">🧩 استعادة النسخة الاحتياطية</button>
+          <button class="btn" id="btnCloudPull"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-download"></use></svg>جلب من السحابة</button>
+          <button class="btn" id="btnCloudPush"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-upload"></use></svg>حفظ للسحابة</button>
+          <button class="btn" id="btnCloudRestoreBackup"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-upload"></use></svg>استعادة النسخة الاحتياطية</button>
         </div>
         <div class="mini" style="margin-top:8px;color:var(--muted)">
           عادةً لا تحتاج هذه الأزرار لأن الحفظ تلقائي. استخدمها فقط إذا أردت فرض جلب/حفظ يدوي.
@@ -1960,13 +1990,13 @@
       return `<tr data-tx-id="${escapeAttr(t.id)}">
         <td class="tx-date">${escapeHTML(t.date||"")}</td>
         <td class="tx-type">${parts.labelType}</td>
-        <td class="tx-category"><span class="tag">🏷️ ${escapeHTML(catName(t.categoryId))}</span>${parts.shopping}</td>
+        <td class="tx-category"><span class="tag"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-tag"></use></svg>${escapeHTML(catName(t.categoryId))}</span>${parts.shopping}</td>
         <td class="tx-amount money ${parts.signClass}">${fmtCompact(t.amount)}</td>
         <td class="tx-note">${escapeHTML(t.note||"")}${parts.tags}</td>
         <td class="tx-actions">
           <div class="actions">
-            <button class="btn small" data-edit="${escapeAttr(t.id)}" aria-label="تعديل عملية بتاريخ ${escapeAttr(t.date||"")}">✏️ تعديل</button>
-            <button class="btn small danger" data-del="${escapeAttr(t.id)}" aria-label="حذف عملية بتاريخ ${escapeAttr(t.date||"")}">🗑️ حذف</button>
+            <button class="btn small" data-edit="${escapeAttr(t.id)}" aria-label="تعديل عملية بتاريخ ${escapeAttr(t.date||"")}"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-edit"></use></svg>تعديل</button>
+            <button class="btn small danger" data-del="${escapeAttr(t.id)}" aria-label="حذف عملية بتاريخ ${escapeAttr(t.date||"")}"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-delete"></use></svg>حذف</button>
           </div>
         </td>
       </tr>`;
@@ -1976,12 +2006,12 @@
       return `<article class="tx-mobile-card" data-tx-id="${escapeAttr(t.id)}" role="listitem" aria-label="عملية ${t.type === "income" ? "إيراد" : "مصروف"} بتاريخ ${escapeAttr(t.date||"")}">
         <header class="tx-card-head"><div class="tx-card-type">${parts.labelType}</div><time datetime="${escapeAttr(t.date||"")}">${escapeHTML(t.date||"")}</time></header>
         <div class="tx-card-amount money ${parts.signClass}">${fmtCompact(t.amount)}</div>
-        <div class="tx-card-category"><span class="tag">🏷️ ${escapeHTML(catName(t.categoryId))}</span>${parts.shopping}</div>
+        <div class="tx-card-category"><span class="tag"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-tag"></use></svg>${escapeHTML(catName(t.categoryId))}</span>${parts.shopping}</div>
         ${t.note ? `<p class="tx-card-note">${escapeHTML(t.note)}</p>` : ""}
         <div class="tx-card-metadata">${parts.tags}</div>
         <footer class="tx-card-actions actions">
-          <button class="btn small" data-edit="${escapeAttr(t.id)}" aria-label="تعديل عملية بتاريخ ${escapeAttr(t.date||"")}">✏️ تعديل</button>
-          <button class="btn small danger" data-del="${escapeAttr(t.id)}" aria-label="حذف عملية بتاريخ ${escapeAttr(t.date||"")}">🗑️ حذف</button>
+          <button class="btn small" data-edit="${escapeAttr(t.id)}" aria-label="تعديل عملية بتاريخ ${escapeAttr(t.date||"")}"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-edit"></use></svg>تعديل</button>
+          <button class="btn small danger" data-del="${escapeAttr(t.id)}" aria-label="حذف عملية بتاريخ ${escapeAttr(t.date||"")}"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-delete"></use></svg>حذف</button>
         </footer>
       </article>`;
     }).join("");
@@ -2015,7 +2045,7 @@
 
     const list = $("#debtList");
     if(!summary.obligations.length){
-      list.innerHTML = `<div class="debt-empty" style="grid-column:1/-1"><div style="font-size:28px">📉</div><b>لا توجد التزامات مسجلة</b><div class="mini" style="margin:6px 0 12px">أضف أول دين أو قسط للبدء، ولن تتغير أي عملية قديمة.</div><button class="btn primary" data-debt-add-empty>➕ إضافة التزام</button></div>`;
+      list.innerHTML = `<div class="debt-empty" style="grid-column:1/-1"><div class="empty-state-icon" aria-hidden="true"><svg class="ui-icon" focusable="false"><use href="#icon-debt"></use></svg></div><b>لا توجد التزامات مسجلة</b><div class="mini" style="margin:6px 0 12px">أضف أول دين أو قسط للبدء، ولن تتغير أي عملية قديمة.</div><button class="btn primary" data-debt-add-empty><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-plus"></use></svg>إضافة التزام</button></div>`;
       $("[data-debt-add-empty]", list)?.addEventListener("click", () => openDebtModal());
       return;
     }
@@ -2029,7 +2059,7 @@
           <div class="row" style="justify-content:space-between"><div><h3>${escapeHTML(item.obligation.name)}</h3><div class="mini">${debtTypeLabel(item.obligation.type)}${item.obligation.creditor ? ` — ${escapeHTML(item.obligation.creditor)}` : ""}</div></div><span class="pill ${statusClass}">${debtStatusLabel(item.effectiveStatus)}</span></div>
           <div class="debt-progress"><span style="width:${percent.toFixed(2)}%"></span></div>
           <div class="row" style="justify-content:space-between"><span class="mini">مدفوع: <b>${fmtCompact(item.totalPaid)}</b></span><span class="mini">متبقي: <b>${fmtCompact(item.remaining)}</b></span></div>
-          ${item.overpayment > 0 ? `<div class="mini" style="color:var(--warn);margin-top:7px">زيادة مدفوعة: ${fmtCompact(item.overpayment)}</div>` : ""}
+          ${item.overpayment > 0 ? `<div class="mini" style="color:var(--theme-warning-foreground);margin-top:7px">زيادة مدفوعة: ${fmtCompact(item.overpayment)}</div>` : ""}
           ${item.nextDue ? `<div class="mini" style="margin-top:7px">القادم: ${escapeHTML(item.nextDue.date)} — ${fmtCompact(item.nextDue.amount)}</div>` : `<div class="mini muted" style="margin-top:7px">لا توجد دفعة قادمة معروفة</div>`}
           <button class="btn small" data-debt-open="${escapeAttr(item.obligation.id)}" style="margin-top:10px">عرض التفاصيل</button>
         </article>`;
@@ -2063,11 +2093,11 @@
       <div style="overflow:auto"><table><thead><tr><th>الاستحقاق</th><th>المخطط</th><th>الموزع</th><th>المتبقي</th></tr></thead><tbody>${scheduleRows}</tbody></table></div>
       ${item.obligation.note ? `<div class="help" style="margin-top:12px">${escapeHTML(item.obligation.note)}</div>` : ""}`;
     const paymentActions = item.effectiveStatus === "completed" ? "" : `
-      <button class="btn primary" data-record-debt-payment>➕ تسجيل دفعة</button>
+      <button class="btn primary" data-record-debt-payment><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-plus"></use></svg>تسجيل دفعة</button>
       <button class="btn" data-link-existing>🔗 ربط عملية</button>`;
     $("#debtDetailsActions").innerHTML = `
       ${paymentActions}
-      <button class="btn" data-edit-debt>✏️ تعديل</button>
+      <button class="btn" data-edit-debt><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-edit"></use></svg>تعديل</button>
       ${item.effectiveStatus === "completed" ? "" : item.storedStatus === "paused" ? `<button class="btn" data-debt-status="active">استئناف</button>` : `<button class="btn" data-debt-status="paused">إيقاف مؤقت</button>`}
       <button class="btn" data-close="#modalDebtDetails">إغلاق</button>`;
     $$('[data-unlink-payment]', $("#debtDetailsBody")).forEach(button => button.addEventListener("click", () => unlinkDebtPayment(button.dataset.unlinkPayment)));
@@ -2477,7 +2507,7 @@
     // If empty
     const total = items.reduce((s,x)=>s+x.value,0);
     if(total<=0){
-      ctx.fillStyle = "rgba(255,255,255,.65)";
+      ctx.fillStyle = "#667085";
       ctx.font = `${14*dpr}px ${getFontFallback()}`;
       ctx.textAlign = "center";
       ctx.fillText("لا توجد مصاريف لعرضها", w/2, h/2);
@@ -2487,7 +2517,7 @@
     const cx = w/2, cy = h/2, r = Math.min(w,h)*0.32;
     let a0 = -Math.PI/2;
 
-    // deterministic pseudo-colors based on label hash (without specifying a fixed palette)
+    // Restrained deterministic category colors keep labels stable across renders.
     items.forEach((it)=>{
       const ang = (it.value/total)*Math.PI*2;
       const a1 = a0 + ang;
@@ -2508,7 +2538,7 @@
     // Legend
     ctx.font = `${12*dpr}px ${getFontFallback()}`;
     ctx.textAlign = "right";
-    ctx.fillStyle = "rgba(255,255,255,.75)";
+    ctx.fillStyle = "#475467";
     const lx = w - 16*dpr;
     let ly = 18*dpr;
     items.slice(0,6).forEach(it=>{
@@ -2537,7 +2567,7 @@
     const gap = barW;
 
     // axes line
-    ctx.strokeStyle = "rgba(255,255,255,.18)";
+    ctx.strokeStyle = "#d6dde7";
     ctx.lineWidth = 1*dpr;
     ctx.beginPath();
     ctx.moveTo(pad, baseY);
@@ -2545,8 +2575,8 @@
     ctx.stroke();
 
     const values = [
-      { label:"دخل حقيقي", value: income, col: "rgba(124,255,232,.85)" },
-      { label:"مصروف", value: expense, col: "rgba(255,107,107,.85)" },
+      { label:"دخل حقيقي", value: income, col: "#0f9f8c" },
+      { label:"مصروف", value: expense, col: "#c94b52" },
     ];
 
     ctx.font = `${12*dpr}px ${getFontFallback()}`;
@@ -2556,7 +2586,7 @@
       const bh = (v.value/max) * (h - pad*2);
       ctx.fillStyle = v.col;
       ctx.fillRect(x, baseY - bh, barW, bh);
-      ctx.fillStyle = "rgba(255,255,255,.78)";
+      ctx.fillStyle = "#475467";
       ctx.fillText(v.label, x+barW/2, baseY + 16*dpr);
       ctx.fillText(shortMoney(v.value), x+barW/2, baseY - bh - 10*dpr);
     });
@@ -2580,7 +2610,7 @@
     const maxV = Math.max(...series.flatMap(s=>[s.income,s.expense,s.costOfLiving]), 1);
 
     // grid lines
-    ctx.strokeStyle = "rgba(255,255,255,.10)";
+    ctx.strokeStyle = "#e3e8ef";
     ctx.lineWidth = 1*dpr;
     for(let i=0;i<=4;i++){
       const y = pad + (innerH*(i/4));
@@ -2604,20 +2634,20 @@
       const livingH = (s.costOfLiving/maxV)*innerH;
 
       // income bar
-      ctx.fillStyle = "rgba(124,255,232,.80)";
+      ctx.fillStyle = "#0f9f8c";
       ctx.fillRect(gx - barW - gap, pad + innerH - incomeH, barW, incomeH);
 
       // expense bar
-      ctx.fillStyle = "rgba(255,107,107,.80)";
+      ctx.fillStyle = "#c94b52";
       ctx.fillRect(gx, pad + innerH - expH, barW, expH);
 
       // regular cost-of-living bar
-      ctx.fillStyle = "rgba(96,165,250,.82)";
+      ctx.fillStyle = "#2f6bff";
       ctx.fillRect(gx + barW + gap, pad + innerH - livingH, barW, livingH);
 
       // month label every 2 steps
       if(idx%2===0){
-        ctx.fillStyle = "rgba(255,255,255,.70)";
+        ctx.fillStyle = "#667085";
         ctx.font = `${10*dpr}px ${getFontFallback()}`;
         ctx.textAlign = "center";
         ctx.fillText(s.month.slice(2), gx, h - 6*dpr);
@@ -2625,21 +2655,21 @@
     });
 
     // legend
-    ctx.fillStyle = "rgba(255,255,255,.78)";
+    ctx.fillStyle = "#475467";
     ctx.font = `${12*dpr}px ${getFontFallback()}`;
     ctx.textAlign = "right";
     ctx.fillText("دخل حقيقي", w - pad, pad);
-    ctx.fillStyle = "rgba(124,255,232,.80)";
+    ctx.fillStyle = "#0f9f8c";
     ctx.fillRect(w - pad - 70*dpr, pad - 10*dpr, 10*dpr, 10*dpr);
 
-    ctx.fillStyle = "rgba(255,255,255,.78)";
+    ctx.fillStyle = "#475467";
     ctx.fillText("مصروف", w - pad, pad + 18*dpr);
-    ctx.fillStyle = "rgba(255,107,107,.80)";
+    ctx.fillStyle = "#c94b52";
     ctx.fillRect(w - pad - 70*dpr, pad + 8*dpr, 10*dpr, 10*dpr);
 
-    ctx.fillStyle = "rgba(255,255,255,.78)";
+    ctx.fillStyle = "#475467";
     ctx.fillText("تكلفة المعيشة", w - pad, pad + 36*dpr);
-    ctx.fillStyle = "rgba(96,165,250,.82)";
+    ctx.fillStyle = "#2f6bff";
     ctx.fillRect(w - pad - 92*dpr, pad + 26*dpr, 10*dpr, 10*dpr);
   }
 
@@ -2652,18 +2682,15 @@
 
   function getFontFallback(){ return "Tahoma, Arial, sans-serif"; }
 
-  // deterministic color from label (so the same category keeps a stable color)
+  // Restrained deterministic palette: the same category keeps a stable color.
   function hashColor(str){
     let h = 2166136261;
     for(let i=0;i<str.length;i++){
       h ^= str.charCodeAt(i);
       h = Math.imul(h, 16777619);
     }
-    // map to HSL
-    const hue = Math.abs(h) % 360;
-    const sat = 70;
-    const light = 55;
-    return `hsl(${hue} ${sat}% ${light}%)`;
+    const palette = ["#2f6bff", "#0f9f8c", "#6c7aa1", "#8b6cb5", "#c07a44", "#4a8ca8", "#7b8b52", "#b46a76"];
+    return palette[Math.abs(h) % palette.length];
   }
 
   // --- Actions
@@ -3473,8 +3500,17 @@ window.addEventListener("pfm:apply", (ev)=>{
     if(kind) el.classList.add(kind);
   }
   function setPill(text, kind){
-    if(pillEl){ pillEl.textContent = text; setKind(pillEl, kind); }
-    if(badgeEl){ badgeEl.textContent = text; setKind(badgeEl, kind); }
+    const label = String(text || "").replace(/^☁️?\s*/, "");
+    for(const el of [pillEl, badgeEl]){
+      if(!el) continue;
+      let labelEl = el.querySelector("span");
+      if(!labelEl){
+        el.innerHTML = '<svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-cloud"></use></svg><span></span>';
+        labelEl = el.querySelector("span");
+      }
+      labelEl.textContent = label;
+      setKind(el, kind);
+    }
   }
   function setStatus(text){ setText(statusEl, text); }
   function setLast(tsText){ setText(lastEl, `آخر حفظ: ${tsText || "—"}`); }
