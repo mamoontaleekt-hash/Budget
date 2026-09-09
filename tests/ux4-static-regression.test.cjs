@@ -26,8 +26,8 @@ test("UX4 stylesheet order and PWA v18 shell are exact", () => {
 });
 
 test("BudgetModel and persisted budget contract remain frozen", () => {
-  const model = fs.readFileSync(path.join(root, "budget-model.js"));
-  assert.equal(crypto.createHash("sha256").update(model).digest("hex"), "7b46a884bc628931f013e43c6ffb321cd814ba881666ef504b44732dbddc99b7");
+  const model = read("budget-model.js").replace(/\r\n/g, "\n");
+  assert.equal(crypto.createHash("sha256").update(model).digest("hex"), "08bea874208994075c082f87d976f574c7a3811f0d95fa09ff6b8f4395832643");
   assert.match(html, /state\.budgets\[activeMonth\] = \{ plan: \{ income1: planIncome1\|\|0, income2: planIncome2\|\|0, note: planNote \}, items \}/);
   assert.doesNotMatch(html + css, /mobileBudgetData|budgetCardData|budgetDraftState|budgetViewState|budgetUISettings|ux4Settings/);
 });
