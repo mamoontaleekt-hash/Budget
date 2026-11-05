@@ -1444,6 +1444,13 @@
       <div class="mini" id="cloudAccount" style="margin-top:8px"></div>
       <div class="help" id="cloudConflicts" hidden></div>
       <div class="mini" id="cloudStatus" role="status" aria-live="polite" style="margin-top:8px">الحالة: غير متصل</div>
+      <details id="cloudErrorDetails" hidden style="margin-top:12px">
+        <summary>تفاصيل تعذّر المزامنة</summary>
+        <p class="mini">هذه التفاصيل تتضمن رسالة الخطأ ومعلومات فنية عن المزامنة، دون إرفاق نسخة من بياناتك.</p>
+        <textarea id="cloudErrorMessage" aria-label="تفاصيل خطأ المزامنة" dir="auto" readonly rows="6" style="width:100%;margin:8px 0;min-height:140px"></textarea>
+        <button class="btn small" id="btnCopyCloudError" type="button">نسخ تفاصيل الخطأ</button>
+        <span class="mini" id="cloudErrorCopyStatus" role="status"></span>
+      </details>
 
       <details style="margin-top:10px">
         <summary class="mini" style="cursor:pointer">خيارات إضافية</summary>
@@ -1469,7 +1476,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
   <script src="./sync-model.js?v=20261105-sync2"></script>
-  <script src="./cloud-sync.js?v=20261105-sync2"></script>
+  <script src="./cloud-sync.js?v=20261105-sync3"></script>
   <script src="./purchase-model.js?v=20261105-planning2"></script>
   <script src="./purchase-ui.js?v=20261105-planning2"></script>
   <script src="./display-format.js?v=20260909-ux5"></script>

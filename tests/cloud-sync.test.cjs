@@ -28,7 +28,7 @@ function client(server,actor,stored){
   const auth={currentUser:null,onAuthStateChanged:fn=>{authChanged=fn;},async signOut(){this.currentUser=null;authChanged(null);}};
   const db={collection:()=>({doc:()=>({onSnapshot(options,fn){server.listeners.add(fn);return ()=>server.listeners.delete(fn);}})}),runTransaction:fn=>server.transaction(fn)};
   const firestore=()=>db;firestore.FieldValue={serverTimestamp:()=>"server-time"};
-  const sandbox={console,Event,CustomEvent,JSON,Date,Map,Set,Promise,navigator:{onLine:true},localStorage,
+  const sandbox={console,Event,CustomEvent,JSON,Date,Map,Set,Promise,TextEncoder,navigator:{onLine:true},localStorage,
     document:{querySelector:getNode,addEventListener:docEvents.addEventListener.bind(docEvents)},
     addEventListener:events.addEventListener.bind(events),dispatchEvent:events.dispatchEvent.bind(events),
     setTimeout:(fn,ms)=>{const id=++taskId;tasks.set(id,{fn,ms});return id;},clearTimeout:id=>tasks.delete(id),
@@ -82,4 +82,17 @@ test("invalid remote payloads cannot overwrite valid local data",async()=>{
 test("account changes do not merge one family's records into another account",async()=>{
   const server=backend(),c=client(server,"a");await c.login("one");c.edit("private");const before=copy(server.document);
   await c.login("two");assert.deepEqual(server.document,before);assert.match(c.status(),/حساب آخر/);
+});
+test("reports the exact server rejection and its phase without replacing local records",async()=>{
+  const server=backend(),c=client(server,"a");await c.login();c.edit("retained");
+  server.transaction=async fn=>{
+    await fn({get:async()=>server.snapshot(),set(){}});
+    throw Object.assign(new Error("Document path projects/demo/documents/pfm_users/family is too large"),{code:"invalid-argument"});
+  };
+  assert.equal(await c.api.syncNow("reject"),false);
+  assert.equal(c.api.getState().lastFailure.code,"invalid-argument");
+  assert.equal(c.api.getState().lastFailure.phase,"commit");
+  assert.match(c.api.getState().lastFailure.message,/is too large/);
+  assert.ok(!c.api.getState().lastFailure.message.includes('/family'));
+  assert.equal(c.read().transactions[0].id,"retained");
 });

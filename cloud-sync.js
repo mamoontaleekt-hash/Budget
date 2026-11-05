@@ -8,6 +8,7 @@
     const $ = selector => document.querySelector(selector);
     let auth, db, FieldValue, session = 0, timer, retryTimer, pulseTimer, unsubscribe;
     let inFlight = null, flightId = 0, ready = false, dirty = false, failures = 0, started = false, loadingSDK = null;
+    let lastFailure = null;
     const text = (id, value) => { const el = $(id); if (el) el.textContent = value; };
     function status(message, label, kind = "warn") {
       clearTimeout(pulseTimer);
@@ -27,6 +28,22 @@
     function clock() { return DisplayFormat.westernizeDigits(new Date().toLocaleString("ar-IQ", {hour12:true})); }
     function pending(message = "التعديلات محفوظة على هذا الجهاز وتنتظر تأكيد السحابة") {
       status(message, navigator.onLine === false ? "محفوظ محلياً · دون إنترنت" : "بانتظار المزامنة");
+    }
+    function showFailure(error, phase, data) {
+      const labels = {read:"قراءة نسخة السحابة",merge:"دمج نسختي البيانات",write:"تجهيز البيانات للرفع",commit:"تأكيد الحفظ من الخادم",apply:"حفظ النسخة المدمجة على الجهاز",listen:"استقبال تحديث من جهاز آخر"};
+      let message = String(error.message || error).slice(0,6000);
+      const uid = auth?.currentUser?.uid;
+      if (uid) message = message.split(uid).join("[account]");
+      message = message.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"[email]");
+      lastFailure = {release:"20261105-sync3",phase,code:error.code || "unknown",message};
+      const lines = ["الإصدار: " + lastFailure.release,"المرحلة: " + (labels[phase] || phase),"الرمز: " + lastFailure.code,"التفاصيل: " + message];
+      if (data) {
+        lines.push("عدد العمليات: " + data.transactions.length,"حجم JSON بالبايت: " + new TextEncoder().encode(JSON.stringify(data)).length);
+      }
+      const panel = $("#cloudErrorDetails"), field = $("#cloudErrorMessage");
+      if (panel) { panel.hidden = false; panel.open = true; }
+      if (field) field.value = lines.join("\n");
+      text("#cloudErrorCopyStatus", "");
     }
     function backupLocalBeforeRemote(data) {
       try {
@@ -76,6 +93,8 @@
       }
     }
     function showSaved() {
+      lastFailure = null;
+      const errorPanel = $("#cloudErrorDetails"); if (errorPanel) errorPanel.hidden = true;
       const count = Sync.conflicts(readLocal()).length;
       status(count ? `تمت المزامنة؛ توجد ${count} تعديلات تحتاج مراجعتك في المزامنة السحابية` : "تم حفظ البيانات محلياً وتأكيد حفظها في السحابة", count ? "تعارض يحتاج مراجعة" : "تمت المزامنة", count ? "warn" : "ok");
       text("#cloudLast", "آخر تأكيد من السحابة: " + clock());
@@ -104,25 +123,32 @@
       if (!isValidAppState(captured)) { pending("لا توجد بيانات محلية صالحة للحفظ؛ لم تُستبدل بيانات السحابة"); return false; }
       localStorage.setItem(OWNER_KEY, user.uid);
       const docRef = db.collection("pfm_users").doc(user.uid);
+      let phase = "read", attemptedData = captured;
       status("جارٍ دمج البيانات وتأكيد الحفظ في السحابة…", "جارٍ المزامنة");
       inFlight = (async () => {
         try {
           const committed = await db.runTransaction(async transaction => {
+            phase = "read";
             const snap = await transaction.get(docRef);
             if (generation !== session || auth.currentUser?.uid !== user.uid) throw new Error("تغير الحساب أثناء المزامنة");
             const remote = snap.exists ? snap.data() : {};
             if (snap.exists && !isValidAppState(remote.data)) rejectInvalidRemote("transaction");
+            phase = "merge";
             const data = snap.exists ? Sync.merge(captured, remote.data) : captured;
+            attemptedData = data;
             // Replace the data field exactly: merge:true would resurrect deleted nested keys.
+            phase = "write";
             if (!snap.exists || !Sync.equivalent(data, remote.data)) transaction.set(docRef, {
               ...remote, data, version:1,
               createdAt:remote.createdAt || FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
               updatedBy:user.uid, updatedByClientId:clientId,
             });
+            phase = "commit";
             return data;
           });
           if (generation !== session || auth.currentUser?.uid !== user.uid) return false;
           // A user may keep editing while the server write is in flight.
+          phase = "apply";
           const current = readLocal();
           const merged = Sync.merge(current, committed);
           apply(merged);
@@ -134,7 +160,8 @@
         } catch (error) {
           if (generation !== session) return false;
           dirty = true; failures += 1;
-          status("لم تؤكد السحابة الحفظ. بياناتك باقية على الجهاز وسنعيد المحاولة تلقائياً" + (error.code ? ` (${error.code})` : ` — ${error.message}`), "محفوظ محلياً · تعذر الرفع", "danger");
+          showFailure(error,phase,attemptedData);
+          status("لم تؤكد السحابة الحفظ. بياناتك باقية على الجهاز. سبب الرفض موضح في تفاصيل الخطأ أدناه" + (error.code ? ` (${error.code})` : ""), "محفوظ محلياً · تعذر الرفع", "danger");
           retry(); return false;
         } finally {
           if (ownFlight === flightId) {
@@ -155,7 +182,7 @@
           apply(merged);
           if (!Sync.equivalent(merged, remoteData)) { dirty = true; pending(); schedule("دمج جهاز آخر"); }
           else if (!inFlight) { dirty = false; showSaved(); }
-        } catch (error) { status(error.message, "تحديث يحتاج مراجعة", "danger"); }
+        } catch (error) { showFailure(error,"listen"); status(error.message, "تحديث يحتاج مراجعة", "danger"); }
       }, error => {
         if (generation !== session) return;
         unsubscribe?.(); unsubscribe = null; ready = false; dirty = true; failures += 1;
@@ -211,6 +238,16 @@
       try { await auth?.signOut(); } catch (error) { status("تعذر تسجيل الخروج", "خطأ", "danger"); }
     });
     $("#btnCloudPush")?.addEventListener("click", () => syncNow("يدوي"));
+    $("#btnCopyCloudError")?.addEventListener("click", async () => {
+      const field = $("#cloudErrorMessage"); if (!field?.value) return;
+      try {
+        await navigator.clipboard.writeText(field.value);
+        text("#cloudErrorCopyStatus", "تم نسخ التفاصيل؛ يمكنك إرسالها للدعم");
+      } catch (error) {
+        field.focus(); field.select();
+        text("#cloudErrorCopyStatus", "حدد النص وانسخه من الحقل أعلاه");
+      }
+    });
     $("#btnCloudPull")?.addEventListener("click", () => { /* A manual fetch also merges unsent edits. */ syncNow("manual fetch"); });
     $("#btnCloudRestoreBackup")?.addEventListener("click", () => {
       try {
@@ -235,6 +272,6 @@
       status("خدمة المزامنة غير متاحة الآن. البيانات محفوظة على هذا الجهاز وسنعيد الاتصال تلقائياً.", "محفوظ محلياً · لا مزامنة");
       ensureSDK();
     }
-    return { syncNow, getState: () => ({ready,dirty,session}) };
+    return { syncNow, getState: () => ({ready,dirty,session,lastFailure}) };
   }
 })();
