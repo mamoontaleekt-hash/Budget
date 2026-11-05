@@ -12,7 +12,7 @@ const sw = read("sw.js");
 const manifest = JSON.parse(read("manifest.json"));
 const count = (source, pattern) => (source.match(pattern) || []).length;
 
-test("UX6 theme is loaded once, last, and cached in PWA v24", () => {
+test("UX6 theme is loaded once, last, and cached in PWA v25", () => {
   const assets = [
     "visual-polish.css?v=20260909-ux2",
     "mobile-enhancements.css?v=20260908-ux1",
@@ -29,7 +29,7 @@ test("UX6 theme is loaded once, last, and cached in PWA v24", () => {
   for (let i = 1; i < assets.length; i += 1) assert.ok(html.indexOf(assets[i - 1]) < html.indexOf(assets[i]));
   const lastStylesheet = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].at(-1)?.[1];
   assert.equal(lastStylesheet, "./theme-system.css?v=20260909-ux6");
-  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v24"/);
+  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v25"/);
 });
 
 test("semantic tokens and the quiet flat shell palette are frozen", () => {

@@ -2,13 +2,13 @@
   "use strict";
   window.PFMCloudSync = { start };
   function start(firebaseConfig) {
-    const Sync = window.PFMSyncModel, DisplayFormat = window.PFMDisplayFormat;
+    const Sync = window.PFMSyncModel, Storage = window.PFMCloudStorage, DisplayFormat = window.PFMDisplayFormat;
     const STORAGE_KEY = "pfm_data_v1", BACKUP_KEY = "pfm_backup_before_remote_v1", OWNER_KEY = "pfm_sync_owner_v2";
     const clientId = window.PFMSyncActor;
     const $ = selector => document.querySelector(selector);
     let auth, db, FieldValue, session = 0, timer, retryTimer, pulseTimer, unsubscribe;
     let inFlight = null, flightId = 0, ready = false, dirty = false, failures = 0, started = false, loadingSDK = null;
-    let lastFailure = null;
+    let lastFailure = null, remoteEvent = 0;
     const text = (id, value) => { const el = $(id); if (el) el.textContent = value; };
     function status(message, label, kind = "warn") {
       clearTimeout(pulseTimer);
@@ -35,7 +35,7 @@
       const uid = auth?.currentUser?.uid;
       if (uid) message = message.split(uid).join("[account]");
       message = message.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"[email]");
-      lastFailure = {release:"20261105-sync3",phase,code:error.code || "unknown",message};
+      lastFailure = {release:"20261105-sync4",phase,code:error.code || "unknown",message};
       const lines = ["الإصدار: " + lastFailure.release,"المرحلة: " + (labels[phase] || phase),"الرمز: " + lastFailure.code,"التفاصيل: " + message];
       if (data) {
         lines.push("عدد العمليات: " + data.transactions.length,"حجم JSON بالبايت: " + new TextEncoder().encode(JSON.stringify(data)).length);
@@ -123,7 +123,7 @@
       if (!isValidAppState(captured)) { pending("لا توجد بيانات محلية صالحة للحفظ؛ لم تُستبدل بيانات السحابة"); return false; }
       localStorage.setItem(OWNER_KEY, user.uid);
       const docRef = db.collection("pfm_users").doc(user.uid);
-      let phase = "read", attemptedData = captured;
+      let phase = "read", attemptedData = captured, storagePlan = null;
       status("جارٍ دمج البيانات وتأكيد الحفظ في السحابة…", "جارٍ المزامنة");
       inFlight = (async () => {
         try {
@@ -132,17 +132,26 @@
             const snap = await transaction.get(docRef);
             if (generation !== session || auth.currentUser?.uid !== user.uid) throw new Error("تغير الحساب أثناء المزامنة");
             const remote = snap.exists ? snap.data() : {};
-            if (snap.exists && !isValidAppState(remote.data)) rejectInvalidRemote("transaction");
+            const remoteData = snap.exists ? await Storage.unpack(remote.data, async id => {
+              const part = await transaction.get(docRef.collection("snapshots").doc(id));
+              return part.exists ? part.data() : null;
+            }) : null;
+            if (snap.exists && !isValidAppState(remoteData)) rejectInvalidRemote("transaction");
             phase = "merge";
-            const data = snap.exists ? Sync.merge(captured, remote.data) : captured;
+            const data = snap.exists ? Sync.merge(captured, remoteData) : captured;
             attemptedData = data;
-            // Replace the data field exactly: merge:true would resurrect deleted nested keys.
-            phase = "write";
-            if (!snap.exists || !Sync.equivalent(data, remote.data)) transaction.set(docRef, {
-              ...remote, data, version:1,
-              createdAt:remote.createdAt || FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
-              updatedBy:user.uid, updatedByClientId:clientId,
-            });
+            if (!snap.exists || !Storage.isPacked(remote.data) || !Sync.equivalent(data, remoteData)) {
+              storagePlan = await Storage.pack(data);
+              phase = "write";
+              // All referenced pieces and the manifest commit together. Old pieces stay
+              // immutable so readers holding an older snapshot can finish safely.
+              for (const part of storagePlan.documents) transaction.set(docRef.collection("snapshots").doc(part.id),part.data);
+              transaction.set(docRef, {
+                ...remote, data:storagePlan.manifest, version:1,
+                createdAt:remote.createdAt || FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+                updatedBy:user.uid, updatedByClientId:clientId,
+              });
+            }
             phase = "commit";
             return data;
           });
@@ -161,6 +170,10 @@
           if (generation !== session) return false;
           dirty = true; failures += 1;
           showFailure(error,phase,attemptedData);
+          if (storagePlan?.documents.length && error.code === "permission-denied") {
+            const diagnostic = $("#cloudErrorMessage");
+            if (diagnostic) diagnostic.value = "تحتاج مزامنة هذا الحجم إلى السماح للحساب نفسه بقراءة وكتابة المسار pfm_users/{uid}/snapshots/{snapshotId}. بياناتك المحلية لم تُحذف.\n" + diagnostic.value;
+          }
           status("لم تؤكد السحابة الحفظ. بياناتك باقية على الجهاز. سبب الرفض موضح في تفاصيل الخطأ أدناه" + (error.code ? ` (${error.code})` : ""), "محفوظ محلياً · تعذر الرفع", "danger");
           retry(); return false;
         } finally {
@@ -173,10 +186,15 @@
       return inFlight;
     }
     function startRealtime(docRef, generation) {
-      unsubscribe = docRef.onSnapshot({includeMetadataChanges:true}, snap => {
+      unsubscribe = docRef.onSnapshot({includeMetadataChanges:true}, async snap => {
         if (generation !== session || !snap.exists || snap.metadata?.hasPendingWrites || snap.metadata?.fromCache) return;
-        const remoteData = snap.data()?.data;
+        const sequence = ++remoteEvent;
         try {
+          const remoteData = await Storage.unpack(snap.data()?.data, async id => {
+            const part = await docRef.collection("snapshots").doc(id).get({source:"server"});
+            return part.exists ? part.data() : null;
+          });
+          if (generation !== session || sequence !== remoteEvent) return;
           if (!isValidAppState(remoteData)) rejectInvalidRemote("realtime update");
           const merged = Sync.merge(readLocal(), remoteData);
           apply(merged);

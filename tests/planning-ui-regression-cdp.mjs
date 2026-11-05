@@ -132,13 +132,13 @@ try {
   await evaluate(`(() => {const value=${JSON.stringify(JSON.stringify(other))};localStorage.setItem('pfm_data_v1',value);window.dispatchEvent(new StorageEvent('storage',{key:'pfm_data_v1',newValue:value}));})()`);
   assert.equal(await evaluate(`PFMGetState().transactions.length`),2);
   await evaluate(`navigator.serviceWorker.ready`);await reload();
-  const assets=await evaluate(`Promise.all(['sync-model.js?v=20261105-sync2','cloud-sync.js?v=20261105-sync3','purchase-model.js?v=20261105-planning2','purchase-ui.js?v=20261105-planning2','planning.css?v=20261105-planning2'].map(async x=>!!await caches.match('./'+x)))`);
+  const assets=await evaluate(`Promise.all(['sync-model.js?v=20261105-sync2','vendor/fflate-0.8.2.js','cloud-storage.js?v=20261105-storage1','cloud-sync.js?v=20261105-sync4','purchase-model.js?v=20261105-planning2','purchase-ui.js?v=20261105-planning2','planning.css?v=20261105-planning2'].map(async x=>!!await caches.match('./'+x)))`);
   assert.ok(assets.every(Boolean));
   const errorCount=errors.length;
   await send("Network.emulateNetworkConditions",{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});await reload();await selectMonth();
   await selectPurchaseMonth('02');
   assert.equal(await evaluate(`document.querySelectorAll('[data-purchase-id]').length`),1);
-  assert.equal(await evaluate(`!!window.PFMSyncModel&&!!window.PFMCloudSync&&!!window.PFMPurchaseModel`),true);
+  assert.equal(await evaluate(`!!window.PFMSyncModel&&!!window.PFMCloudStorage&&!!window.fflate&&!!window.PFMCloudSync&&!!window.PFMPurchaseModel`),true);
   assert.deepEqual(errors.slice(errorCount).filter(x=>!expectedFirebaseError(x)),[]);
   assert.deepEqual(errors.filter(x=>!expectedFirebaseError(x)),[]);
   console.log(JSON.stringify({result:'PASS',layouts,planned:500000,actual:480000,transactions:purchased.transactions.length,offlineAssets:assets.length,storageTabMerge:true}));

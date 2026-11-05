@@ -2,14 +2,16 @@
    - Caches app shell for offline open.
    - Network-first for HTML, cache-first for static assets.
 */
-const CACHE_NAME = "pfm-pwa-v24";
+const CACHE_NAME = "pfm-pwa-v25";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
   "./sw.js",
   "./sync-model.js?v=20261105-sync2",
-  "./cloud-sync.js?v=20261105-sync3",
+  "./vendor/fflate-0.8.2.js",
+  "./cloud-storage.js?v=20261105-storage1",
+  "./cloud-sync.js?v=20261105-sync4",
   "./purchase-model.js?v=20261105-planning2",
   "./purchase-ui.js?v=20261105-planning2",
   "./planning.css?v=20261105-planning2",
