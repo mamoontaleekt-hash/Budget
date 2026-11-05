@@ -252,6 +252,7 @@
 
   function renderEnhancedReports() {
     if (!ensureReportsPanel()) return;
+    if ($("#view-reports")?.style.display === "none") return;
     const state = loadState();
     const activeMonth = $("#monthPicker")?.value || new Date().toISOString().slice(0, 7);
     if (selectorActiveMonth !== activeMonth) { selectorActiveMonth = activeMonth; selectedComparisonMonth = ComparisonModel.addMonths(activeMonth, -1); }
@@ -277,12 +278,16 @@
     renderMetricRows(comparison); renderDrivers(state, comparison); renderInsights(state, comparison); renderCategoryAnalytics(state, activeMonth);
     $("#monthlySummaryBody").innerHTML = series.slice().reverse().map((row) => `<tr><td><b>${escapeHTML(monthLabel(row.month))}</b></td><td>${money(row.income)}</td><td>${money(row.expense)}</td><td>${money(row.costOfLiving)}</td><td>${money(row.exceptionalExpenses)}</td><td>${money(row.debtPayments)}</td><td>${money(row.net)}</td><td>${money(row.closingBalance)}</td><td>${DisplayFormat.formatNumber(row.count)}</td></tr>`).join("");
   }
+  let renderScheduled = false;
   function scheduleRender() {
-    const run = () => { try { renderEnhancedReports(); } catch (error) { console.error("Report enhancements failed", error); } };
+    if (renderScheduled) return;
+    renderScheduled = true;
+    const run = () => { renderScheduled = false; try { renderEnhancedReports(); } catch (error) { console.error("Report enhancements failed", error); } };
     if (typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(run); else setTimeout(run, 0);
   }
   document.addEventListener("DOMContentLoaded", scheduleRender); window.addEventListener("pfm:changed", scheduleRender); window.addEventListener("pfm:apply", scheduleRender);
-  document.addEventListener("click", (event) => { const target = event.target; if (target instanceof Element && target.matches("#btnRefreshReports, #tabs .tab[data-tab='reports']")) setTimeout(scheduleRender, 50); });
+  window.addEventListener("pfm:view", event => { if (event.detail?.tab === "reports") scheduleRender(); });
+  document.addEventListener("click", (event) => { const target = event.target; if (target instanceof Element && target.closest("#btnRefreshReports, #tabs .tab[data-tab='reports']")) scheduleRender(); });
   document.addEventListener("change", (event) => {
     const target = event.target; if (!(target instanceof Element)) return;
     if (target.matches("#monthPicker")) scheduleRender();

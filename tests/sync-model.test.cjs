@@ -67,3 +67,8 @@ test("a higher observed logical clock wins even with device wall clocks skewed",
   const b=change(Sync.merge(empty(),a),"b",s=>s.transactions[0].amount=999);
   assert.equal(Sync.merge(a,b).transactions[0].amount,999);
 });
+test("equivalence ignores object property order and preserves array order",()=>{
+  assert.equal(Sync.equivalent({a:[{id:"one",amount:100}],b:{x:1,y:2}},{b:{y:2,x:1},a:[{amount:100,id:"one"}]}),true);
+  assert.equal(Sync.equivalent({transactions:[{id:"a"},{id:"b"}]},{transactions:[{id:"b"},{id:"a"}]}),false);
+  assert.equal(Sync.equivalent({amount:100},{amount:200}),false);
+});

@@ -131,14 +131,18 @@ try {
   const other=await evaluate(`(() => { const before=JSON.parse(localStorage.getItem('pfm_data_v1')),next=JSON.parse(JSON.stringify(before));next.transactions.push({id:'other-tab',type:'income',amount:1000000,date:'2027-02-01'});return PFMSyncModel.recordChanges(before,next,'other-tab-actor');})()`);
   await evaluate(`(() => {const value=${JSON.stringify(JSON.stringify(other))};localStorage.setItem('pfm_data_v1',value);window.dispatchEvent(new StorageEvent('storage',{key:'pfm_data_v1',newValue:value}));})()`);
   assert.equal(await evaluate(`PFMGetState().transactions.length`),2);
+  // A missed storage event must still merge another tab's records before saving.
+  await evaluate(`(()=>{const before=JSON.parse(localStorage.getItem('pfm_data_v1')),next=JSON.parse(JSON.stringify(before));next.transactions.push({id:'missed-tab',type:'income',amount:5000,date:'2027-02-01'});localStorage.setItem('pfm_data_v1',JSON.stringify(PFMSyncModel.recordChanges(before,next,'missed-tab-actor')));document.querySelector('[data-tab="budgets"]').click();document.querySelector('#btnSaveBudgets').click();})()`);
+  assert.equal(await evaluate(`PFMGetState().transactions.length`),3);
   await evaluate(`navigator.serviceWorker.ready`);await reload();
-  const assets=await evaluate(`Promise.all(['sync-model.js?v=20261105-sync2','vendor/fflate-0.8.2.js?v=20261105','cloud-storage.js?v=20261105-storage1','cloud-sync.js?v=20261105-sync4','purchase-model.js?v=20261105-planning2','purchase-ui.js?v=20261105-planning2','planning.css?v=20261105-planning2'].map(async x=>!!await caches.match('./'+x)))`);
+  const assets=await evaluate(`Promise.all(['sync-model.js?v=20261106-sync3','vendor/fflate-0.8.2.js?v=20261105','cloud-storage.js?v=20261106-storage2','cloud-sync.js?v=20261106-sync5','purchase-model.js?v=20261105-planning2','purchase-ui.js?v=20261105-planning2','planning.css?v=20261105-planning2'].map(async x=>!!await caches.match('./'+x)))`);
   assert.ok(assets.every(Boolean));
   const errorCount=errors.length;
   await send("Network.emulateNetworkConditions",{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});await reload();await selectMonth();
   await selectPurchaseMonth('02');
   assert.equal(await evaluate(`document.querySelectorAll('[data-purchase-id]').length`),1);
   assert.equal(await evaluate(`!!window.PFMSyncModel&&!!window.PFMCloudStorage&&!!window.fflate&&!!window.PFMCloudSync&&!!window.PFMPurchaseModel`),true);
+  assert.equal(await evaluate(`(async()=>{const data=PFMGetState(),encoded=await PFMCloudStorage.pack(data),decoded=await PFMCloudStorage.unpack(encoded.manifest);return PFMSyncModel.equivalent(data,decoded)&&PFMCloudStorage.backgroundState().active;})()`),true);
   assert.deepEqual(errors.slice(errorCount).filter(x=>!expectedFirebaseError(x)),[]);
   assert.deepEqual(errors.filter(x=>!expectedFirebaseError(x)),[]);
   console.log(JSON.stringify({result:'PASS',layouts,planned:500000,actual:480000,transactions:purchased.transactions.length,offlineAssets:assets.length,storageTabMerge:true}));

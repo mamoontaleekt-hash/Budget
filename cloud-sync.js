@@ -9,6 +9,8 @@
     let auth, db, FieldValue, session = 0, timer, retryTimer, pulseTimer, unsubscribe;
     let inFlight = null, flightId = 0, ready = false, dirty = false, failures = 0, started = false, loadingSDK = null;
     let lastFailure = null, remoteEvent = 0;
+    let conflictPage = 0;
+    const CONFLICT_PAGE_SIZE = 10;
     const text = (id, value) => { const el = $(id); if (el) el.textContent = value; };
     function status(message, label, kind = "warn") {
       clearTimeout(pulseTimer);
@@ -35,7 +37,7 @@
       const uid = auth?.currentUser?.uid;
       if (uid) message = message.split(uid).join("[account]");
       message = message.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"[email]");
-      lastFailure = {release:"20261105-sync4",phase,code:error.code || "unknown",message};
+      lastFailure = {release:"20261106-sync5",phase,code:error.code || "unknown",message};
       const lines = ["الإصدار: " + lastFailure.release,"المرحلة: " + (labels[phase] || phase),"الرمز: " + lastFailure.code,"التفاصيل: " + message];
       if (data) {
         lines.push("عدد العمليات: " + data.transactions.length,"حجم JSON بالبايت: " + new TextEncoder().encode(JSON.stringify(data)).length);
@@ -65,20 +67,25 @@
     }
     function renderConflicts() {
       const panel = $("#cloudConflicts"); if (!panel) return;
+      // Closed dialogs must not parse the ledger or build hundreds of hidden cards.
+      if (!$("#modalCloud")?.classList.contains("open")) return;
       panel.replaceChildren();
-      const entries = Sync.conflicts(readLocal());
+      const data = readLocal(), entries = Sync.conflicts(data);
       panel.hidden = !entries.length;
       if (!entries.length) return;
+      conflictPage = Math.min(conflictPage,Math.floor((entries.length - 1) / CONFLICT_PAGE_SIZE));
+      const pageStart = conflictPage * CONFLICT_PAGE_SIZE;
+      const categories = new Map(data.categories.map(category => [category.id,category.name]));
       const heading = document.createElement("p"); heading.textContent = "توجد تعديلات مختلفة على البيانات نفسها. احتفظنا بالنسختين؛ اختر النسخة الصحيحة لكل تعارض."; panel.append(heading);
-      for (const [id, conflict] of entries) {
-        const card = document.createElement("div"); card.className = "sync-conflict";
+      for (const [id, conflict] of entries.slice(pageStart,pageStart + CONFLICT_PAGE_SIZE)) {
+        const card = document.createElement("div"); card.className = "sync-conflict"; card.dataset.conflictId = id;
         const title = document.createElement("b");
         const name = conflict.alternatives.find(item => item.value?.note || item.value?.name || item.value?.title)?.value;
         title.textContent = name?.note || name?.name || name?.title || ({budgets:"ميزانية",financialSettings:"الرصيد الافتتاحي",transactions:"عملية مالية",plannedPurchases:"شراء مخطط"}[conflict.path[0]] || "إعداد مالي"); card.append(title);
         conflict.alternatives.forEach((item, index) => {
           const detail = document.createElement("p");
           const value = item.value;
-          const category = readLocal()?.categories.find(c => c.id === value?.categoryId)?.name;
+          const category = categories.get(value?.categoryId);
           detail.textContent = item.deleted ? "هذه النسخة تحذف السجل" : value && typeof value === "object"
             ? [value.title || value.name || value.note, value.amount != null ? DisplayFormat.formatMoney(value.amount) : "", value.date || (value.month ? DisplayFormat.formatMonthKey(value.month) : ""), category, value.deletedAt ? "نُقلت إلى سلة المحذوفات" : ""].filter(Boolean).join(" · ") || "إعداد محفوظ"
             : typeof value === "number" ? DisplayFormat.formatMoney(value) : String(value);
@@ -90,6 +97,18 @@
           card.append(detail, button);
         });
         panel.append(card);
+      }
+      if (entries.length > CONFLICT_PAGE_SIZE) {
+        const controls = document.createElement("div"); controls.className = "row";
+        const previous = document.createElement("button"), next = document.createElement("button"), count = document.createElement("span");
+        previous.className = next.className = "btn small"; previous.type = next.type = "button";
+        previous.textContent = "السابق"; next.textContent = "التالي";
+        previous.disabled = conflictPage === 0; next.disabled = pageStart + CONFLICT_PAGE_SIZE >= entries.length;
+        previous.addEventListener("click", () => {conflictPage--;renderConflicts();});
+        next.addEventListener("click", () => {conflictPage++;renderConflicts();});
+        count.className = "mini"; count.setAttribute("data-conflict-page", "");
+        count.textContent = `${pageStart + 1}–${Math.min(pageStart + CONFLICT_PAGE_SIZE,entries.length)} من ${entries.length}`;
+        controls.append(previous,count,next); panel.append(controls);
       }
     }
     function showSaved() {
@@ -246,6 +265,7 @@
     }
     $("#btnCloud")?.addEventListener("click", () => { $("#modalCloud")?.classList.add("open"); renderConflicts(); });
     $("#btnCloudLogin")?.addEventListener("click", async () => {
+      await ensureSDK();
       connect();
       if (!auth) { status("تعذر تحميل خدمة المزامنة. اتصل بالإنترنت وأعد فتح التطبيق؛ البيانات المحلية محفوظة.", "المزامنة غير متاحة", "danger"); return; }
       try { await auth.signInWithEmailAndPassword($("#cloudEmail").value.trim(), $("#cloudPass").value); $("#cloudPass").value = ""; }
@@ -287,7 +307,8 @@
     window.addEventListener("pagehide", () => { if (dirty) syncNow("إغلاق الصفحة"); });
     connect();
     if (!started) {
-      status("خدمة المزامنة غير متاحة الآن. البيانات محفوظة على هذا الجهاز وسنعيد الاتصال تلقائياً.", "محفوظ محلياً · لا مزامنة");
+      if (navigator.onLine === false) pending();
+      else status("جارٍ تحميل المزامنة في الخلفية. يمكنك استخدام التطبيق وبيانات هذا الجهاز أثناء الاتصال.", "جارٍ الاتصال بالسحابة");
       ensureSDK();
     }
     return { syncNow, getState: () => ({ready,dirty,session,lastFailure}) };

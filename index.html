@@ -1471,14 +1471,11 @@
   </div>
 </div>
 
-  <!-- Firebase (CDN) - for Cloud Sync -->
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-  <script src="./sync-model.js?v=20261105-sync2"></script>
+  <!-- Cloud SDK loads asynchronously after the local application is interactive. -->
+  <script src="./sync-model.js?v=20261106-sync3"></script>
   <script src="./vendor/fflate-0.8.2.js?v=20261105"></script>
-  <script src="./cloud-storage.js?v=20261105-storage1"></script>
-  <script src="./cloud-sync.js?v=20261105-sync4"></script>
+  <script src="./cloud-storage.js?v=20261106-storage2"></script>
+  <script src="./cloud-sync.js?v=20261106-sync5"></script>
   <script src="./purchase-model.js?v=20261105-planning2"></script>
   <script src="./purchase-ui.js?v=20261105-planning2"></script>
   <script src="./display-format.js?v=20260909-ux5"></script>
@@ -1604,13 +1601,15 @@
       if(emit){
         state = PFMSyncModel.recordChanges(lastPersistedState, state, window.PFMSyncActor);
         const disk = localStorage.getItem(STORAGE_KEY);
-        if(disk){
+        if(disk && disk !== lastPersistedString){
           const other = JSON.parse(disk);
           if(isValidAppState(other)) state = PFMSyncModel.merge(state, other);
         }
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      lastPersistedState = JSON.parse(JSON.stringify(state));
+      const serialized = JSON.stringify(state);
+      localStorage.setItem(STORAGE_KEY, serialized);
+      lastPersistedState = JSON.parse(serialized);
+      lastPersistedString = serialized;
     }catch(error){
       toast("تعذر حفظ البيانات على الجهاز. لم يكتمل الحفظ؛ تحقق من مساحة التخزين وصدّر نسخة احتياطية.");
       window.dispatchEvent(new CustomEvent("pfm:savefailed"));
@@ -1623,6 +1622,7 @@
 
   let state = load();
   let lastPersistedState = JSON.parse(JSON.stringify(state));
+  let lastPersistedString = localStorage.getItem(STORAGE_KEY) || "";
   window.PFMGetState = () => JSON.parse(JSON.stringify(state));
   window.addEventListener("storage", event => {
     if(event.key !== STORAGE_KEY || !event.newValue) return;
@@ -1663,6 +1663,7 @@
     $$("#view-dash, #view-tx, #view-budgets, #view-debts, #view-reports, #view-settings").forEach(v => v.style.display="none");
     $(`#view-${tab}`).style.display = "block";
     render();
+    window.dispatchEvent(new CustomEvent("pfm:view", {detail:{tab}}));
   }
 
   // Month change
@@ -3557,7 +3558,7 @@ window.addEventListener("pfm:apply", (ev)=>{
 <script>
   // PWA Service Worker
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
+    window.addEventListener("DOMContentLoaded", () => {
       navigator.serviceWorker.register("./sw.js").then((reg) => {
         reg.update().catch(()=>{});
       }).catch((err) => {
@@ -3567,7 +3568,7 @@ window.addEventListener("pfm:apply", (ev)=>{
   }
 </script>
 
-<script src="./report-enhancements.js?v=20260909-ux5"></script>
+<script src="./report-enhancements.js?v=20261106-reports1"></script>
 
 </body>
 </html>

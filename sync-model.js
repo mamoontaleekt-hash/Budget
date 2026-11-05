@@ -8,12 +8,14 @@
   const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const own = (o, k) => Object.prototype.hasOwnProperty.call(o || {}, k);
   const safe = key => !["__proto__", "prototype", "constructor"].includes(key);
-  function canonical(value) {
-    if (Array.isArray(value)) return value.map(canonical);
-    if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]));
-    return value;
+  function equivalent(a, b) {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
+    const keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) return false;
+    for (const key of keys) if (!own(b,key) || !equivalent(a[key],b[key])) return false;
+    return true;
   }
-  const equivalent = (a, b) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
   const entities = new Set(["transactions", "categories"]);
   function conflictId(value) {
     // Bounded Firestore map keys, including when transaction notes are long.
@@ -90,6 +92,7 @@
   }
   function merge(leftData, rightData) {
     if (!valid(leftData) || !valid(rightData)) throw new Error("Invalid sync state");
+    if (equivalent(leftData,rightData)) return clone(leftData);
     const a = metadata(leftData), b = metadata(rightData), meta = metadata(null);
     meta.clock = Math.max(a.clock, b.clock);
     for (const actor of new Set([...Object.keys(a.vector), ...Object.keys(b.vector)])) meta.vector[actor] = Math.max(a.vector[actor] || 0, b.vector[actor] || 0);
@@ -104,7 +107,8 @@
       const as = stamp(a, key), bs = stamp(b, key);
       const aKnown = av.has(key) || own(a.revisions, key), bKnown = bv.has(key) || own(b.revisions, key);
       const different = av.has(key) !== bv.has(key) || !equal(av.get(key), bv.get(key));
-      let useA = !bKnown || (aKnown && (compare(as, bs) > 0 || (compare(as, bs) === 0 && JSON.stringify(av.get(key) ?? null) >= JSON.stringify(bv.get(key) ?? null))));
+      const order = compare(as,bs);
+      let useA = !bKnown || (aKnown && (order > 0 || (order === 0 && (!different || JSON.stringify(av.get(key) ?? null) >= JSON.stringify(bv.get(key) ?? null)))));
       const concurrent = (b.vector[as.actor] || 0) < as.n && (a.vector[bs.actor] || 0) < bs.n;
       const ambiguousLegacy = as.n === 0 && bs.n === 0;
       if (aKnown && bKnown && different && (concurrent || ambiguousLegacy || compare(as, bs) === 0)) {
@@ -121,7 +125,7 @@
     }
     return rebuild(values, meta);
   }
-  function conflicts(data) { return Object.entries(metadata(data).conflicts).filter(([, value]) => !value.resolvedBy); }
+  function conflicts(data) { return Object.entries(data?._sync?.version === 2 ? data._sync.conflicts || {} : {}).filter(([, value]) => !value.resolvedBy); }
   function resolveConflict(data, id, choice, actor) {
     const meta = metadata(data), conflict = meta.conflicts[id], selected = conflict?.alternatives?.[choice];
     if (!selected) throw new Error("Invalid conflict choice");
