@@ -59,16 +59,42 @@ async function reload(wait = 650) {
 const expectedFirebaseError = value => String(value).includes("www.gstatic.com/firebasejs/10.13.0/") && /Failed to load resource|ERR_/i.test(String(value));
 const fixture = { version:1, categories:[{id:"family",type:"expense",name:"عائلة / منزل"}], transactions:[], budgets:{} };
 const selectMonth = () => evaluate(`(() => { const p=document.querySelector('#monthPicker');p.value='2027-01';p.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('[data-tab="budgets"]').click(); })()`);
+async function click(selector) {
+  const point=await evaluate(`(() => {const el=document.querySelector(${JSON.stringify(selector)});el.scrollIntoView({behavior:'instant',block:'center'});const r=el.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});
+  await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});
+}
+async function enter(selector,text) {
+  await click(selector);
+  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2});
+  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2});
+  await send('Input.insertText',{text});
+}
+const selectPurchaseMonth = value => evaluate(`(() => {const select=document.querySelector('#purchaseViewMonth');select.value=${JSON.stringify(value)};select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
 try {
   await Promise.all([send("Page.enable"),send("Runtime.enable"),send("Network.enable"),send("Log.enable")]);
   const loaded=waitEvent("Page.loadEventFired");await send("Page.navigate",{url:appUrl});await loaded;await delay(900);
   await evaluate(`localStorage.setItem('pfm_data_v1',${JSON.stringify(JSON.stringify(fixture))})`);await reload();await selectMonth();
-  await evaluate(`(() => {document.querySelector('#btnNewPurchase').click();document.querySelector('#purchaseTitle').value='غرفة غيث';document.querySelector('#purchaseMonth').value='2027-01';document.querySelector('#purchaseAmount').value='500000';document.querySelector('#purchaseSaved').value='100000';document.querySelector('#purchaseCategory').value='family';document.querySelector('#purchasePriority').value='high';document.querySelector('#purchaseNote').value='غرفة مع خزانة <img src=x onerror=alert(1)>';document.querySelector('#purchaseForm').requestSubmit();})()`);
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:true});
+  assert.equal(await evaluate(`document.querySelector('#purchaseTitle').getClientRects().length>0`),true);
+  assert.equal(await evaluate(`document.querySelector('#purchaseMonth').value`),'2027-01');
+  await click('#btnNewPurchase');
+  await enter('#purchaseTitle','غرفة غيث');
+  await enter('#purchaseAmount','٥٠٠٬٠٠٠');
+  await enter('#purchaseSaved','١٠٠٬٠٠٠');
+  await enter('#purchaseNote','غرفة مع خزانة <img src=x onerror=alert(1)>');
+  await evaluate(`document.querySelector('#purchaseCategory').value='family';document.querySelector('#purchasePriority').value='high'`);
+  await click('#btnSavePurchase');
   const planned=await evaluate(`JSON.parse(localStorage.getItem('pfm_data_v1'))`);
   const [id]=Object.keys(planned.plannedPurchases);
   assert.equal(planned.plannedPurchases[id].amount,500000);assert.equal(planned.transactions.length,0);assert.ok(planned._sync);
   assert.equal(await evaluate(`document.querySelectorAll('#purchaseTimeline img').length`),0);
   assert.equal(await evaluate(`PFMFinancialModel.calculateMonthFinancials(JSON.parse(localStorage.getItem('pfm_data_v1')),'2027-01').totalExpenses`),0);
+  await selectPurchaseMonth('02');
+  assert.equal(await evaluate(`document.querySelectorAll('[data-purchase-id]').length`),0);
+  assert.equal(await evaluate(`document.querySelector('#purchaseMonth').value`),'2027-02');
+  await selectPurchaseMonth('01');
+  assert.equal(await evaluate(`document.querySelectorAll('[data-purchase-id]').length`),1);
   await reload();await selectMonth();
   assert.equal(await evaluate(`document.querySelectorAll('[data-purchase-id]').length`),1);
   await evaluate(`document.querySelector('[data-purchase-action="cancel"]').click()`);
@@ -80,7 +106,7 @@ try {
     await send("Emulation.setDeviceMetricsOverride",{width,height:900,deviceScaleFactor:1,mobile:width<600});
     await evaluate(`document.querySelector('#btnNewPurchase').click()`);
     layouts[width]=await evaluate(`({doc:document.documentElement.scrollWidth,width:innerWidth,form:!!document.querySelector('#purchaseForm'),months:document.querySelectorAll('.purchase-month').length})`);
-    assert.ok(layouts[width].doc<=layouts[width].width+1,JSON.stringify(layouts[width]));assert.equal(layouts[width].months,12);
+    assert.ok(layouts[width].doc<=layouts[width].width+1,JSON.stringify(layouts[width]));assert.equal(layouts[width].months,1);
     await evaluate(`document.querySelector('#btnCancelPurchaseEdit').click()`);
   }
   if(process.argv[5]) {
@@ -106,10 +132,11 @@ try {
   await evaluate(`(() => {const value=${JSON.stringify(JSON.stringify(other))};localStorage.setItem('pfm_data_v1',value);window.dispatchEvent(new StorageEvent('storage',{key:'pfm_data_v1',newValue:value}));})()`);
   assert.equal(await evaluate(`PFMGetState().transactions.length`),2);
   await evaluate(`navigator.serviceWorker.ready`);await reload();
-  const assets=await evaluate(`Promise.all(['sync-model.js?v=20261105-sync2','cloud-sync.js?v=20261105-sync2','purchase-model.js?v=20261105-planning1','purchase-ui.js?v=20261105-planning1','planning.css?v=20261105-planning1'].map(async x=>!!await caches.match('./'+x)))`);
+  const assets=await evaluate(`Promise.all(['sync-model.js?v=20261105-sync2','cloud-sync.js?v=20261105-sync2','purchase-model.js?v=20261105-planning2','purchase-ui.js?v=20261105-planning2','planning.css?v=20261105-planning2'].map(async x=>!!await caches.match('./'+x)))`);
   assert.ok(assets.every(Boolean));
   const errorCount=errors.length;
   await send("Network.emulateNetworkConditions",{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});await reload();await selectMonth();
+  await selectPurchaseMonth('02');
   assert.equal(await evaluate(`document.querySelectorAll('[data-purchase-id]').length`),1);
   assert.equal(await evaluate(`!!window.PFMSyncModel&&!!window.PFMCloudSync&&!!window.PFMPurchaseModel`),true);
   assert.deepEqual(errors.slice(errorCount).filter(x=>!expectedFirebaseError(x)),[]);

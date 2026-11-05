@@ -3,10 +3,9 @@
 .purchase-form>div{min-width:0}.purchase-form label{display:block;font-weight:700;margin-bottom:6px}
 .purchase-form input,.purchase-form select{width:100%;min-width:0}.purchase-wide{grid-column:1/-1}
 #purchaseEditor{margin-top:16px;padding:12px;border:1px solid var(--theme-border);border-radius:12px}
-#purchaseEditor>summary{cursor:pointer;font-weight:700}.purchase-year{margin:20px 0 14px}.purchase-year input{width:100px}
+#purchaseEditor h3{margin:0}.purchase-period{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px;margin:20px 0 14px}.purchase-period label{display:block;font-weight:700;margin-bottom:6px}.purchase-period input,.purchase-period select{width:100%;min-width:0}.purchase-period p{grid-column:1/-1;margin:0}
 .purchase-timeline{display:grid;gap:10px}.purchase-month{padding:14px;border:1px solid var(--theme-border);border-radius:12px;background:var(--theme-surface)}
-.purchase-month>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;font-weight:700;flex-wrap:wrap}
-.purchase-month>summary span:last-child{font-size:.85em;color:var(--theme-text-muted);font-weight:400}
+.purchase-month-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.purchase-month-heading h3{margin:0}
 .purchase-item{display:flex;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid var(--theme-border);padding:14px 0 4px;margin-top:12px;overflow-wrap:anywhere}
 .purchase-item>div{min-width:0}.purchase-item p{margin:6px 0}.purchase-item .row{flex-wrap:wrap}.purchase-reminder{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
 .purchase-reminder[hidden],#cloudConflicts[hidden]{display:none}.sync-conflict{padding:12px 0;border-top:1px solid var(--theme-border);overflow-wrap:anywhere}.sync-conflict p{white-space:pre-wrap;font-size:.85em}

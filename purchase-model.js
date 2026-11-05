@@ -5,6 +5,14 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
   const monthValid = value => /^\d{4}-(0[1-9]|1[0-2])$/.test(value || "");
+  function parseAmount(value) {
+    if (typeof value === "number") return value;
+    const text = String(value ?? "").trim()
+      .replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 0x660))
+      .replace(/[۰-۹]/g, digit => String(digit.charCodeAt(0) - 0x6f0));
+    if (!/^-?(?:\d+|\d{1,3}(?:[,٬\s]\d{3})+)(?:[.٫]\d+)?$/.test(text)) return NaN;
+    return Number(text.replace(/[,٬\s]/g, "").replace("٫", "."));
+  }
   function monthDistance(from, to) {
     if (!monthValid(from) || !monthValid(to)) return 0;
     const [fy, fm] = from.split("-").map(Number), [ty, tm] = to.split("-").map(Number);
@@ -22,7 +30,7 @@
     return { items, total, saved, remaining: total - saved, monthlySaving: Math.ceil((total - saved) / Math.max(1, monthDistance(currentMonth, month) + 1)) };
   }
   function withPurchase(state, values, id) {
-    const amount = Number(values.amount), savedAmount = Number(values.savedAmount || 0), title = String(values.title || "").trim();
+    const amount = parseAmount(values.amount), savedAmount = parseAmount(values.savedAmount || 0), title = String(values.title || "").trim();
     if (!title || title.length > 180) throw new Error("أدخل اسم المشتريات بما لا يزيد على 180 حرفاً");
     if (!monthValid(values.month)) throw new Error("اختر شهراً صحيحاً للشراء");
     if (!Number.isFinite(amount) || amount <= 0) throw new Error("أدخل تكلفة تقديرية صحيحة");

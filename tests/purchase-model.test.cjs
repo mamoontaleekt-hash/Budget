@@ -20,3 +20,16 @@ test("postponing updates the month; cancellation and actual purchase remove outs
 test("rejects invalid costs, invalid month and excessive earmarked funds",()=>{
   for(const values of [{amount:Infinity,month:"2027-01"},{amount:-1,month:"2027-01"},{amount:1,month:"2027-13"},{amount:100,month:"2027-01",savedAmount:101}])assert.throws(()=>Model.withPurchase(empty(),{title:"غرفة",...values},"room"));
 });
+test("accepts Arabic and Persian digits, grouped amounts, and Arabic decimal separators",()=>{
+  for(const amount of ["500000","500,000","٥٠٠٬٠٠٠","۵۰۰٬۰۰۰","500 000"]){
+    const s=Model.withPurchase(empty(),{title:"غرفة",month:"2027-01",amount,savedAmount:"١٠٠٬٠٠٠"},"room");
+    assert.equal(s.plannedPurchases.room.amount,500000);assert.equal(s.plannedPurchases.room.savedAmount,100000);
+  }
+  const s=Model.withPurchase(empty(),{title:"غرفة",month:"2027-01",amount:"١٢٣٫٥٠"},"room");
+  assert.equal(s.plannedPurchases.room.amount,123.5);
+});
+test("rejects malformed numeric grouping instead of silently changing its value",()=>{
+  for(const amount of ["500,5","5,00,000","خمسمائة","", "NaN"]){
+    assert.throws(()=>Model.withPurchase(empty(),{title:"غرفة",month:"2027-01",amount},"room"));
+  }
+});
