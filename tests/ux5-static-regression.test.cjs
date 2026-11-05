@@ -11,7 +11,7 @@ const css = read("dashboard-polish.css");
 const sw = read("sw.js");
 const count = (source, pattern) => (source.match(pattern) || []).length;
 
-test("UX5 assets load once, in order, and are cached in PWA v21", () => {
+test("UX5 assets load once, in order, and are cached in PWA v22", () => {
   const styles = [
     "visual-polish.css?v=20260909-ux2",
     "mobile-enhancements.css?v=20260908-ux1",
@@ -23,7 +23,7 @@ test("UX5 assets load once, in order, and are cached in PWA v21", () => {
   for (let index = 1; index < styles.length; index += 1) assert.ok(html.indexOf(styles[index - 1]) < html.indexOf(styles[index]));
   assert.equal(count(html, /display-format\.js\?v=20260909-ux5/g), 1);
   assert.equal(count(html, /report-enhancements\.js\?v=20260909-ux5/g), 1);
-  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v21"/);
+  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v22"/);
   for (const asset of [...styles, "display-format.js?v=20260909-ux5", "report-enhancements.js?v=20260909-ux5"]) assert.equal(count(sw, new RegExp(asset.replace(/[.?]/g, "\\$&"), "g")), 1);
 });
 
@@ -63,7 +63,7 @@ test("UX5 state is ephemeral and budget remaining uses the existing model result
 test("cloud sync binds the display formatter across the application IIFE boundary", () => {
   const cloudSync = html.slice(html.indexOf("* Cloud Sync (Firebase Firestore)"));
   assert.match(cloudSync, /\(function\(\)\{\s*const DisplayFormat = window\.PFMDisplayFormat;/);
-  assert.match(cloudSync, /DisplayFormat\.westernizeDigits\(/);
+  assert.match(read("cloud-sync.js"), /DisplayFormat\.westernizeDigits\(/);
 });
 
 test("frozen model files exactly match the verified baseline", () => {

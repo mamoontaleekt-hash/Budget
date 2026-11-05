@@ -77,8 +77,8 @@ test("source icon reuses the UX6 wallet mark inside a maskable-safe full-bleed f
   assert.doesNotMatch(svg, /<text\b|<image\b|gradient|filter|shadow/i);
 });
 
-test("PWA v21 pre-caches only the authoritative identity assets", () => {
-  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v21";/);
+test("PWA v22 pre-caches only the authoritative identity assets", () => {
+  assert.match(sw, /const CACHE_NAME = "pfm-pwa-v22";/);
   const appShell = sw.match(/const APP_SHELL = \[([\s\S]*?)\n\];/)?.[1] || "";
   for (const asset of [
     "./icons/app-icon.svg",

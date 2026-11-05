@@ -453,6 +453,7 @@
   <link rel="stylesheet" href="./interaction-polish.css?v=20260909-ux3">
   <link rel="stylesheet" href="./budget-polish.css?v=20260909-ux4">
   <link rel="stylesheet" href="./dashboard-polish.css?v=20260909-ux5">
+  <link rel="stylesheet" href="./planning.css?v=20261105-planning1">
   <link rel="stylesheet" href="./theme-system.css?v=20260909-ux6">
 </head>
 
@@ -766,6 +767,7 @@
             <p>حدد الدخل المخطط، ثم وزّعه على التصنيفات (إيجار، دين، كهرباء، ماء، مشتريات...)</p>
           </div>
           <div class="row">
+            <button class="btn small" id="btnUpcomingPurchases" type="button"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-calendar"></use></svg>المشتريات القادمة</button>
             <button class="btn small" id="btnAutoSuggestions"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-analysis"></use></svg>اقتراح توزيع سريع</button>
             <button class="btn small primary" id="btnSaveBudgets"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-save"></use></svg>حفظ</button>
           </div>
@@ -1439,12 +1441,14 @@
         <span class="mini" id="cloudLast">آخر حفظ: —</span>
       </div>
 
-      <div class="mini" id="cloudStatus" style="margin-top:8px">الحالة: غير متصل</div>
+      <div class="mini" id="cloudAccount" style="margin-top:8px"></div>
+      <div class="help" id="cloudConflicts" hidden></div>
+      <div class="mini" id="cloudStatus" role="status" aria-live="polite" style="margin-top:8px">الحالة: غير متصل</div>
 
       <details style="margin-top:10px">
         <summary class="mini" style="cursor:pointer">خيارات إضافية</summary>
         <div class="row" style="margin-top:10px">
-          <button class="btn" id="btnCloudPull"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-download"></use></svg>جلب من السحابة</button>
+          <button class="btn" id="btnCloudPull"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-download"></use></svg>جلب ودمج من السحابة</button>
           <button class="btn" id="btnCloudPush"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-upload"></use></svg>حفظ للسحابة</button>
           <button class="btn" id="btnCloudRestoreBackup"><svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-upload"></use></svg>استعادة النسخة الاحتياطية</button>
         </div>
@@ -1464,6 +1468,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <script src="./sync-model.js?v=20261105-sync2"></script>
+  <script src="./cloud-sync.js?v=20261105-sync2"></script>
+  <script src="./purchase-model.js?v=20261105-planning1"></script>
+  <script src="./purchase-ui.js?v=20261105-planning1"></script>
   <script src="./display-format.js?v=20260909-ux5"></script>
   <script src="./financial-model.js?v=20260907-phase3"></script>
   <script src="./expense-model.js?v=20260907-phase3"></script>
@@ -1581,17 +1589,48 @@
       return defaultData();
     }
   }
+  window.PFMSyncActor = (globalThis.crypto?.randomUUID?.() || uid());
   function save(emit=true){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try{
+      if(emit){
+        state = PFMSyncModel.recordChanges(lastPersistedState, state, window.PFMSyncActor);
+        const disk = localStorage.getItem(STORAGE_KEY);
+        if(disk){
+          const other = JSON.parse(disk);
+          if(isValidAppState(other)) state = PFMSyncModel.merge(state, other);
+        }
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      lastPersistedState = JSON.parse(JSON.stringify(state));
+    }catch(error){
+      toast("تعذر حفظ البيانات على الجهاز. لم يكتمل الحفظ؛ تحقق من مساحة التخزين وصدّر نسخة احتياطية.");
+      window.dispatchEvent(new CustomEvent("pfm:savefailed"));
+      throw error;
+    }
     if(emit){
       try{ window.dispatchEvent(new CustomEvent("pfm:changed", {detail: state})); }catch(e){}
     }
   }
 
   let state = load();
+  let lastPersistedState = JSON.parse(JSON.stringify(state));
+  window.PFMGetState = () => JSON.parse(JSON.stringify(state));
+  window.addEventListener("storage", event => {
+    if(event.key !== STORAGE_KEY || !event.newValue) return;
+    try{
+      const incoming = JSON.parse(event.newValue);
+      if(!isValidAppState(incoming)) return;
+      const merged = PFMSyncModel.merge(state, incoming);
+      if(PFMSyncModel.equivalent(state, merged)) return;
+      state = merged; save(false); render();
+      window.dispatchEvent(new CustomEvent("pfm:merged"));
+    }catch(error){ console.error("Failed to merge another tab", error); }
+  });
   let activeTab = "dash";
   let activeMonth = thisMonth();
   let editingTxId = null;
+  let pendingPurchaseId = null;
+  let purchaseUI = null;
   let editingDebtId = null;
   let activeDebtId = null;
   let activeDashboardPanel = null;
@@ -1705,6 +1744,7 @@
     if(activeTab==="debts") renderDebts();
     if(activeTab==="reports") renderReports();
     if(activeTab==="settings") renderSettings();
+    purchaseUI?.render(activeMonth);
   }
 
   function renderDashboard(){
@@ -2939,6 +2979,7 @@
 
   // --- Transaction modal logic
   function openTxModal(tx=null){
+    pendingPurchaseId = null;
     editingTxId = tx?.id || null;
     $("#txTitle").textContent = editingTxId ? "تعديل عملية" : "إضافة عملية";
     $("#txEditingHint").style.display = editingTxId ? "inline" : "none";
@@ -3039,8 +3080,10 @@
     const note = ($("#txNote").value||"").trim();
 
     if(!date){ toast("أدخل التاريخ (يدوياً)"); return; }
-    if(!amount || amount<=0){ toast("أدخل مبلغاً صحيحاً"); return; }
+    if(!Number.isFinite(amount) || amount<=0){ toast("أدخل مبلغاً صحيحاً"); return; }
     if(!type){ toast("اختر النوع"); return; }
+    if(pendingPurchaseId && type !== "expense"){ toast("تسجيل المشتريات يتطلب عملية مصروف"); return; }
+    if(pendingPurchaseId && !categoryId){ toast("اختر تصنيف المصروف قبل تسجيل الشراء"); return; }
     const existingTransaction = editingTxId ? state.transactions.find(transaction => transaction.id === editingTxId) : null;
     if(existingTransaction && DebtModel.getValidLinkedObligationId(state, existingTransaction) && type !== "expense"){
       toast("فك ارتباط العملية من الالتزام قبل تحويلها إلى إيراد");
@@ -3048,6 +3091,14 @@
     }
 
     let savedTransactionId = editingTxId;
+    if(pendingPurchaseId){
+      savedTransactionId = `planned_${pendingPurchaseId}`;
+      const existing = state.transactions.find(t => t.id === savedTransactionId);
+      const transaction = { ...existing, id:savedTransactionId, type, date, categoryId, amount, note, plannedPurchaseId:pendingPurchaseId, createdAt:existing?.createdAt || new Date().toISOString() };
+      delete transaction.deletedAt; delete transaction.deletedReason;
+      state.transactions = [...state.transactions.filter(t => t.id !== savedTransactionId), transaction];
+      state.plannedPurchases[pendingPurchaseId] = {...state.plannedPurchases[pendingPurchaseId], transactionId:savedTransactionId};
+    }else
     if(editingTxId){
       const idx = state.transactions.findIndex(t=>t.id===editingTxId);
       if(idx>=0){
@@ -3445,6 +3496,24 @@ window.addEventListener("pfm:apply", (ev)=>{
 });
 
   // Start
+  purchaseUI = PFMPurchaseUI.create({
+    getState: () => state,
+    saveState: next => { state = next; save(); render(); },
+    notify: toast,
+    goToBudgets: () => setTab("budgets"),
+    startPurchase: item => {
+      const linked = PFMPurchaseModel.linkedTransaction(state, item);
+      if(linked && !linked.deletedAt){ toast("تم تسجيل هذه المشتريات بالفعل؛ راجع قسم العمليات"); return; }
+      openTxModal();
+      pendingPurchaseId = item.id;
+      $("#txTitle").textContent = "تسجيل شراء: " + item.title;
+      $("#txAmount").value = item.amount;
+      $("#txNote").value = item.title + (item.note ? " — " + item.note : "");
+      fillTxCategories("expense", item.categoryId);
+      $("#txExpenseClass").value = "exceptional";
+      updateShoppingSubcategoryVisibility();
+    },
+  });
   render();
 
 })();
@@ -3452,11 +3521,10 @@ window.addEventListener("pfm:apply", (ev)=>{
 
 <script>
 /** =========================
- * Cloud Sync (Firebase Firestore) - Auto Sync PRO+
- * - Paste your firebaseConfig below.
+ * Cloud Sync (Firebase Firestore) - durable merge protocol v2
  * - Stores data per-user at: pfm_users/{uid}
- * - Autosaves on every local change (debounced)
- * - Shows clear connection/saved status + basic conflict protection (backup + warning)
+ * - Journals local revisions before upload and merges inside a transaction.
+ * - Retains concurrent alternatives for review; retries unconfirmed writes.
  * ========================= */
 (function(){
   const DisplayFormat = window.PFMDisplayFormat;
@@ -3472,441 +3540,7 @@ window.addEventListener("pfm:apply", (ev)=>{
     measurementId: "G-0405TZ8HEY"
   };
 
-  const STORAGE_KEY = "pfm_data_v1"; // must match main app
-  const CLIENT_ID_KEY = "pfm_client_id_v1";
-  const BACKUP_KEY = "pfm_backup_before_remote_v1";
-
-  const $ = (sel, root=document) => root.querySelector(sel);
-
-  const btnOpen   = $("#btnCloud");
-  const modal     = $("#modalCloud");
-  const emailEl   = $("#cloudEmail");
-  const passEl    = $("#cloudPass");
-  const btnLogin  = $("#btnCloudLogin");
-  const btnLogout = $("#btnCloudLogout");
-  const btnPull   = $("#btnCloudPull");
-  const btnPush   = $("#btnCloudPush");
-  const btnRestore = $("#btnCloudRestoreBackup");
-  const statusEl  = $("#cloudStatus");
-  const pillEl    = $("#cloudConnPill");
-  const badgeEl   = $("#cloudBadge");
-  const lastEl    = $("#cloudLast");
-  const hintEl    = $("#cloudHint");
-
-  function setText(el, text){ if(el) el.textContent = text; }
-  function setKind(el, kind){
-    if(!el) return;
-    el.classList.remove("ok","warn","danger");
-    if(kind) el.classList.add(kind);
-  }
-  function setPill(text, kind){
-    const label = String(text || "").replace(/^☁️?\s*/, "");
-    for(const el of [pillEl, badgeEl]){
-      if(!el) continue;
-      let labelEl = el.querySelector("span");
-      if(!labelEl){
-        el.innerHTML = '<svg class="ui-icon" aria-hidden="true" focusable="false"><use href="#icon-cloud"></use></svg><span></span>';
-        labelEl = el.querySelector("span");
-      }
-      labelEl.textContent = label;
-      setKind(el, kind);
-    }
-  }
-  function setStatus(text){ setText(statusEl, text); }
-  function setLast(tsText){ setText(lastEl, `آخر حفظ: ${tsText || "—"}`); }
-
-  function nowClock(){
-    const d = new Date();
-    return DisplayFormat.westernizeDigits(d.toLocaleString("ar-IQ", {hour12:true}));
-  }
-
-  // Create a stable clientId (to ignore our own realtime echoes)
-  function uuid4(){
-    return (crypto?.randomUUID?.() || (Date.now().toString(16) + Math.random().toString(16).slice(2)));
-  }
-  let clientId = localStorage.getItem(CLIENT_ID_KEY);
-  if(!clientId){
-    clientId = uuid4();
-    localStorage.setItem(CLIENT_ID_KEY, clientId);
-  }
-
-  // Open modal
-  btnOpen?.addEventListener("click", ()=> modal?.classList.add("open"));
-
-  // Configuration check
-  const configured = firebaseConfig && firebaseConfig.apiKey && !String(firebaseConfig.apiKey).includes("PASTE_");
-  if(!configured){
-    btnOpen?.addEventListener("click", ()=>{
-      setStatus("الحالة: يرجى إدخال إعدادات Firebase داخل ملف index.html (firebaseConfig).");
-      setPill("☁️ غير مهيأ", "warn");
-    });
-    setPill("☁️ غير مهيأ", "warn");
-    return;
-  }
-
-  if(typeof window.firebase === "undefined"){
-    btnOpen?.addEventListener("click", ()=>{
-      setStatus("الحالة: المزامنة السحابية غير متاحة حالياً. بيانات هذا الجهاز ما زالت تعمل محلياً.");
-      setPill("☁️ غير متاح", "warn");
-    });
-    setPill("☁️ غير متاح", "warn");
-    return;
-  }
-
-  // Init Firebase (compat)
-  try{
-    if(!firebase.apps || !firebase.apps.length){
-      firebase.initializeApp(firebaseConfig);
-    }
-  }catch(e){
-    console.error(e);
-  }
-  const auth = firebase.auth();
-  const db   = firebase.firestore();
-  const FieldValue = firebase.firestore.FieldValue;
-
-  let unsubSnap = null;
-  let pushTimer = null;
-  let dirty = false;
-  let cloudReady = false;
-  let lastLocalStr = null;
-  let lastAppliedRemoteHash = null;
-  let lastSavedPulseTimer = null;
-  let lastSeenRemoteClientId = null;
-
-  function localString(){
-    try{ return localStorage.getItem(STORAGE_KEY) || ""; }catch(e){ return ""; }
-  }
-  function readLocal(){
-    try{
-      const s = localStorage.getItem(STORAGE_KEY);
-      return s ? JSON.parse(s) : null;
-    }catch(e){ return null; }
-  }
-  function isValidAppState(value){
-    return !!value
-      && typeof value === "object"
-      && !Array.isArray(value)
-      && Array.isArray(value.categories)
-      && Array.isArray(value.transactions)
-      && !!value.budgets
-      && typeof value.budgets === "object"
-      && !Array.isArray(value.budgets);
-  }
-  function rejectInvalidRemote(source){
-    console.warn(`Rejected invalid remote app state (${source})`);
-    setStatus("الحالة: تم تجاهل بيانات سحابية غير صالحة لحماية بيانات هذا الجهاز.");
-    setPill("☁️ بيانات مرفوضة", "warn");
-  }
-  function hashStr(s){
-    let h = 0; for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i))|0; }
-    return String(h);
-  }
-
-  function pulseSaved(){
-    clearTimeout(lastSavedPulseTimer);
-    setPill("☁️ تم الحفظ ✓", "ok");
-    lastSavedPulseTimer = setTimeout(()=> {
-      if(auth.currentUser) setPill("☁️ متصل", "ok");
-    }, 1400);
-  }
-
-  async function prepareCloudSession(docRef){
-    const snap = await docRef.get();
-    if(!snap.exists){
-      const data = readLocal();
-      if(!isValidAppState(data)){
-        lastLocalStr = localString();
-        dirty = false;
-        setStatus("الحالة: لا توجد بيانات محلية صالحة للرفع؛ لم يتم إنشاء بيانات سحابية.");
-        setPill("☁️ جاهز", "ok");
-        return { created: false, appliedRemote: false, deferred: true };
-      }
-      await docRef.set({
-        data,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-        updatedBy: auth.currentUser.uid,
-        updatedByClientId: clientId,
-        version: 1
-      }, {merge:true});
-      lastLocalStr = localString();
-      dirty = false;
-      return { created: true, appliedRemote: false };
-    }
-    const remote = snap.data() || {};
-    const remoteData = remote.data;
-    if(!isValidAppState(remoteData)){
-      rejectInvalidRemote("initial fetch");
-      lastLocalStr = localString();
-      dirty = false;
-      return { created: false, appliedRemote: false, rejectedRemote: true };
-    }
-    const remoteStr = JSON.stringify(remoteData);
-    const localStr = JSON.stringify(readLocal() || {});
-    const remoteHash = hashStr(remoteStr);
-    if(remoteHash !== hashStr(localStr)){
-      backupLocalBeforeRemote();
-      lastAppliedRemoteHash = remoteHash;
-      window.dispatchEvent(new CustomEvent("pfm:apply", {detail: remoteData}));
-    }
-    lastLocalStr = localString();
-    dirty = false;
-    setStatus("الحالة: تم جلب بيانات السحابة قبل بدء الحفظ التلقائي ✅");
-    setPill("☁️ متصل", "ok");
-    setLast(nowClock());
-    return { created: false, appliedRemote: true };
-  }
-
-  async function pushToCloud(reason){
-    if(!auth.currentUser){ setStatus("الحالة: غير متصل (سجّل الدخول)"); return; }
-    if(!cloudReady){ setStatus("الحالة: ينتظر اكتمال جلب السحابة قبل الحفظ"); return; }
-    const uid = auth.currentUser.uid;
-    const docRef = db.collection("pfm_users").doc(uid);
-
-    const data = readLocal();
-    if(!isValidAppState(data)){
-      setStatus("الحالة: لا توجد بيانات محلية صالحة للحفظ");
-      setPill("☁️ لم يتم الحفظ", "warn");
-      return;
-    }
-
-    try{
-      setStatus(`الحالة: جارٍ الحفظ تلقائياً... (${reason||"تغيير"})`);
-      await docRef.set({
-        data,
-        updatedAt: FieldValue.serverTimestamp(),
-        updatedBy: uid,
-        updatedByClientId: clientId,
-        version: 1
-      }, {merge:true});
-      dirty = false;
-      setStatus("الحالة: تم الحفظ ✅");
-      setPill("☁️ متصل", "ok");
-      pulseSaved();
-      setLast(nowClock());
-    }catch(err){
-      console.error(err);
-      const code = err && err.code ? ` (${err.code})` : "";
-      setStatus("الحالة: فشل الحفظ ❌" + code + " — تحقق من Rules/الإنترنت");
-      setPill("☁️ خطأ", "danger");
-      if(hintEl){
-        hintEl.textContent = "تنبيه: فشل الحفظ. غالباً السبب هو Firestore Rules أو الدومين غير مضاف في Authorized domains أو انقطاع الإنترنت.";
-      }
-    }
-  }
-
-  function schedulePush(reason){
-    if(!cloudReady){ setStatus("الحالة: ينتظر اكتمال جلب السحابة قبل الحفظ"); return; }
-    clearTimeout(pushTimer);
-    pushTimer = setTimeout(()=> pushToCloud(reason), 800);
-  }
-
-  function backupLocalBeforeRemote(){
-    try{
-      const payload = {
-        at: new Date().toISOString(),
-        data: readLocal()
-      };
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(payload));
-    }catch(e){}
-  }
-
-  function startRealtime(docRef){
-    if(unsubSnap) { try{ unsubSnap(); }catch(e){} }
-    unsubSnap = docRef.onSnapshot((snap)=>{
-      if(!snap.exists) return;
-
-      const remote = snap.data() || {};
-      const remoteData = remote.data;
-      const remoteClientId = remote.updatedByClientId || null;
-      lastSeenRemoteClientId = remoteClientId;
-
-      // Ignore our own writes (prevents ping-pong and flicker)
-      if(remoteClientId && remoteClientId === clientId){
-        return;
-      }
-
-      if(!isValidAppState(remoteData)){
-        rejectInvalidRemote("realtime update");
-        return;
-      }
-
-      const remoteStr = JSON.stringify(remoteData);
-      const remoteHash = hashStr(remoteStr);
-
-      const curLocalStr = localString();
-      let localObj = {};
-      try{ localObj = curLocalStr ? JSON.parse(curLocalStr) : {}; }catch(e){ localObj = {}; }
-      const localStrNorm = JSON.stringify(localObj);
-      const localHash = hashStr(localStrNorm);
-
-      // If nothing changed, skip
-      if(remoteHash === localHash || remoteHash === lastAppliedRemoteHash) return;
-
-      // If user has unsaved local edits (dirty), keep a backup + warn in status
-      if(dirty){
-        backupLocalBeforeRemote();
-        setStatus("الحالة: تم استلام تحديث من جهاز آخر — تم حفظ نسخة احتياطية محلية قبل التطبيق.");
-        setPill("☁️ تحديث وارد", "warn");
-      }else{
-        setStatus("الحالة: تم تحديث البيانات من السحابة ✅");
-        setPill("☁️ متصل", "ok");
-      }
-
-      // Apply remote
-      try{
-        lastAppliedRemoteHash = remoteHash;
-        window.dispatchEvent(new CustomEvent("pfm:apply", {detail: remoteData}));
-        setLast(nowClock());
-      }catch(e){
-        console.error(e);
-      }
-
-    }, (err)=>{
-      console.error(err);
-      setStatus("الحالة: تعذر الاستماع للتحديثات ❌ (Rules/الإنترنت)");
-      setPill("☁️ خطأ", "danger");
-    });
-  }
-
-  function updateAuthUI(user){
-    const signedIn = !!user;
-    const creds = $("#cloudCreds");
-    if(btnLogin)  btnLogin.style.display  = signedIn ? "none" : "inline-flex";
-    if(btnLogout) btnLogout.style.display = signedIn ? "inline-flex" : "none";
-    if(creds)     creds.style.display     = signedIn ? "none" : "grid";
-
-    if(signedIn){
-      setPill("☁️ متصل", "ok");
-      const who = user.email ? `متصل: ${user.email}` : "متصل";
-      setStatus(`الحالة: ${who}`);
-    }else{
-      setPill("☁️ غير متصل", "warn");
-      setStatus("الحالة: غير متصل");
-      setLast("—");
-    }
-  }
-
-  // Login / Logout
-  btnLogin?.addEventListener("click", async ()=>{
-    const email = (emailEl?.value || "").trim();
-    const pass  = (passEl?.value || "").trim();
-    if(!email || !pass){ setStatus("الحالة: أدخل البريد وكلمة المرور"); return; }
-    setStatus("الحالة: جارٍ تسجيل الدخول...");
-    try{
-      await auth.signInWithEmailAndPassword(email, pass);
-    }catch(err){
-      console.error(err);
-      const code = err && err.code ? ` (${err.code})` : "";
-      setStatus("الحالة: فشل تسجيل الدخول ❌" + code);
-      setPill("☁️ خطأ", "danger");
-    }
-  });
-
-  btnLogout?.addEventListener("click", async ()=>{
-    try{ await auth.signOut(); }catch(e){}
-  });
-
-  // Optional manual buttons
-  btnPull?.addEventListener("click", async ()=>{
-    if(!auth.currentUser){ setStatus("الحالة: سجّل الدخول أولاً"); return; }
-    const docRef = db.collection("pfm_users").doc(auth.currentUser.uid);
-    setStatus("الحالة: جارٍ الجلب من السحابة...");
-    try{
-      const snap = await docRef.get();
-      if(snap.exists){
-        const remoteData = (snap.data()||{}).data;
-        if(!isValidAppState(remoteData)){
-          rejectInvalidRemote("manual fetch");
-          return;
-        }
-        backupLocalBeforeRemote();
-        window.dispatchEvent(new CustomEvent("pfm:apply", {detail: remoteData}));
-        dirty = false;
-        setStatus("الحالة: تم الجلب ✅");
-        setPill("☁️ متصل", "ok");
-        setLast(nowClock());
-      }else{
-        setStatus("الحالة: لا يوجد بيانات بالسحابة بعد");
-      }
-    }catch(err){
-      console.error(err);
-      setStatus("الحالة: فشل الجلب ❌");
-      setPill("☁️ خطأ", "danger");
-    }
-  });
-
-  btnPush?.addEventListener("click", ()=> schedulePush("يدوي"));
-
-  // Restore last backup created before applying remote updates (if any)
-  btnRestore?.addEventListener("click", ()=>{
-    try{
-      const raw = localStorage.getItem(BACKUP_KEY);
-      if(!raw){ setStatus("الحالة: لا توجد نسخة احتياطية بعد"); return; }
-      const payload = JSON.parse(raw);
-      if(payload && payload.data){
-        window.dispatchEvent(new CustomEvent("pfm:apply", {detail: payload.data}));
-        dirty = true;
-        setStatus("الحالة: تم استعادة النسخة الاحتياطية ✅ (سيتم الحفظ تلقائياً)");
-        setPill("☁️ متصل", "ok");
-        schedulePush("استعادة نسخة");
-      }else{
-        setStatus("الحالة: النسخة الاحتياطية غير صالحة");
-      }
-    }catch(e){
-      console.error(e);
-      setStatus("الحالة: فشل استعادة النسخة الاحتياطية ❌");
-    }
-  });
-
-
-  // Autosave on local changes
-  window.addEventListener("pfm:changed", ()=>{
-    // Debounce push only if logged in
-    dirty = true;
-    if(!auth.currentUser || !cloudReady) return;
-    const cur = localString();
-    if(cur === lastLocalStr) return;
-    lastLocalStr = cur;
-    schedulePush("تغيير");
-  });
-
-  // Online/offline hints
-  window.addEventListener("online", ()=> {
-    if(auth.currentUser){
-      setStatus("الحالة: عاد الاتصال ✅ سيتم الحفظ تلقائياً");
-      setPill("☁️ متصل", "ok");
-      schedulePush("عودة اتصال");
-    }
-  });
-  window.addEventListener("offline", ()=> {
-    setStatus("الحالة: لا يوجد إنترنت — سيتم الحفظ عند عودة الاتصال");
-    setPill("☁️ أوفلاين", "warn");
-  });
-
-  // Auth state
-  auth.onAuthStateChanged(async (user)=>{
-    updateAuthUI(user);
-    if(unsubSnap){ try{ unsubSnap(); }catch(e){} unsubSnap=null; }
-    cloudReady = false;
-    if(!user) return;
-
-    const docRef = db.collection("pfm_users").doc(user.uid);
-
-    // Prepare safely, then start realtime listening even when creation is deferred.
-    try{
-      setStatus("الحالة: جارٍ جلب بيانات السحابة أولاً لحماية البيانات...");
-      await prepareCloudSession(docRef);
-      startRealtime(docRef);
-      cloudReady = true;
-    }catch(err){
-      console.error(err);
-      const code = err && err.code ? ` (${err.code})` : "";
-      setStatus("الحالة: فشل تهيئة السحابة ❌" + code);
-      setPill("☁️ خطأ", "danger");
-    }
-  });
+  window.PFMCloudSync.start(firebaseConfig);
 
 })();
 </script>

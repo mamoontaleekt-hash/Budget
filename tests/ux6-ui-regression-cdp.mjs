@@ -172,6 +172,8 @@ try {
   const actionable = { ...healthy, budgets:{"2026-09":{plan:{},items:{living:{amount:1200000}}}}, debtSettings:{obligations:{loan:overdue},paymentLinks:{}} };
   await evaluate(`localStorage.setItem('pfm_data_v1',${JSON.stringify(JSON.stringify(actionable))})`);
   await reload();
+  // Reload defaults to the current month; the warning fixture belongs to September.
+  await evaluate(`(() => { const p=document.querySelector('#monthPicker'); p.value='2026-09'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`);
   const status = await evaluate(`(() => { const items=[...document.querySelectorAll('#dashboardAttentionList .attention-item')],styles=items.map(x=>({class:x.className,bg:getComputedStyle(x).backgroundColor,color:getComputedStyle(x).color,text:x.innerText})); return {hidden:document.querySelector('#dashboardAttentionSection').hidden,styles,distinct:new Set(styles.map(x=>x.bg)).size}; })()`);
   assert.equal(status.hidden, false); assert.ok(status.styles.some(x=>x.class.includes("danger"))); assert.ok(status.styles.some(x=>x.class.includes("warn"))); assert.ok(status.distinct >= 2);
   assert.ok(status.styles.every((item) => contrast(item.color, item.bg) >= 4.5), JSON.stringify(status.styles));
@@ -197,7 +199,7 @@ try {
   await evaluate(`navigator.serviceWorker.ready`);
   await reload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),theme:!!(await caches.match('./theme-system.css?v=20260909-ux6')),ux5:!!(await caches.match('./dashboard-polish.css?v=20260909-ux5')),ux4:!!(await caches.match('./budget-polish.css?v=20260909-ux4')),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1')),iconSvg:!!(await caches.match('./icons/app-icon.svg')),icon192:!!(await caches.match('./icons/app-icon-192.png')),icon512:!!(await caches.match('./icons/app-icon-512.png')),old192:!!(await caches.match('./icons/icon-192.png')),old512:!!(await caches.match('./icons/icon-512.png'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v21")); for (const key of ["theme","ux5","ux4","ux3","ux2","ux1","iconSvg","icon192","icon512"]) assert.equal(pwa[key], true); assert.equal(pwa.old192,false); assert.equal(pwa.old512,false);
+  assert.ok(pwa.keys.includes("pfm-pwa-v22")); for (const key of ["theme","ux5","ux4","ux3","ux2","ux1","iconSvg","icon192","icon512"]) assert.equal(pwa[key], true); assert.equal(pwa.old192,false); assert.equal(pwa.old512,false);
   if(!pwa.controller) await reload();
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions", { offline:true, latency:0, downloadThroughput:0, uploadThroughput:0, connectionType:"none" });

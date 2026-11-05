@@ -114,6 +114,9 @@ try {
   assert.notEqual(await evaluate(`document.querySelector('[data-cat="rent"] .budgetInput').value`), "1000000");
   await reload(); await evaluate(`document.querySelector('#tabs [data-tab="budgets"]').click()`);
 
+  // Reload defaults to the current month; edit the September fixture explicitly.
+  await evaluate(`(() => { const p=document.querySelector('#monthPicker'); p.value='2026-09'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+
   const layouts = {};
   for (const width of [360, 390, 430, 768, 1200]) {
     await send("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width <= 430 }); await delay(100);
@@ -133,6 +136,7 @@ try {
   const topSave = await evaluate(`(() => { const original=Storage.prototype.setItem; window.__ux4Writes=0; Storage.prototype.setItem=function(k,v){if(k==='pfm_data_v1')window.__ux4Writes+=1;return original.call(this,k,v)}; const row=document.querySelector('[data-cat="rent"]'); row.querySelector('.budgetInput').value='1050000'; row.querySelector('.budgetNote').value='موعد الدفع بداية الشهر'; document.querySelector('#btnSaveBudgets').click(); Storage.prototype.setItem=original; const saved=JSON.parse(localStorage.getItem('pfm_data_v1')).budgets['2026-09'].items.rent; return {writes:window.__ux4Writes,saved}; })()`);
   assert.equal(topSave.writes, 1); assert.deepEqual(topSave.saved, { amount: 1050000, note: "موعد الدفع بداية الشهر" });
   await reload(); await evaluate(`document.querySelector('#tabs [data-tab="budgets"]').click()`);
+  await evaluate(`(() => { const p=document.querySelector('#monthPicker'); p.value='2026-09'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`);
   assert.deepEqual(await evaluate(`({amount:+document.querySelector('[data-cat="rent"] .budgetInput').value,note:document.querySelector('[data-cat="rent"] .budgetNote').value})`), { amount: 1050000, note: "موعد الدفع بداية الشهر" });
 
   await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
@@ -162,7 +166,7 @@ try {
 
   await evaluate(`navigator.serviceWorker.ready`); await reload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),ux4:!!(await caches.match('./budget-polish.css?v=20260909-ux4')),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v21")); assert.equal(pwa.ux4, true); assert.equal(pwa.ux3, true); assert.equal(pwa.ux2, true); assert.equal(pwa.ux1, true);
+  assert.ok(pwa.keys.includes("pfm-pwa-v22")); assert.equal(pwa.ux4, true); assert.equal(pwa.ux3, true); assert.equal(pwa.ux2, true); assert.equal(pwa.ux1, true);
   if (!pwa.controller) await reload();
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0, connectionType: "none" }); await reload();

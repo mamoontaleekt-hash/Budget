@@ -129,9 +129,11 @@ try {
   assert.equal(performance.rows,200); assert.equal(performance.cards,200); assert.equal(performance.count,"200 عملية"); assert.ok(performance.duration<2000,JSON.stringify(performance));
 
   const pwa=await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v21")); assert.equal(pwa.ux3,true); assert.equal(pwa.ux2,true); assert.equal(pwa.ux1,true);
+  assert.ok(pwa.keys.includes("pfm-pwa-v22")); assert.equal(pwa.ux3,true); assert.equal(pwa.ux2,true); assert.equal(pwa.ux1,true);
   if(!pwa.controller) await reload();
   await send("Network.emulateNetworkConditions",{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0,connectionType:"none"}); await reload();
+  // Reload defaults to the current month; restore the fixture month offline too.
+  await evaluate(`(() => { const p=document.querySelector('#monthPicker'); p.value='2026-09'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`);
   await evaluate(`document.querySelector('#tabs [data-tab="tx"]').click()`);
   assert.equal(await evaluate(`[...document.styleSheets].some(x=>x.href?.endsWith('/interaction-polish.css?v=20260909-ux3'))`),true);
   assert.ok(await evaluate(`document.querySelectorAll('#txMobileList .tx-mobile-card').length>0`));
