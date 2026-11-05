@@ -9,7 +9,7 @@ const APP_SHELL = [
   "./manifest.json",
   "./sw.js",
   "./sync-model.js?v=20261105-sync2",
-  "./vendor/fflate-0.8.2.js",
+  "./vendor/fflate-0.8.2.js?v=20261105",
   "./cloud-storage.js?v=20261105-storage1",
   "./cloud-sync.js?v=20261105-sync4",
   "./purchase-model.js?v=20261105-planning2",
