@@ -47,6 +47,7 @@ function client(server,actor,stored){
   vm.runInNewContext(source,sandbox,{filename:"cloud-sync.js"});
   const api=sandbox.PFMCloudSync.start({});
   return {api,storage,sandbox,tasks,read:()=>JSON.parse(storage.get("pfm_data_v1")),
+    refreshAuth(){authChanged(auth.currentUser);},
     async login(uid="family"){auth.currentUser={uid,email:"family@example.test"};authChanged(auth.currentUser);await api.syncNow("wait login");},
     edit(id,amount=100){const before=JSON.parse(storage.get("pfm_data_v1")),after=copy(before);after.transactions.push({id,type:"expense",amount,date:"2026-11-05"});localStorage.setItem("pfm_data_v1",JSON.stringify(Sync.recordChanges(before,after,actor)));events.dispatchEvent(new Event("pfm:changed"));},
     status:()=>getNode("#cloudStatus").textContent,
@@ -167,4 +168,14 @@ test("edits during asynchronous backup are never overwritten by stale bulk selec
   assert.equal(Sync.conflicts(c.read()).length,1);
   assert.equal(await c.api.adoptFirstVersions(),true);assert.equal(c.read().transactions.length,2);
   await c.api.syncNow('settle');assert.equal((await server.appData()).transactions.length,2);
+});
+test("a delayed initial signed-out auth callback does not cancel safe local adoption",async()=>{
+  const initial=disputedState(),c=client(backend(),'offline',new Map([['pfm_data_v1',JSON.stringify(initial)]]));
+  const pending=c.api.adoptFirstVersions();c.refreshAuth();
+  assert.equal(await pending,true);assert.equal(Sync.conflicts(c.read()).length,0);
+});
+test("switching accounts while creating the backup cancels adoption",async()=>{
+  const initial=disputedState(),c=client(backend(initial),'a');await c.login('family');
+  const before=c.read(),pending=c.api.adoptFirstVersions();await c.login('another');
+  assert.equal(await pending,false);assert.deepEqual(c.read(),before);
 });

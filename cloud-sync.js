@@ -13,7 +13,7 @@
     let conflictPage = 0, resolving = false;
     const CONFLICT_PAGE_SIZE = 10;
     const text = (id, value) => { const el = $(id); if (el) el.textContent = value; };
-    text("#cloudBuild","إصدار المزامنة: 20261106-sync6");
+    text("#cloudBuild","إصدار المزامنة: 20261106-sync7");
     function status(message, label, kind = "warn") {
       clearTimeout(pulseTimer);
       text("#cloudStatus", message);
@@ -39,7 +39,7 @@
       const uid = auth?.currentUser?.uid;
       if (uid) message = message.split(uid).join("[account]");
       message = message.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"[email]");
-      lastFailure = {release:"20261106-sync6",phase,code:error.code || "unknown",message};
+      lastFailure = {release:"20261106-sync7",phase,code:error.code || "unknown",message};
       const lines = ["الإصدار: " + lastFailure.release,"المرحلة: " + (labels[phase] || phase),"الرمز: " + lastFailure.code,"التفاصيل: " + message];
       if (data) {
         lines.push("عدد العمليات: " + data.transactions.length,"حجم JSON بالبايت: " + new TextEncoder().encode(JSON.stringify(data)).length);
@@ -82,10 +82,10 @@
       resolving = true;
       const button = $("#btnCloudResolveAllFirst"); if (button) button.disabled = true;
       try {
-        const before = readLocal(), generation = session;
+        const before = readLocal(), account = auth?.currentUser?.uid || null;
         await saveConflictBackup(before);
         // Do not overwrite edits or incoming data received while compression ran.
-        if (generation !== session || !Sync.equivalent(before,readLocal())) {
+        if (account !== (auth?.currentUser?.uid || null) || !Sync.equivalent(before,readLocal())) {
           pending("وصل تحديث أثناء حفظ النسخة الاحتياطية؛ اضغط اعتماد النسخة الأولى للجميع مجدداً لتشمل أحدث البيانات");
           return false;
         }

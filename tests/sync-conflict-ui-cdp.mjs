@@ -79,7 +79,7 @@ try {
   await evaluate(`document.querySelector('#btnCloudResolveAllFirst').click()`);
   let finished=false;
   for(let i=0;i<100;i++){finished=await evaluate(`PFMSyncModel.conflicts(PFMGetState()).length===0`);if(finished)break;await delay(100);}
-  assert.equal(finished,true);
+  assert.equal(finished,true,await evaluate(`JSON.stringify({status:document.querySelector('#cloudStatus').textContent,error:document.querySelector('#cloudErrorMessage').value,backup:!!localStorage.getItem('pfm_conflict_backup_latest_v1'),worker:PFMCloudStorage.backgroundState()})`));
   const result=await evaluate(`(async()=>{
     const data=PFMGetState(),key=localStorage.getItem('pfm_conflict_backup_latest_v1'),backup=JSON.parse(localStorage.getItem(key));
     const parts=new Map(backup.documents.map(p=>[p.id,p.data]));

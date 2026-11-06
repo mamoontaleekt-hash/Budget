@@ -135,7 +135,7 @@ try {
   await evaluate(`(()=>{const before=JSON.parse(localStorage.getItem('pfm_data_v1')),next=JSON.parse(JSON.stringify(before));next.transactions.push({id:'missed-tab',type:'income',amount:5000,date:'2027-02-01'});localStorage.setItem('pfm_data_v1',JSON.stringify(PFMSyncModel.recordChanges(before,next,'missed-tab-actor')));document.querySelector('[data-tab="budgets"]').click();document.querySelector('#btnSaveBudgets').click();})()`);
   assert.equal(await evaluate(`PFMGetState().transactions.length`),3);
   await evaluate(`navigator.serviceWorker.ready`);await reload();
-  const assets=await evaluate(`Promise.all(['sync-model.js?v=20261106-sync4','vendor/fflate-0.8.2.js?v=20261105','cloud-storage.js?v=20261106-storage2','cloud-sync.js?v=20261106-sync6','purchase-model.js?v=20261105-planning2','purchase-ui.js?v=20261105-planning2','planning.css?v=20261105-planning2'].map(async x=>!!await caches.match('./'+x)))`);
+  const assets=await evaluate(`Promise.all(['sync-model.js?v=20261106-sync4','vendor/fflate-0.8.2.js?v=20261105','cloud-storage.js?v=20261106-storage2','cloud-sync.js?v=20261106-sync7','purchase-model.js?v=20261105-planning2','purchase-ui.js?v=20261105-planning2','planning.css?v=20261105-planning2'].map(async x=>!!await caches.match('./'+x)))`);
   assert.ok(assets.every(Boolean));
   const errorCount=errors.length;
   await send("Network.emulateNetworkConditions",{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});await reload();await selectMonth();
