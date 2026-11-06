@@ -67,6 +67,7 @@ try{
   const realFirebase=window.firebase,apps=[],databases=[];
   const base={version:1,categories:[{id:'family',type:'expense',name:'عائلة'}],transactions:[],budgets:{}};
   async function connect(uid,data,label){
+    window.__emulatorPhase='connecting '+label;
     const app=realFirebase.initializeApp({projectId:'demo-family-expenses-validation',apiKey:'demo-key',appId:'demo-app'},label);
     const db=realFirebase.firestore(app);db.useEmulator('127.0.0.1',9198,{mockUserToken:{sub:uid}});apps.push(app);databases.push(db);
     const auth={currentUser:{uid,email:'test@example.test'},onAuthStateChanged(fn){this.listener=fn;}};
@@ -94,6 +95,30 @@ try{
   if(!husband.api.getState().ready)throw new Error(JSON.stringify(husband.api.getState().lastFailure));
   const restored=JSON.parse(localStorage.getItem('pfm_data_v1'));
   husband.stop();
+  // Exercise real Firestore map-key reordering, then migrate historical conflicts.
+  const legacy={...base,transactions:[{id:'ordered-map',type:'expense',date:'2026-11-06',amount:100,categoryId:'family',note:'unchanged'}]};
+  const serverLegacy={...legacy,transactions:legacy.transactions.map(tx=>Object.fromEntries(Object.keys(tx).sort().map(key=>[key,tx[key]])))};
+  await preDb.doc('pfm_users/size-test').set({data:serverLegacy});
+  const reordered=(await preDb.doc('pfm_users/size-test').get({source:'server'})).data().data;
+  const firestoreReordered=JSON.stringify(reordered.transactions[0])!==JSON.stringify(legacy.transactions[0]);
+  const mapClient=await connect('size-test',legacy,'map-order-device');
+  const mapConflicts=PFMSyncModel.conflicts(JSON.parse(localStorage.getItem('pfm_data_v1'))).length;
+  mapClient.stop();
+  const history={...base,transactions:Array.from({length:863},(_,i)=>({id:'history-'+i,type:'expense',date:'2026-11-06',amount:1000+i,categoryId:'family',note:'سجل '+i})),_sync:{version:2,clock:2,vector:{a:2,b:2},revisions:{},conflicts:{}}};
+  for(let i=0;i<1714;i++){const value=history.transactions[i%857],sorted=Object.fromEntries(Object.keys(value).sort().map(k=>[k,value[k]]));history._sync.conflicts['old-'+i]={path:['transactions',value.id],alternatives:[{stamp:{n:1,actor:'a'},deleted:false,value},{stamp:{n:1,actor:'a'},deleted:false,value:sorted}]};}
+  for(let i=0;i<2;i++){const value=history.transactions[861+i];history._sync.conflicts['real-'+i]={path:['transactions',value.id],alternatives:[{stamp:{n:2,actor:'a'},deleted:false,value:{...value,amount:700+i}},{stamp:{n:2,actor:'b'},deleted:false,value:{...value,amount:900+i}}]};}
+  await preDb.doc('pfm_users/size-test').set({data:(await PFMCloudStorage.pack(history)).manifest});
+  const repairClient=await connect('size-test',history,'repair-device');
+  const repaired=JSON.parse(localStorage.getItem('pfm_data_v1'));
+  const repairPreservesValues=history.transactions.every(tx=>PFMSyncModel.equivalent(tx,repaired.transactions.find(item=>item.id===tx.id)));
+  const remainingRealConflicts=PFMSyncModel.conflicts(repaired).length;
+  window.__emulatorPhase='adopting';
+  const adopted=await repairClient.api.adoptFirstVersions();await repairClient.api.syncNow('publish all first');repairClient.stop();
+  const replayClient=await connect('size-test',history,'old-phone-reconnect');
+  const afterReplay=JSON.parse(localStorage.getItem('pfm_data_v1'));
+  const replayConflicts=PFMSyncModel.conflicts(afterReplay).length;
+  const firstChoicesPreserved=[861,862].every(i=>afterReplay.transactions.find(tx=>tx.id==='history-'+i).amount===700+i-861);
+  replayClient.stop();
   const random=new Uint8Array(950000);for(let i=0;i<random.length;i+=65536)crypto.getRandomValues(random.subarray(i,Math.min(i+65536,random.length)));
   let binary='';for(let i=0;i<random.length;i+=16000)binary+=String.fromCharCode.apply(null,random.subarray(i,i+16000));
   const chunkData=PFMSyncModel.recordChanges(base,{...base,transactions:[{id:'large-note',type:'expense',categoryId:'family',date:'2026-11-05',amount:1000,note:btoa(binary)}]},'chunk-device');
@@ -102,12 +127,16 @@ try{
   const chunkSnapshot=await chunked.ref.get({source:'server'}),manifest=chunkSnapshot.data().data;
   const decoded=await PFMCloudStorage.unpack(manifest,async id=>(await chunked.ref.collection('snapshots').doc(id).get({source:'server'})).data());
   const chunkSizes=await Promise.all(manifest.partIds.map(async id=>new TextEncoder().encode(JSON.stringify((await chunked.ref.collection('snapshots').doc(id).get({source:'server'})).data())).length));
-  const output={available:true,rawRejected,rawBytes,storedBytes,compressedInline:!!packed.parts,recordsRestored:restored.transactions.length,lastRecord:restored.transactions.some(tx=>tx.id==='day-862'),legacyRecordPreserved:restored.transactions.some(tx=>tx.id==='remote-preserved'),chunkCount:manifest.partIds.length,largestChunk:Math.max(...chunkSizes),chunkRoundtrip:decoded.transactions.find(tx=>tx.id==='large-note')?.note===chunkData.transactions[0].note};
+  const output={available:true,rawRejected,rawBytes,storedBytes,compressedInline:!!packed.parts,recordsRestored:restored.transactions.length,lastRecord:restored.transactions.some(tx=>tx.id==='day-862'),legacyRecordPreserved:restored.transactions.some(tx=>tx.id==='remote-preserved'),firestoreReordered,mapConflicts,repairPreservesValues,remainingRealConflicts,adopted,replayConflicts,firstChoicesPreserved,replayRecords:afterReplay.transactions.length,chunkCount:manifest.partIds.length,largestChunk:Math.max(...chunkSizes),chunkRoundtrip:decoded.transactions.find(tx=>tx.id==='large-note')?.note===chunkData.transactions[0].note};
+  window.__emulatorPhase='terminating';
   window.firebase=realFirebase;for(const db of databases)await db.terminate();for(const app of apps)await app.delete();return output;
  })()`);
  assert.equal(result.available,true);assert.equal(result.rawRejected,true);assert.ok(result.rawBytes>1318063);
  assert.ok(result.storedBytes<1048576);assert.equal(result.compressedInline,true);
  assert.equal(result.recordsRestored,864);assert.equal(result.lastRecord,true);assert.equal(result.legacyRecordPreserved,true);
+ assert.equal(result.firestoreReordered,true);assert.equal(result.mapConflicts,0);assert.equal(result.repairPreservesValues,true);
+ assert.equal(result.remainingRealConflicts,2);assert.equal(result.adopted,true);assert.equal(result.replayConflicts,0);
+ assert.equal(result.firstChoicesPreserved,true);assert.equal(result.replayRecords,863);
  assert.ok(result.chunkCount>1);assert.ok(result.largestChunk<1048576);assert.equal(result.chunkRoundtrip,true);
  console.log(JSON.stringify({result:'PASS',...result},null,2));
 }finally{socket.close();chrome.kill();}

@@ -4,14 +4,16 @@
   function start(firebaseConfig) {
     const Sync = window.PFMSyncModel, Storage = window.PFMCloudStorage, DisplayFormat = window.PFMDisplayFormat;
     const STORAGE_KEY = "pfm_data_v1", BACKUP_KEY = "pfm_backup_before_remote_v1", OWNER_KEY = "pfm_sync_owner_v2";
+    const CONFLICT_BACKUP_KEY = "pfm_conflict_backup_latest_v1";
     const clientId = window.PFMSyncActor;
     const $ = selector => document.querySelector(selector);
     let auth, db, FieldValue, session = 0, timer, retryTimer, pulseTimer, unsubscribe;
     let inFlight = null, flightId = 0, ready = false, dirty = false, failures = 0, started = false, loadingSDK = null;
     let lastFailure = null, remoteEvent = 0;
-    let conflictPage = 0;
+    let conflictPage = 0, resolving = false;
     const CONFLICT_PAGE_SIZE = 10;
     const text = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+    text("#cloudBuild","إصدار المزامنة: 20261106-sync6");
     function status(message, label, kind = "warn") {
       clearTimeout(pulseTimer);
       text("#cloudStatus", message);
@@ -37,7 +39,7 @@
       const uid = auth?.currentUser?.uid;
       if (uid) message = message.split(uid).join("[account]");
       message = message.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"[email]");
-      lastFailure = {release:"20261106-sync5",phase,code:error.code || "unknown",message};
+      lastFailure = {release:"20261106-sync6",phase,code:error.code || "unknown",message};
       const lines = ["الإصدار: " + lastFailure.release,"المرحلة: " + (labels[phase] || phase),"الرمز: " + lastFailure.code,"التفاصيل: " + message];
       if (data) {
         lines.push("عدد العمليات: " + data.transactions.length,"حجم JSON بالبايت: " + new TextEncoder().encode(JSON.stringify(data)).length);
@@ -65,6 +67,51 @@
       if (!Sync.equivalent(readLocal(), data)) throw new Error("تعذر حفظ التحديث على هذا الجهاز؛ تحقق من مساحة التخزين");
       renderConflicts();
     }
+    async function saveConflictBackup(data) {
+      const packed = await Storage.pack(data);
+      const key = "pfm_conflict_backup_v1:" + packed.manifest.sha256;
+      const value = JSON.stringify({at:new Date().toISOString(),...packed});
+      // Unlike the rolling sync backup, this snapshot is immutable and verified.
+      localStorage.setItem(key,value);
+      if (localStorage.getItem(key) !== value) throw new Error("تعذر التحقق من النسخة الاحتياطية؛ لم نعتمد أي نسخة");
+      localStorage.setItem(CONFLICT_BACKUP_KEY,key);
+      return key;
+    }
+    async function adoptFirstVersions() {
+      if (resolving) return false;
+      resolving = true;
+      const button = $("#btnCloudResolveAllFirst"); if (button) button.disabled = true;
+      try {
+        const before = readLocal(), generation = session;
+        await saveConflictBackup(before);
+        // Do not overwrite edits or incoming data received while compression ran.
+        if (generation !== session || !Sync.equivalent(before,readLocal())) {
+          pending("وصل تحديث أثناء حفظ النسخة الاحتياطية؛ اضغط اعتماد النسخة الأولى للجميع مجدداً لتشمل أحدث البيانات");
+          return false;
+        }
+        const resolved = Sync.resolveAllFirst(before,clientId);
+        apply(resolved); dirty = true;
+        pending("تم اعتماد النسخة الأولى وحفظ نسخة احتياطية كاملة؛ جارٍ تأكيد المزامنة");
+        schedule("اعتماد النسخة الأولى للجميع",0);
+        return true;
+      } catch (error) {
+        status("لم يكتمل اعتماد النسخ — " + error.message,"لم تكتمل المعالجة","danger");
+        return false;
+      } finally {
+        resolving = false; if (button) button.disabled = false;
+      }
+    }
+    async function downloadConflictBackup() {
+      try {
+        const key = localStorage.getItem(CONFLICT_BACKUP_KEY), raw = key && localStorage.getItem(key);
+        if (!raw) { pending("لا توجد نسخة احتياطية لاعتماد النسخ على هذا الجهاز بعد"); return; }
+        const backup = JSON.parse(raw), parts = new Map(backup.documents.map(part => [part.id,part.data]));
+        const data = await Storage.unpack(backup.manifest,async id => parts.get(id));
+        const url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+        const link = document.createElement("a"); link.href = url; link.download = "pfm-before-conflict-resolution.json";
+        link.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
+      } catch (error) { status("تعذر تنزيل النسخة الاحتياطية — " + error.message,"تعذر التنزيل","danger"); }
+    }
     function renderConflicts() {
       const panel = $("#cloudConflicts"); if (!panel) return;
       // Closed dialogs must not parse the ledger or build hundreds of hidden cards.
@@ -76,7 +123,10 @@
       conflictPage = Math.min(conflictPage,Math.floor((entries.length - 1) / CONFLICT_PAGE_SIZE));
       const pageStart = conflictPage * CONFLICT_PAGE_SIZE;
       const categories = new Map(data.categories.map(category => [category.id,category.name]));
-      const heading = document.createElement("p"); heading.textContent = "توجد تعديلات مختلفة على البيانات نفسها. احتفظنا بالنسختين؛ اختر النسخة الصحيحة لكل تعارض."; panel.append(heading);
+      const heading = document.createElement("p"); heading.textContent = "هذه اختلافات فعلية في السجلات. يمكنك اعتماد النسخة الأولى للجميع مرة واحدة؛ سنحفظ نسخة احتياطية كاملة ونحتفظ بالبدائل. الاختيارات التي تحذف سجلاً تبقى للمراجعة."; panel.append(heading);
+      const adopt = document.createElement("button"); adopt.id = "btnCloudResolveAllFirst"; adopt.type = "button"; adopt.className = "btn primary";
+      adopt.textContent = "اعتماد النسخة الأولى للجميع"; adopt.disabled = resolving;
+      adopt.addEventListener("click",adoptFirstVersions); panel.append(adopt);
       for (const [id, conflict] of entries.slice(pageStart,pageStart + CONFLICT_PAGE_SIZE)) {
         const card = document.createElement("div"); card.className = "sync-conflict"; card.dataset.conflictId = id;
         const title = document.createElement("b");
@@ -287,6 +337,7 @@
       }
     });
     $("#btnCloudPull")?.addEventListener("click", () => { /* A manual fetch also merges unsent edits. */ syncNow("manual fetch"); });
+    $("#btnCloudDownloadConflictBackup")?.addEventListener("click",downloadConflictBackup);
     $("#btnCloudRestoreBackup")?.addEventListener("click", () => {
       try {
         const backup = JSON.parse(localStorage.getItem(BACKUP_KEY) || "null");
@@ -311,6 +362,6 @@
       else status("جارٍ تحميل المزامنة في الخلفية. يمكنك استخدام التطبيق وبيانات هذا الجهاز أثناء الاتصال.", "جارٍ الاتصال بالسحابة");
       ensureSDK();
     }
-    return { syncNow, getState: () => ({ready,dirty,session,lastFailure}) };
+    return { syncNow, adoptFirstVersions, getState: () => ({ready,dirty,session,lastFailure}) };
   }
 })();

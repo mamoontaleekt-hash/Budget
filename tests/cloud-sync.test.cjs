@@ -130,3 +130,41 @@ test("chunk writes and manifest are atomic, and a rejected chunk leaves the loca
   assert.ok(server.document.data.partIds.length>1);assert.equal((await server.appData()).transactions[0].note,noise);
   const second=client(server,"b");await second.login();assert.equal(second.read().transactions[0].note,noise);
 });
+
+function disputedState(){
+  const base=empty(),a=copy(base),b=copy(base);
+  a.transactions=[{id:'one',type:'expense',date:'2026-11-06',amount:100,note:'first'}];
+  b.transactions=[{id:'one',type:'expense',date:'2026-11-06',amount:200,note:'second'}];
+  return Sync.merge(Sync.recordChanges(base,a,'a'),Sync.recordChanges(base,b,'b'));
+}
+test("bulk adoption saves a durable lossless backup before syncing the first versions to both devices",async()=>{
+  const initial=disputedState(),server=backend(initial),c=client(server,'reviewer');
+  await c.login();const before=c.read(),first=Sync.conflicts(before)[0][1].alternatives[0].value;
+  assert.equal(await c.api.adoptFirstVersions(),true);
+  const key=c.storage.get('pfm_conflict_backup_latest_v1'),backup=JSON.parse(c.storage.get(key));
+  const parts=new Map(backup.documents.map(p=>[p.id,p.data]));
+  assert.deepEqual(await Storage.unpack(backup.manifest,async id=>parts.get(id)),before);
+  assert.deepEqual(c.read().transactions,[first]);
+  await c.api.syncNow('publish choice');server.listeners.clear();
+  const stale=copy(initial);stale._sync.conflicts.alias=copy(Sync.conflicts(initial)[0][1]);
+  const other=client(server,'stale-device',new Map([['pfm_data_v1',JSON.stringify(stale)]]));
+  await other.login();
+  assert.deepEqual(other.read().transactions,[first]);assert.equal(Sync.conflicts(other.read()).length,0);
+  assert.deepEqual((await server.appData()).transactions,[first]);
+  assert.equal(Sync.conflicts(await server.appData()).length,0);
+});
+test("failed recovery-backup writes abort bulk adoption without changing any data",async()=>{
+  const server=backend(disputedState()),c=client(server,'a');await c.login();
+  const before=copy(c.read()),remote=copy(server.document),original=c.sandbox.localStorage.setItem;
+  c.sandbox.localStorage.setItem=(key,value)=>{if(key.startsWith('pfm_conflict_backup_v1:'))throw new Error('QuotaExceededError');original(key,value);};
+  assert.equal(await c.api.adoptFirstVersions(),false);
+  assert.deepEqual(c.read(),before);assert.deepEqual(server.document,remote);
+});
+test("edits during asynchronous backup are never overwritten by stale bulk selection",async()=>{
+  const server=backend(disputedState()),c=client(server,'a');await c.login();
+  const pending=c.api.adoptFirstVersions();c.edit('made-during-backup',321);
+  assert.equal(await pending,false);assert.equal(c.read().transactions.length,2);
+  assert.equal(Sync.conflicts(c.read()).length,1);
+  assert.equal(await c.api.adoptFirstVersions(),true);assert.equal(c.read().transactions.length,2);
+  await c.api.syncNow('settle');assert.equal((await server.appData()).transactions.length,2);
+});

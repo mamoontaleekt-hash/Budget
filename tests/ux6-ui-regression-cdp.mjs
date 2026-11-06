@@ -199,7 +199,7 @@ try {
   await evaluate(`navigator.serviceWorker.ready`);
   await reload();
   const pwa = await evaluate(`navigator.serviceWorker.ready.then(async()=>({controller:!!navigator.serviceWorker.controller,keys:await caches.keys(),theme:!!(await caches.match('./theme-system.css?v=20260909-ux6')),ux5:!!(await caches.match('./dashboard-polish.css?v=20260909-ux5')),ux4:!!(await caches.match('./budget-polish.css?v=20260909-ux4')),ux3:!!(await caches.match('./interaction-polish.css?v=20260909-ux3')),ux2:!!(await caches.match('./visual-polish.css?v=20260909-ux2')),ux1:!!(await caches.match('./mobile-enhancements.css?v=20260908-ux1')),iconSvg:!!(await caches.match('./icons/app-icon.svg')),icon192:!!(await caches.match('./icons/app-icon-192.png')),icon512:!!(await caches.match('./icons/app-icon-512.png')),old192:!!(await caches.match('./icons/icon-192.png')),old512:!!(await caches.match('./icons/icon-512.png'))}))`);
-  assert.ok(pwa.keys.includes("pfm-pwa-v26")); for (const key of ["theme","ux5","ux4","ux3","ux2","ux1","iconSvg","icon192","icon512"]) assert.equal(pwa[key], true); assert.equal(pwa.old192,false); assert.equal(pwa.old512,false);
+  assert.ok(pwa.keys.includes("pfm-pwa-v27")); for (const key of ["theme","ux5","ux4","ux3","ux2","ux1","iconSvg","icon192","icon512"]) assert.equal(pwa[key], true); assert.equal(pwa.old192,false); assert.equal(pwa.old512,false);
   if(!pwa.controller) await reload();
   const errorCount = errors.length;
   await send("Network.emulateNetworkConditions", { offline:true, latency:0, downloadThroughput:0, uploadThroughput:0, connectionType:"none" });

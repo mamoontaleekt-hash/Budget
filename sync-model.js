@@ -5,7 +5,8 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
   const clone = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
-  const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  // Firestore sorts map keys. Property insertion order is not a financial edit.
+  const equal = (a, b) => equivalent(a, b);
   const own = (o, k) => Object.prototype.hasOwnProperty.call(o || {}, k);
   const safe = key => !["__proto__", "prototype", "constructor"].includes(key);
   function equivalent(a, b) {
@@ -17,6 +18,48 @@
     return true;
   }
   const entities = new Set(["transactions", "categories"]);
+  function canonical(value) {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]));
+    return value;
+  }
+  const stable = value => JSON.stringify(canonical(value));
+  const alternativeOrder = (x, y) => compare(x.stamp,y.stamp) || stable(x).localeCompare(stable(y),"en");
+  function identicalAlternatives(conflict) {
+    const items = conflict.alternatives || [];
+    return items.length > 1 && items.every(item => !!item.deleted === !!items[0].deleted && equal(item.value,items[0].value));
+  }
+  function conflictSignature(conflict) {
+    return stable([conflict.path,[...conflict.alternatives].sort(alternativeOrder)]);
+  }
+  function repairMetadata(meta) {
+    const resolutions = new Map();
+    for (const conflict of Object.values(meta.conflicts)) if (conflict.resolvedBy && conflict.resolvedVector) {
+      const key = JSON.stringify(conflict.path), list = resolutions.get(key) || [];
+      list.push(conflict); resolutions.set(key,list);
+    }
+    for (const conflict of Object.values(meta.conflicts)) {
+      if (conflict.resolvedBy) continue;
+      if (identicalAlternatives(conflict)) {
+        // Keep the complete alternatives as recovery history; touch no ledger value.
+        conflict.resolvedBy = {n:0,actor:"identical-values-v1"};
+        conflict.resolution = "identical-values";
+        continue;
+      }
+      const resolution = (resolutions.get(JSON.stringify(conflict.path)) || []).find(item =>
+        conflict.alternatives.every(alt => alt.stamp.n === 0 || (item.resolvedVector[alt.stamp.actor] || 0) >= alt.stamp.n));
+      if (resolution) {
+        conflict.resolvedBy = clone(resolution.resolvedBy);
+        conflict.resolvedVector = clone(resolution.resolvedVector);
+      }
+    }
+    return meta;
+  }
+  function repairConflicts(data) {
+    const out = clone(data);
+    if (out?._sync?.version === 2) repairMetadata(out._sync);
+    return out;
+  }
   function conflictId(value) {
     // Bounded Firestore map keys, including when transaction notes are long.
     const hashes = [2166136261, 2246822507, 3266489909, 668265263];
@@ -92,7 +135,7 @@
   }
   function merge(leftData, rightData) {
     if (!valid(leftData) || !valid(rightData)) throw new Error("Invalid sync state");
-    if (equivalent(leftData,rightData)) return clone(leftData);
+    if (equivalent(leftData,rightData)) return repairConflicts(leftData);
     const a = metadata(leftData), b = metadata(rightData), meta = metadata(null);
     meta.clock = Math.max(a.clock, b.clock);
     for (const actor of new Set([...Object.keys(a.vector), ...Object.keys(b.vector)])) meta.vector[actor] = Math.max(a.vector[actor] || 0, b.vector[actor] || 0);
@@ -108,32 +151,65 @@
       const aKnown = av.has(key) || own(a.revisions, key), bKnown = bv.has(key) || own(b.revisions, key);
       const different = av.has(key) !== bv.has(key) || !equal(av.get(key), bv.get(key));
       const order = compare(as,bs);
-      let useA = !bKnown || (aKnown && (order > 0 || (order === 0 && (!different || JSON.stringify(av.get(key) ?? null) >= JSON.stringify(bv.get(key) ?? null)))));
+      let useA = !bKnown || (aKnown && (order > 0 || (order === 0 && (!different || stable(av.get(key) ?? null) >= stable(bv.get(key) ?? null)))));
       const concurrent = (b.vector[as.actor] || 0) < as.n && (a.vector[bs.actor] || 0) < bs.n;
       const ambiguousLegacy = as.n === 0 && bs.n === 0;
       if (aKnown && bKnown && different && (concurrent || ambiguousLegacy || compare(as, bs) === 0)) {
         const alternatives = [
           { stamp: as, deleted: !av.has(key), ...(av.has(key) ? { value: av.get(key) } : {}) },
           { stamp: bs, deleted: !bv.has(key), ...(bv.has(key) ? { value: bv.get(key) } : {}) },
-        ].sort((x, y) => compare(x.stamp, y.stamp) || JSON.stringify(x).localeCompare(JSON.stringify(y), "en"));
-        const id = conflictId(JSON.stringify([key, alternatives]));
+        ].sort(alternativeOrder);
+        const id = conflictId(stable([key, alternatives]));
         if (!own(meta.conflicts, id)) meta.conflicts[id] = { path: JSON.parse(key), alternatives };
       }
       const source = useA ? av : bv, revision = useA ? as : bs;
       meta.revisions[key] = clone(revision);
       if (source.has(key) && !revision.deleted) values.set(key, source.get(key));
     }
-    return rebuild(values, meta);
+    return rebuild(values, repairMetadata(meta));
   }
-  function conflicts(data) { return Object.entries(data?._sync?.version === 2 ? data._sync.conflicts || {} : {}).filter(([, value]) => !value.resolvedBy); }
+  function conflicts(data) {
+    const seen = new Set();
+    return Object.entries(data?._sync?.version === 2 ? data._sync.conflicts || {} : {}).filter(([, value]) => {
+      if (value.resolvedBy || identicalAlternatives(value)) return false;
+      const signature = conflictSignature(value);
+      if (seen.has(signature)) return false;
+      seen.add(signature); return true;
+    });
+  }
+  function resolveChoices(data, choices, actor, preserveRecords = false) {
+    const meta = repairMetadata(metadata(data)), values = flatten(data), selectedPaths = new Map();
+    for (const [id, choice] of choices) {
+      const conflict = meta.conflicts[id], selected = conflict?.alternatives?.[choice];
+      if (!selected) throw new Error("Invalid conflict choice");
+      const key = JSON.stringify(conflict.path);
+      if (conflict.resolvedBy || selectedPaths.has(key)) continue;
+      // Bulk adoption never deletes records, including soft deletions.
+      if (preserveRecords && (selected.deleted || selected.value?.deletedAt)) continue;
+      selectedPaths.set(key,selected);
+    }
+    if (!selectedPaths.size) return repairConflicts(data);
+    // Include all observed alternative stamps, even in legacy malformed metadata.
+    for (const conflict of Object.values(meta.conflicts)) for (const alt of conflict.alternatives || []) {
+      meta.clock = Math.max(meta.clock,alt.stamp.n);
+      meta.vector[alt.stamp.actor] = Math.max(meta.vector[alt.stamp.actor] || 0,alt.stamp.n);
+    }
+    const revision = next(meta,actor), observed = clone(meta.vector);
+    for (const [key, selected] of selectedPaths) {
+      if (selected.deleted) values.delete(key); else values.set(key,clone(selected.value));
+      meta.revisions[key] = {...revision,...(selected.deleted ? {deleted:true} : {})};
+    }
+    for (const conflict of Object.values(meta.conflicts)) if (!conflict.resolvedBy && selectedPaths.has(JSON.stringify(conflict.path))) {
+      conflict.resolvedBy = clone(revision);
+      conflict.resolvedVector = clone(observed);
+    }
+    return rebuild(values,meta);
+  }
   function resolveConflict(data, id, choice, actor) {
-    const meta = metadata(data), conflict = meta.conflicts[id], selected = conflict?.alternatives?.[choice];
-    if (!selected) throw new Error("Invalid conflict choice");
-    const values = flatten(data), key = JSON.stringify(conflict.path), revision = next(meta, actor);
-    if (selected.deleted) values.delete(key); else values.set(key, clone(selected.value));
-    meta.revisions[key] = { ...revision, ...(selected.deleted ? { deleted: true } : {}) };
-    meta.conflicts[id].resolvedBy = revision;
-    return rebuild(values, meta);
+    return resolveChoices(data,[[id,choice]],actor);
   }
-  return { valid, recordChanges, merge, conflicts, resolveConflict, equivalent };
+  function resolveAllFirst(data, actor) {
+    return resolveChoices(data,conflicts(data).map(([id]) => [id,0]),actor,true);
+  }
+  return { valid, recordChanges, merge, conflicts, resolveConflict, resolveAllFirst, repairConflicts, equivalent };
 });
